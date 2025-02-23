@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <!-- Disable pinch-to-zoom -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Breakout Twist</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background: #000;
+            height: 100vh;
+            font-family: Arial, sans-serif;
+        }
+
+        #gameContainer {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+            overflow: hidden;
+            touch-action: none; /* Prevent pinch-to-zoom gestures */
+        }
+
+        #gameCanvas {
+            position: absolute;
+            top: 50px;
+            bottom: 60px;
+            left: 10px;
+            right: 80px;
+            background: #000;
+            width: calc(100% - 90px);
+            height: calc(100% - 110px);
+        }
+
+        #scoreDisplay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 50px;
+            color: white;
+            font-size: 20px;
+            text-align: center;
+            padding: 15px 0;
+            background: rgba(0, 0, 0, 0.8);
+            box-sizing: border-box;
+        }
+
+        #controlButtons {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 60px;
+            display: flex;
+            justify-content: center;
+            gap: 5px;
+            padding: 5px 0;
+            background: rgba(0, 0, 0, 0.8);
+            box-sizing: border-box;
+        }
+
+        #sideButtons {
+            position: absolute;
+            right: 0;
+            top: 50px;
+            bottom: 60px;
+            width: 80px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 10px;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            box-sizing: border-box;
+        }
+
+        .touchButton {
+            padding: 8px 12px;
+            font-size: 12px;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            user-select: none;
+            min-width: 40px;
+            max-width: 60px;
+        }
+
+        .touchButton:active {
+            opacity: 0.7;
+        }
+
+        #leftPaddleLeft { background: #007BFF; }
+        #leftPaddleLeft:active { background: #0056b3; }
+        #leftPaddleRight { background: #007BFF; }
+        #leftPaddleRight:active { background: #0056b3; }
+        #cannonLeft { background: #28A745; }
+        #cannonLeft:active { background: #1e7e34; }
+        #launch { background: #28A745; }
+        #launch:active { background: #1e7e34; }
+        #cannonRight { background: #28A745; }
+        #cannonRight:active { background: #1e7e34; }
+        #rightPaddleLeft { background: #DC3545; }
+        #rightPaddleLeft:active { background: #b02a37; }
+        #rightPaddleRight { background: #DC3545; }
+        #rightPaddleRight:active { background: #b02a37; }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <div id="scoreDisplay">Score: 0 | Lives: 3</div>
+        <canvas id="gameCanvas"></canvas>
+        <div id="controlButtons">
+            <button class="touchButton" id="leftPaddleLeft">←</button>
+            <button class="touchButton" id="leftPaddleRight">→</button>
+            <button class="touchButton" id="cannonLeft">←</button>
+            <button class="touchButton" id="launch">Launch</button>
+            <button class="touchButton" id="cannonRight">→</button>
+            <button class="touchButton" id="rightPaddleLeft">←</button>
+            <button class="touchButton" id="rightPaddleRight">→</button>
+        </div>
+        <div id="sideButtons">
+            <button class="touchButton" id="pauseButton">Pause</button>
+            <button class="touchButton" id="resetButton">Reset</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const container = document.getElementById('gameContainer');
+        const scoreDisplay = document.getElementById('scoreDisplay');
+        const leftPaddleLeft = document.getElementById('leftPaddleLeft');
+        const leftPaddleRight = document.getElementById('leftPaddleRight');
+        const cannonLeft = document.getElementById('cannonLeft');
+        const launch = document.getElementById('launch');
+        const cannonRight = document.getElementById('cannonRight');
+        const rightPaddleLeft = document.getElementById('rightPaddleLeft');
+        const rightPaddleRight = document.getElementById('rightPaddleRight');
+        const pauseButton = document.getElementById('pauseButton');
+        const resetButton = document.getElementById('resetButton');
+
+        // Game state
+        let score = 0;
+        let lives = 3;
+        let isPaused = false;
+        let gameWidth, gameHeight, gameX, gameY;
+
+        // Paddles
+        const leftPaddle = { width: 0, height: 0, x: 0, y: 0, speed: 7 };
+        const rightPaddle = { width: 0, height: 0, x: 0, y: 0, speed: 7 };
+        let leftPaddleLeftPressed = false, leftPaddleRightPressed = false;
+        let rightPaddleLeftPressed = false, rightPaddleRightPressed = false;
+
+        // Ball (placeholder until cannon is added)
+        const ball = { radius: 10, x: 0, y: 0, dx: 4, dy: -4 };
+
+        // Lock orientation to landscape
+        function lockOrientation() {
+            if (screen.orientation && screen.orientation.lock) {
+                screen.orientation.lock('landscape')
+                    .then(() => console.log('Orientation locked to landscape'))
+                    .catch(err => console.log('Orientation lock failed:', err));
+            } else {
+                console.log('Orientation lock not supported on this device');
+            }
+        }
+
+        function resizeCanvas() {
+            const availableWidth = window.innerWidth;
+            const availableHeight = window.innerHeight;
+            container.style.width = `${availableWidth}px`;
+            container.style.height = `${availableHeight}px`;
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+
+            gameWidth = canvas.width * 0.8;
+            gameHeight = canvas.height * 0.8;
+            gameX = (canvas.width - gameWidth) / 2;
+            gameY = (canvas.height - gameHeight) / 2;
+
+            leftPaddle.width = rightPaddle.width = gameWidth * 0.15;
+            leftPaddle.height = rightPaddle.height = gameHeight * 0.02;
+            leftPaddle.x = gameX + gameWidth * 0.25 - leftPaddle.width / 2;
+            leftPaddle.y = rightPaddle.y = gameY + gameHeight - leftPaddle.height - 10;
+            rightPaddle.x = gameX + gameWidth * 0.75 - rightPaddle.width / 2;
+
+            resetGame();
+        }
+
+        function resetGame() {
+            ball.x = gameX + gameWidth / 2;
+            ball.y = gameY + gameHeight / 2;
+            ball.dx = 4;
+            ball.dy = -4;
+            leftPaddle.x = gameX + gameWidth * 0.25 - leftPaddle.width / 2;
+            rightPaddle.x = gameX + gameWidth * 0.75 - rightPaddle.width / 2;
+            lives = 3;
+            score = 0;
+            updateScoreDisplay();
+        }
+
+        function updateScoreDisplay() {
+            scoreDisplay.textContent = `Score: ${score} | Lives: ${lives}`;
+        }
+
+        function drawPaddle(paddle) {
+            const halfWidth = paddle.width / 2;
+            const gradient = ctx.createLinearGradient(paddle.x, 0, paddle.x + paddle.width, 0);
+            gradient.addColorStop(0, '#000');
+            gradient.addColorStop(0.5, '#0f0');
+            gradient.addColorStop(1, '#000');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(paddle.x, paddle.y, paddle.width, paddle.height);
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(gameX, gameY, gameWidth, gameHeight);
+
+            drawPaddle(leftPaddle);
+            drawPaddle(rightPaddle);
+
+            ctx.beginPath();
+            ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+            ctx.fillStyle = '#f00';
+            ctx.fill();
+            ctx.closePath();
+        }
+
+        function movePaddles() {
+            if (leftPaddleLeftPressed && leftPaddle.x > gameX) {
+                leftPaddle.x -= leftPaddle.speed;
+            }
+            if (leftPaddleRightPressed && leftPaddle.x + leftPaddle.width < gameX + gameWidth / 2) {
+                leftPaddle.x += leftPaddle.speed;
+            }
+            if (rightPaddleLeftPressed && rightPaddle.x > gameX + gameWidth / 2) {
+                rightPaddle.x -= rightPaddle.speed;
+            }
+            if (rightPaddleRightPressed && rightPaddle.x + rightPaddle.width < gameX + gameWidth) {
+                rightPaddle.x += rightPaddle.speed;
+            }
+        }
+
+        function moveBall() {
+            ball.x += ball.dx;
+            ball.y += ball.dy;
+
+            if (ball.x + ball.radius > gameX + gameWidth) ball.dx = -ball.dx;
+            if (ball.x - ball.radius < gameX) ball.dx = -ball.dx;
+            if (ball.y - ball.radius < gameY) ball.dy = -ball.dy;
+
+            if (ball.y + ball.radius > leftPaddle.y &&
+                ball.y - ball.radius < leftPaddle.y + leftPaddle.height &&
+                ball.x > leftPaddle.x &&
+                ball.x < leftPaddle.x + leftPaddle.width) {
+                ball.dy = -ball.dy;
+                ball.y = leftPaddle.y - ball.radius;
+                score += 10;
+                updateScoreDisplay();
+            }
+            if (ball.y + ball.radius > rightPaddle.y &&
+                ball.y - ball.radius < rightPaddle.y + rightPaddle.height &&
+                ball.x > rightPaddle.x &&
+                ball.x < rightPaddle.x + rightPaddle.width) {
+                ball.dy = -ball.dy;
+                ball.y = rightPaddle.y - ball.radius;
+                score += 10;
+                updateScoreDisplay();
+            }
+
+            if (ball.y + ball.radius > gameY + gameHeight) {
+                lives--;
+                updateScoreDisplay();
+                if (lives > 0) {
+                    ball.x = gameX + gameWidth / 2;
+                    ball.y = gameY + gameHeight / 2;
+                    ball.dy = -ball.dy;
+                } else {
+                    alert('Game Over! Score: ' + score);
+                    resetGame();
+                }
+            }
+        }
+
+        function gameLoop() {
+            if (!isPaused) {
+                movePaddles();
+                moveBall();
+                draw();
+            }
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Controls
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'a' || e.key === 'A') leftPaddleLeftPressed = true;
+            if (e.key === 's' || e.key === 'S') leftPaddleRightPressed = true;
+            if (e.key === 'ArrowLeft') rightPaddleLeftPressed = true;
+            if (e.key === 'ArrowRight') rightPaddleRightPressed = true;
+        });
+        document.addEventListener('keyup', (e) => {
+            if (e.key === 'a' || e.key === 'A') leftPaddleLeftPressed = false;
+            if (e.key === 's' || e.key === 'S') leftPaddleRightPressed = false;
+            if (e.key === 'ArrowLeft') rightPaddleLeftPressed = false;
+            if (e.key === 'ArrowRight') rightPaddleRightPressed = false;
+        });
+
+        leftPaddleLeft.addEventListener('touchstart', () => leftPaddleLeftPressed = true);
+        leftPaddleLeft.addEventListener('touchend', () => leftPaddleLeftPressed = false);
+        leftPaddleRight.addEventListener('touchstart', () => leftPaddleRightPressed = true);
+        leftPaddleRight.addEventListener('touchend', () => leftPaddleRightPressed = false);
+        rightPaddleLeft.addEventListener('touchstart', () => rightPaddleLeftPressed = true);
+        rightPaddleLeft.addEventListener('touchend', () => rightPaddleLeftPressed = false);
+        rightPaddleRight.addEventListener('touchstart', () => rightPaddleRightPressed = true);
+        rightPaddleRight.addEventListener('touchend', () => rightPaddleRightPressed = false);
+
+        pauseButton.addEventListener('click', () => {
+            isPaused = !isPaused;
+            pauseButton.textContent = isPaused ? 'Resume' : 'Pause';
+        });
+        resetButton.addEventListener('click', resetGame);
+
+        // Initial setup
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                resizeCanvas();
+                lockOrientation();
+                gameLoop();
+            }, 50);
+        });
+        window.addEventListener('resize', resizeCanvas);
+    </script>
+</body>
+</html>
