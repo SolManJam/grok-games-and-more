@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Monkey Drawing</title>
+    <style>
+        canvas {
+            /* No border, and we can match the background */
+            background: transparent;
+        }
+        body {
+            /* Optional: set page background to match */
+            background: white;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="monkeyCanvas" width="400" height="400"></canvas>
+    
+    <script>
+        const canvas = document.getElementById('monkeyCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Draw monkey face
+        ctx.beginPath();
+        ctx.arc(200, 200, 100, 0, Math.PI * 2);
+        ctx.fillStyle = '#8B4513';
+        ctx.fill();
+        ctx.closePath();
+
+        // Left ear
+        ctx.beginPath();
+        ctx.arc(100, 150, 50, 0, Math.PI * 2);
+        ctx.fillStyle = '#8B4513';
+        ctx.fill();
+        ctx.closePath();
+
+        // Right ear
+        ctx.beginPath();
+        ctx.arc(300, 150, 50, 0, Math.PI * 2);
+        ctx.fillStyle = '#8B4513';
+        ctx.fill();
+        ctx.closePath();
+
+        // Inner ears
+        ctx.beginPath();
+        ctx.arc(100, 150, 30, 0, Math.PI * 2);
+        ctx.fillStyle = '#D2B48C';
+        ctx.fill();
+        ctx.closePath();
+
+        ctx.beginPath();
+        ctx.arc(300, 150, 30, 0, Math.PI * 2);
+        ctx.fillStyle = '#D2B48C';
+        ctx.fill();
+        ctx.closePath();
+
+        // Face patch
+        ctx.beginPath();
+        ctx.arc(200, 230, 60, 0, Math.PI * 2);
+        ctx.fillStyle = '#D2B48C';
+        ctx.fill();
+        ctx.closePath();
+
+        // Eyes
+        ctx.beginPath();
+        ctx.arc(170, 180, 20, 0, Math.PI * 2);
+        ctx.fillStyle = 'white';
+        ctx.fill();
+        ctx.closePath();
+
+        ctx.beginPath();
+        ctx.arc(230, 180, 20, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.closePath();
+
+        // Pupils
+        ctx.beginPath();
+        ctx.arc(170, 180, 10, 0, Math.PI * 2);
+        ctx.fillStyle = 'black';
+        ctx.fill();
+        ctx.closePath();
+
+        ctx.beginPath();
+        ctx.arc(230, 180, 10, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.closePath();
+
+        // Mouth
+        ctx.beginPath();
+        ctx.arc(200, 250, 30, 0, Math.PI, false);
+        ctx.lineWidth = 5;
+        ctx.strokeStyle = 'black';
+        ctx.stroke();
+        ctx.closePath();
+    </script>
+</body>
+</html>
