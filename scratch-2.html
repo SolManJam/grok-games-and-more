@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Breakout Twist</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background: #000;
+            height: 100vh;
+            font-family: Arial, sans-serif;
+        }
+
+        #gameContainer {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        #gameCanvas {
+            position: absolute;
+            top: 50px;
+            bottom: 60px;
+            left: 10px;
+            right: 80px;
+            background: #000;
+            width: calc(100% - 90px);
+            height: calc(100% - 110px);
+        }
+
+        #scoreDisplay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 50px;
+            color: white;
+            font-size: 20px;
+            text-align: center;
+            padding: 15px 0;
+            background: rgba(0, 0, 0, 0.8);
+            box-sizing: border-box;
+        }
+
+        #controlButtons {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 60px;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            padding: 10px 0;
+            background: rgba(0, 0, 0, 0.8);
+            box-sizing: border-box;
+        }
+
+        #sideButtons {
+            position: absolute;
+            right: 0;
+            top: 50px;
+            bottom: 60px;
+            width: 80px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 10px;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            box-sizing: border-box;
+        }
+
+        .touchButton {
+            padding: 8px 16px;
+            font-size: 14px;
+            background: #333;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            user-select: none;
+            min-width: 50px;
+            max-width: 100%;
+        }
+
+        .touchButton:active {
+            background: #555;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <div id="scoreDisplay">Score: 0 | Lives: 3</div>
+        <canvas id="gameCanvas"></canvas>
+        <div id="controlButtons">
+            <button class="touchButton" id="leftButton">Left</button>
+            <button class="touchButton" id="rightButton">Right</button>
+        </div>
+        <div id="sideButtons">
+            <button class="touchButton" id="pauseButton">Pause</button>
+            <button class="touchButton" id="resetButton">Reset</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const container = document.getElementById('gameContainer');
+        const leftButton = document.getElementById('leftButton');
+        const rightButton = document.getElementById('rightButton');
+        const pauseButton = document.getElementById('pauseButton');
+        const resetButton = document.getElementById('resetButton');
+        const scoreDisplay = document.getElementById('scoreDisplay');
+
+        // Game state
+        let score = 0;
+        let lives = 3;
+        let isPaused = false;
+
+        // Gameplay area dimensions
+        let gameWidth, gameHeight, gameX, gameY;
+
+        // Paddle
+        const paddle = {
+            width: 0, // Set in resizeCanvas
+            height: 0, // Set in resizeCanvas
+            x: 0, // Set in resizeCanvas
+            y: 0, // Set in resizeCanvas
+            speed: 7
+        };
+
+        // Ball
+        const ball = {
+            radius: 10,
+            x: 0, // Set in resetGame
+            y: 0, // Set in resetGame
+            dx: 4, // Horizontal speed
+            dy: -4 // Vertical speed
+        };
+
+        // Input state
+        let leftPressed = false;
+        let rightPressed = false;
+
+        function resizeCanvas() {
+            const availableWidth = window.innerWidth;
+            const availableHeight = window.innerHeight;
+
+            container.style.width = `${availableWidth}px`;
+            container.style.height = `${availableHeight}px`;
+
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+
+            gameWidth = canvas.width * 0.8;
+            gameHeight = canvas.height * 0.8;
+            gameX = (canvas.width - gameWidth) / 2;
+            gameY = (canvas.height - gameHeight) / 2;
+
+            // Update paddle dimensions
+            paddle.width = gameWidth * 0.15;
+            paddle.height = gameHeight * 0.02;
+            paddle.x = gameX + (gameWidth - paddle.width) / 2;
+            paddle.y = gameY + gameHeight - paddle.height - 10;
+
+            resetGame(); // Reset ball position
+        }
+
+        function resetGame() {
+            ball.x = gameX + gameWidth / 2;
+            ball.y = gameY + gameHeight / 2;
+            ball.dx = 4;
+            ball.dy = -4;
+            paddle.x = gameX + (gameWidth - paddle.width) / 2;
+            lives = 3;
+            score = 0;
+            updateScoreDisplay();
+        }
+
+        function updateScoreDisplay() {
+            scoreDisplay.textContent = `Score: ${score} | Lives: ${lives}`;
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw gameplay area
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(gameX, gameY, gameWidth, gameHeight);
+
+            // Draw paddle
+            ctx.fillStyle = '#0f0';
+            ctx.fillRect(paddle.x, paddle.y, paddle.width, paddle.height);
+
+            // Draw ball
+            ctx.beginPath();
+            ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+            ctx.fillStyle = '#f00';
+            ctx.fill();
+            ctx.closePath();
+        }
+
+        function movePaddle() {
+            if (leftPressed && paddle.x > gameX) {
+                paddle.x -= paddle.speed;
+            }
+            if (rightPressed && paddle.x + paddle.width < gameX + gameWidth) {
+                paddle.x += paddle.speed;
+            }
+        }
+
+        function moveBall() {
+            ball.x += ball.dx;
+            ball.y += ball.dy;
+
+            // Wall collisions
+            if (ball.x + ball.radius > gameX + gameWidth) {
+                ball.x = gameX + gameWidth - ball.radius;
+                ball.dx = -ball.dx;
+            }
+            if (ball.x - ball.radius < gameX) {
+                ball.x = gameX + ball.radius;
+                ball.dx = -ball.dx;
+            }
+            if (ball.y - ball.radius < gameY) {
+                ball.y = gameY + ball.radius;
+                ball.dy = -ball.dy;
+            }
+
+            // Paddle collision
+            if (
+                ball.y + ball.radius > paddle.y &&
+                ball.y - ball.radius < paddle.y + paddle.height &&
+                ball.x > paddle.x &&
+                ball.x < paddle.x + paddle.width
+            ) {
+                ball.dy = -ball.dy;
+                ball.y = paddle.y - ball.radius; // Prevent sticking
+                score += 10;
+                updateScoreDisplay();
+            }
+
+            // Bottom collision (lose life)
+            if (ball.y + ball.radius > gameY + gameHeight) {
+                lives--;
+                updateScoreDisplay();
+                if (lives > 0) {
+                    ball.x = gameX + gameWidth / 2;
+                    ball.y = gameY + gameHeight / 2;
+                    ball.dy = -ball.dy;
+                } else {
+                    alert('Game Over! Score: ' + score);
+                    resetGame();
+                }
+            }
+        }
+
+        function gameLoop() {
+            if (!isPaused) {
+                movePaddle();
+                moveBall();
+                draw();
+            }
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Keyboard controls
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') leftPressed = true;
+            if (e.key === 'ArrowRight') rightPressed = true;
+        });
+        document.addEventListener('keyup', (e) => {
+            if (e.key === 'ArrowLeft') leftPressed = false;
+            if (e.key === 'ArrowRight') rightPressed = false;
+        });
+
+        // Touch controls
+        leftButton.addEventListener('touchstart', () => leftPressed = true);
+        leftButton.addEventListener('touchend', () => leftPressed = false);
+        rightButton.addEventListener('touchstart', () => rightPressed = true);
+        rightButton.addEventListener('touchend', () => rightPressed = false);
+
+        // Pause and Reset
+        pauseButton.addEventListener('click', () => {
+            isPaused = !isPaused;
+            pauseButton.textContent = isPaused ? 'Resume' : 'Pause';
+        });
+        resetButton.addEventListener('click', resetGame);
+
+        // Initial setup
+        window.addEventListener('load', () => {
+            setTimeout(resizeCanvas, 50);
+            gameLoop();
+        });
+        window.addEventListener('resize', resizeCanvas);
+    </script>
+</body>
+</html>
