@@ -2,46 +2,36 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <!-- Ensures proper scaling on mobile devices -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- Title reflects the upward-floating balloon theme, placeholder until "SHAPE UP" is added -->
-    <title>Tetris - Balloon Blocks (Widescreen)</title>
+    <title>SHAPE UP</title>
     <style>
         body {
-            /* Centers the game vertically and horizontally on the screen */
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
             margin: 0;
-            /* Black background for Atari-era minimalist aesthetic */
             background: #000;
-            /* Monospace font for a retro, techy feel */
             font-family: monospace;
         }
         #game-container {
-            /* Stacks canvas, score, and controls vertically */
             display: flex;
             flex-direction: column;
             align-items: center;
+            position: relative;
+            padding-top: 40px;
         }
         #game-canvas {
-            /* Dark gray background with white border for contrast */
             background: #111;
             border: 2px solid #fff;
         }
         #score {
-            /* White text for visibility, spaced above controls */
-            color: #fff;
-            font-size: 20px;
-            margin-top: 10px;
+            display: none;
         }
         #controls {
-            /* Space buttons below score */
-            margin-top: 10px;
+            margin-top: 20px;
         }
         button {
-            /* Simple, clickable buttons with retro styling */
             padding: 5px 10px;
             font-size: 16px;
             margin: 0 5px;
@@ -50,107 +40,169 @@
             cursor: pointer;
         }
         button:active {
-            /* Gray feedback when pressed */
             background: #ccc;
+        }
+        @media (min-width: 600px) {
+            #game-canvas { transform: scale(1.2); transform-origin: center; }
         }
     </style>
 </head>
 <body>
     <div id="game-container">
-        <!-- Canvas set to 400x200 for widescreen PC layout (20x10 grid), consistent with mega-game view area -->
         <canvas id="game-canvas" width="400" height="200"></canvas>
-        <!-- Displays the player's score -->
         <div id="score">Score: 0</div>
         <div id="controls">
-            <!-- Pause button to toggle game state -->
             <button id="pause-btn">Pause</button>
-            <!-- Instructions button, detects mouse vs touch for tailored controls -->
+            <button id="fullscreen-btn">Full Screen</button>
             <button id="instructions-btn">Instructions</button>
         </div>
     </div>
 
     <script>
-        // Get the canvas and its 2D rendering context
         const canvas = document.getElementById('game-canvas');
         const ctx = canvas.getContext('2d');
-        
-        // Grid size is 20px per cell, matching Atari-era blockiness and scalable for mega-game
         const gridSize = 20;
-        // Widescreen layout: 20 columns wide, 10 rows tall, standard for collage view area
         const cols = canvas.width / gridSize; // 20
         const rows = canvas.height / gridSize; // 10
-        // Game board is a 2D array, initialized empty (0 = no balloon)
         let board = Array(rows).fill().map(() => Array(cols).fill(0));
-        // Score tracks cleared rows, 10 points each
         let score = 0;
-        // Game over flag, triggers reset when true
         let gameOver = false;
-        // Paused state, freezes game when true
         let paused = false;
 
-        // Tetromino shapes (7 classic shapes, 4 balloons each)
         const shapes = [
-            [[1,1,1,1]],         // I: Straight line
-            [[1,1],[1,1]],       // O: Square
-            [[1,1,1],[0,1,0]],   // T: T-shape
-            [[1,1,1],[1,0,0]],   // L: L-shape
-            [[1,1,1],[0,0,1]],   // J: J-shape
-            [[1,1,0],[0,1,1]],   // S: Zigzag
-            [[0,1,1],[1,1,0]]    // Z: Reverse zigzag
+            [[1,1,1,1]], [[1,1],[1,1]], [[1,1,1],[0,1,0]], [[1,1,1],[1,0,0]],
+            [[1,1,1],[0,0,1]], [[1,1,0],[0,1,1]], [[0,1,1],[1,1,0]]
         ];
-        // Colors for each tetromino, bright and Atari-inspired
         const colors = ['#FF0', '#0FF', '#F0F', '#00F', '#F00', '#0F0', '#FFA500'];
 
-        // Current active piece, starts with a random shape
         let currentPiece = newPiece();
-        // Timer for automatic upward movement
         let dropCounter = 0;
-        // Normal speed: move up every 1000ms (1s), adjustable per level
         let dropInterval = 1000;
-        // Speed-up interval when up key pressed: 100ms (10x faster)
         let fastDropInterval = 100;
-        // Tracks how long up key/swipe is held for teleport
         let speedHeldTime = 0;
-        // Teleport threshold: hold for 1000ms (1s) to jump to top
         const teleportThreshold = 1000;
-        // Flag for speed-up/teleport activation
         let speedPressed = false;
-        // Animation timer for string wiggle
         let wiggleTime = 0;
+        let poppingFragments = [];
+        let titleTimer = 2000;
+        let lastRotateTime = 0;
 
-        // Creates a new tetromino at the bottom center of the board
+        // Audio setup
+        let audioCtx = null;
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                console.log('Audio context initialized');
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume().then(() => console.log('Audio context resumed'));
+            }
+        }
+        function playPop() {
+            if (!audioCtx) {
+                console.log('Audio not initialized yet');
+                return;
+            }
+            console.log('Playing pop sound');
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.value = 800;
+            gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.2);
+        }
+
         function newPiece() {
             const shapeIdx = Math.floor(Math.random() * shapes.length);
             return {
                 shape: shapes[shapeIdx],
                 color: colors[shapeIdx],
-                // Start near center, adjusted for wider board (x=9)
                 x: Math.floor(cols / 2) - 2,
-                // Bottom row (y=9 for widescreen)
                 y: rows - 1
             };
         }
 
-        // Main draw function, clears and redraws everything each frame
         function draw() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
+            if (titleTimer > 0) drawTitle();
             drawBoard();
             drawPiece(currentPiece);
-            // Increment wiggleTime slowly for smooth string animation
+            drawPoppingFragments();
+            ctx.fillStyle = '#FFF';
+            ctx.font = '16px monospace';
+            ctx.textAlign = 'right';
+            ctx.fillText(`Score: ${score}`, canvas.width - 10, canvas.height - 10);
             wiggleTime += 0.05;
+            if (titleTimer > 0) titleTimer -= 16;
         }
 
-        // Draws the locked balloons on the board (no strings)
+        function drawTitle() {
+            const title = "SHAPE UP";
+            const balloonSize = gridSize / 4;
+            const startX = (canvas.width - (title.length * gridSize * 2.2)) / 2; // ~44px/letter, total ~352px
+            const startY = 20;
+            const letterShapes = [
+                [[1,1,1,1],[1,0,0,0],[1,1,1,1],[0,0,0,1],[1,1,1,1]], // S
+                [[1,0,0,1],[1,0,0,1],[1,1,1,1],[1,0,0,1],[1,0,0,1]], // H
+                [[1,1,1,1],[1,0,0,1],[1,1,1,1],[1,0,0,1],[1,0,0,1]], // A
+                [[1,1,1,1],[1,0,0,1],[1,1,1,1],[1,0,0,0],[1,0,0,0]], // P (SHAPE)
+                [[1,1,1,1],[1,0,0,0],[1,1,1,1],[1,0,0,0],[1,1,1,1]], // E
+                [[0,0,0,0]], // Space
+                [[1,0,0,1],[1,0,0,1],[1,0,0,1],[1,0,0,1],[1,1,1,1]], // U
+                [[1,1,1,1],[1,0,0,1],[1,1,1,1],[1,0,0,0],[1,0,0,0]]  // P (UP)
+            ];
+
+            for (let i = 0; i < title.length; i++) {
+                const shape = letterShapes[i]; // Direct index, no modulo
+                shape.forEach((row, r) => {
+                    row.forEach((val, c) => {
+                        if (val) {
+                            ctx.fillStyle = colors[(i + 1) % colors.length];
+                            ctx.beginPath();
+                            ctx.arc(
+                                startX + (i * gridSize * 2.2) + c * gridSize / 2,
+                                startY + r * gridSize / 2,
+                                balloonSize,
+                                0,
+                                Math.PI * 2
+                            );
+                            ctx.fill();
+                            ctx.strokeStyle = '#FFF';
+                            ctx.lineWidth = 1;
+                            ctx.stroke();
+                            if (titleTimer < 500 && Math.random() < 0.05) {
+                                for (let j = 0; j < 6; j++) {
+                                    const angle = Math.random() * Math.PI * 2;
+                                    const speed = 1 + Math.random() * 2;
+                                    poppingFragments.push({
+                                        x: startX + (i * gridSize * 2.2) + c * gridSize / 2,
+                                        y: startY + r * gridSize / 2,
+                                        vx: Math.cos(angle) * speed,
+                                        vy: Math.sin(angle) * speed,
+                                        color: colors[(i + 1) % colors.length],
+                                        time: 500
+                                    });
+                                }
+                                playPop();
+                            }
+                        }
+                    });
+                });
+            }
+        }
+
         function drawBoard() {
             for (let r = 0; r < rows; r++) {
                 for (let c = 0; c < cols; c++) {
                     if (board[r][c]) {
                         ctx.fillStyle = board[r][c];
                         ctx.beginPath();
-                        // Draw a balloon (circle) at each occupied cell
                         ctx.arc(c * gridSize + gridSize / 2, r * gridSize + gridSize / 2, gridSize / 2 - 1, 0, Math.PI * 2);
                         ctx.fill();
-                        // White outline for balloon effect
                         ctx.strokeStyle = '#FFF';
                         ctx.lineWidth = 1;
                         ctx.stroke();
@@ -159,12 +211,26 @@
             }
         }
 
-        // Draws the active tetromino with balloons and wiggly strings
+        function drawPoppingFragments() {
+            poppingFragments = poppingFragments.filter(f => f.time > 0);
+            poppingFragments.forEach(fragment => {
+                ctx.globalAlpha = fragment.time / 500;
+                ctx.fillStyle = fragment.color;
+                ctx.beginPath();
+                ctx.arc(fragment.x, fragment.y, gridSize / 6, 0, Math.PI * 2);
+                ctx.fill();
+                fragment.x += fragment.vx;
+                fragment.y += fragment.vy;
+                fragment.time -= 16;
+            });
+            ctx.globalAlpha = 1;
+        }
+
         function drawPiece(piece) {
             ctx.fillStyle = piece.color;
             ctx.strokeStyle = '#FFF';
             ctx.lineWidth = 1;
-            let lowestPoints = []; // Tracks lowest balloon per column for strings
+            let lowestPoints = [];
 
             piece.shape.forEach((row, r) => {
                 row.forEach((val, c) => {
@@ -172,11 +238,9 @@
                         const x = (piece.x + c) * gridSize + gridSize / 2;
                         const y = (piece.y - r) * gridSize + gridSize / 2;
                         ctx.beginPath();
-                        // Balloon is a circle, slightly smaller than grid cell
                         ctx.arc(x, y, gridSize / 2 - 1, 0, Math.PI * 2);
                         ctx.fill();
                         ctx.stroke();
-                        // Add a subtle shine for balloon realism
                         ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
                         ctx.beginPath();
                         ctx.arc(x - gridSize / 4, y - gridSize / 4, gridSize / 6, 0, Math.PI * 2);
@@ -190,31 +254,28 @@
                 });
             });
 
-            // Draw smooth, wiggly strings from lowest balloons
-            ctx.strokeStyle = '#888'; // Gray for string visibility
-            ctx.lineWidth = 1.5; // Thin but noticeable
+            ctx.strokeStyle = '#888';
+            ctx.lineWidth = 1.5;
             lowestPoints.forEach(point => {
                 if (point) {
                     const startX = point.x * gridSize + gridSize / 2;
-                    const startY = point.y * gridSize + gridSize; // Bottom of balloon
-                    const endY = startY + gridSize * 2; // String hangs 2 units down
+                    const startY = point.y * gridSize + gridSize;
+                    const endY = startY + gridSize * 2;
                     const wiggle1 = Math.sin(wiggleTime) * (gridSize / 3);
                     const wiggle2 = Math.sin(wiggleTime + Math.PI) * (gridSize / 3);
 
                     ctx.beginPath();
                     ctx.moveTo(startX, startY);
-                    // Bezier curve for smooth S-shape
                     ctx.bezierCurveTo(
-                        startX + wiggle1, startY + gridSize * 0.66, // First control point
-                        startX + wiggle2, startY + gridSize * 1.33, // Second control point
-                        startX, endY // End point, centered below
+                        startX + wiggle1, startY + gridSize * 0.66,
+                        startX + wiggle2, startY + gridSize * 1.33,
+                        startX, endY
                     );
                     ctx.stroke();
                 }
             });
         }
 
-        // Checks if a piece would collide with walls or other balloons
         function collide(piece) {
             for (let r = 0; r < piece.shape.length; r++) {
                 for (let c = 0; c < piece.shape[r].length; c++) {
@@ -229,7 +290,6 @@
             return false;
         }
 
-        // Locks a piece into the board when it can’t move up
         function merge(piece) {
             piece.shape.forEach((row, r) => {
                 row.forEach((val, c) => {
@@ -240,7 +300,6 @@
             });
         }
 
-        // Clears full rows, shifts board down, adds empty row at bottom
         function clearRows() {
             let linesCleared = 0;
             for (let r = rows - 1; r >= 0; r--) {
@@ -252,17 +311,32 @@
                     }
                 }
                 if (isFull) {
+                    for (let c = 0; c < cols; c++) {
+                        const centerX = c * gridSize + gridSize / 2;
+                        const centerY = r * gridSize + gridSize / 2;
+                        for (let i = 0; i < 6; i++) {
+                            const angle = Math.random() * Math.PI * 2;
+                            const speed = 1 + Math.random() * 2;
+                            poppingFragments.push({
+                                x: centerX,
+                                y: centerY,
+                                vx: Math.cos(angle) * speed,
+                                vy: Math.sin(angle) * speed,
+                                color: board[r][c],
+                                time: 500
+                            });
+                        }
+                    }
+                    playPop();
                     board.splice(r, 1);
                     board.push(Array(cols).fill(0));
                     linesCleared++;
-                    r++; // Re-check this index after shift
+                    r++;
                 }
             }
             score += linesCleared * 10;
-            document.getElementById('score').textContent = `Score: ${score}`;
         }
 
-        // Rotates the piece clockwise, reverts if collision occurs
         function rotatePiece() {
             const rotated = currentPiece.shape[0].map((_, idx) =>
                 currentPiece.shape.map(row => row[idx]).reverse()
@@ -274,7 +348,6 @@
             }
         }
 
-        // Moves the piece, handles collisions and locking
         function movePiece(dx, dy) {
             currentPiece.x += dx;
             currentPiece.y += dy;
@@ -285,14 +358,12 @@
                     merge(currentPiece);
                     clearRows();
                     currentPiece = newPiece();
-                    // Only end game if piece can’t spawn after one frame
                     if (collide(currentPiece) && dropCounter > 0) {
                         gameOver = true;
                         alert(`Game Over! Score: ${score}`);
                         board = Array(rows).fill().map(() => Array(cols).fill(0));
                         score = 0;
                         gameOver = false;
-                        document.getElementById('score').textContent = `Score: ${score}`;
                     }
                 }
                 return false;
@@ -300,17 +371,17 @@
             return true;
         }
 
-        // Teleports piece to the top instantly
         function teleportPiece() {
             while (movePiece(0, -1)) {}
         }
 
-        // Main game loop, updates every frame
         let lastTime = 0;
-        function update(time = 0) {
+        let time = 0;
+        function update(timeStamp = 0) {
+            time = timeStamp;
             if (gameOver || paused) return;
-            const deltaTime = time - lastTime;
-            lastTime = time;
+            const deltaTime = timeStamp - lastTime;
+            lastTime = timeStamp;
             dropCounter += deltaTime;
 
             if (speedPressed) {
@@ -332,18 +403,15 @@
             requestAnimationFrame(update);
         }
 
-        // Keyboard controls, flipped for upward movement
         document.addEventListener('keydown', e => {
             if (gameOver || paused) return;
             switch (e.key) {
                 case 'ArrowLeft': case 'a': movePiece(-1, 0); break;
                 case 'ArrowRight': case 'd': movePiece(1, 0); break;
-                // Up speeds up ascent, hold for teleport
                 case 'ArrowUp': case 'w': 
                     speedPressed = true;
                     speedHeldTime = 0;
                     break;
-                // Down rotates, matches gravity intuition
                 case 'ArrowDown': case 's': 
                     rotatePiece();
                     draw();
@@ -351,7 +419,6 @@
             }
         });
 
-        // Reset speed flag when up key released
         document.addEventListener('keyup', e => {
             if (e.key === 'ArrowUp' || e.key === 'w') {
                 speedPressed = false;
@@ -359,11 +426,11 @@
             }
         });
 
-        // Touch controls for mobile/tablet compatibility
         let touchStartX = 0;
         let touchStartY = 0;
         canvas.addEventListener('touchstart', e => {
             e.preventDefault();
+            initAudio();
             touchStartX = e.touches[0].clientX;
             touchStartY = e.touches[0].clientY;
         });
@@ -377,15 +444,14 @@
                 movePiece(dx > 0 ? 1 : -1, 0);
                 touchStartX = touchX;
             }
-            // Swipe up speeds up, hold for teleport
             if (dy < -20 && !speedPressed) {
                 speedPressed = true;
                 speedHeldTime = 0;
                 touchStartY = touchY;
             }
-            // Swipe down rotates
-            if (dy > 20) {
+            if (dy > 40 && (time - lastRotateTime > 300)) {
                 rotatePiece();
+                lastRotateTime = time;
                 touchStartY = touchY;
             }
             draw();
@@ -396,16 +462,37 @@
             speedHeldTime = 0;
         });
 
-        // Pause button toggles game state
         const pauseBtn = document.getElementById('pause-btn');
         pauseBtn.addEventListener('click', () => {
+            initAudio();
             paused = !paused;
             pauseBtn.textContent = paused ? 'Resume' : 'Pause';
             if (!paused) update();
         });
 
-        // Instructions button, detects input type for tailored controls
+        const fullscreenBtn = document.getElementById('fullscreen-btn');
+        fullscreenBtn.addEventListener('click', () => {
+            initAudio();
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+                fullscreenBtn.textContent = 'Exit Full Screen';
+            } else {
+                document.exitFullscreen();
+                fullscreenBtn.textContent = 'Full Screen';
+            }
+        });
+
         const instructionsBtn = document.getElementById('instructions-btn');
+        instructionsBtn.addEventListener('click', () => {
+            initAudio();
+            alert(keyboardInstructions.trim());
+        });
+        instructionsBtn.addEventListener('touchstart', e => {
+            e.preventDefault();
+            initAudio();
+            alert(touchInstructions.trim());
+        });
+
         const keyboardInstructions = `
 Controls (Keyboard):
 - Left Arrow or A: Move left
@@ -420,20 +507,11 @@ Controls (Touchscreen):
 - Swipe left: Move left
 - Swipe right: Move right
 - Swipe up: Speed up (hold to teleport to top)
-- Swipe down: Rotate piece
+- Swipe down: Rotate piece (hold briefly)
 - Pause button: Pause/Resume game
 Goal: Stack balloons as they float up. Fill a row to clear it and score 10 points per row. Game ends if balloons can't spawn.
         `;
 
-        instructionsBtn.addEventListener('click', () => {
-            alert(keyboardInstructions.trim());
-        });
-        instructionsBtn.addEventListener('touchstart', e => {
-            e.preventDefault();
-            alert(touchInstructions.trim());
-        });
-
-        // Start the game loop
         update();
 
         // --- Potential Updates from Discussions ---
@@ -449,8 +527,8 @@ Goal: Stack balloons as they float up. Fill a row to clear it and score 10 point
            - Twist: Vertical (20 rows) focuses on height, widescreen (20 cols) on lateral space.
 
         3. Sound Effects:
-           - Add retro beeps (Web Audio API, square waves) for movement, rotation, and row clears.
-           - E.g., high beep for rotate, low thud for lock, rising tone for clear.
+           - Implemented: Pop sound for row clears and title fade, tied to button clicks with logs.
+           - Todo: Add beeps for movement, rotation.
 
         4. Difficulty Progression:
            - Increase challenge over time: reduce dropInterval by 50ms per 100 points, min 200ms.
@@ -470,12 +548,12 @@ Goal: Stack balloons as they float up. Fill a row to clear it and score 10 point
            - Game over screen: Show score, “Restart” button.
 
         9. Balloon Pop Animation:
-           - When row clears, balloons scale up and fade out (e.g., 1.5x size, 0 opacity over 300ms) before removal.
-           - Add to clearRows() with a temporary animation state.
+           - Implemented: Balloons break into 6 fragments moving outward randomly, fading over 500ms, with pop sound.
+           - Uses poppingFragments array and drawPoppingFragments() function.
 
         10. Title: "SHAPE UP":
-            - Display above canvas using balloon shapes (circles) to form letters S-H-A-P-E U-P.
-            - Static or animated (e.g., slight bounce), drawn in draw().
+            - Implemented: Inside canvas at y=20, 5x4 balloon letters, spacing 2.2x, smaller balloons (gridSize/4), fades after 2s with pop effect.
+            - Fixed: Full 8-letter array (2 Ps), added gaps in SHAPE.
 
         11. Level System:
             - Show "LVL X" at start (e.g., 2s overlay), complete after clearing X rows (e.g., 5 per level).
