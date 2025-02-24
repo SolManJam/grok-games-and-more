@@ -23,7 +23,7 @@
             flex-direction: row; /* Canvas on left, controls on right */
             align-items: center;
             position: relative;
-            padding-right: 40px; /* Gap between canvas and buttons */
+            padding-right: 50px; /* Increased gap between canvas and buttons */
             padding-bottom: 60px; /* Space for teleport button */
         }
         /* Game canvas styling */
@@ -62,8 +62,7 @@
             font-weight: bold;
             position: absolute;
             bottom: -10px; /* Below canvas, clear of spawn */
-            left: 50%; /* Center horizontally */
-            transform: translateX(-50%);
+            /* Centering handled in JS */
         }
         /* Start overlay covers canvas until game begins */
         #start-overlay {
@@ -189,20 +188,18 @@
             teleportBtn.id = 'teleport-btn';
             teleportBtn.textContent = 'Teleport';
             document.getElementById('game-container').appendChild(teleportBtn);
+            // Center teleport button relative to canvas
+            const centerTeleport = () => {
+                teleportBtn.style.left = `${canvas.offsetLeft + (canvas.offsetWidth / 2)}px`;
+            };
+            window.addEventListener('resize', centerTeleport);
+            centerTeleport(); // Initial centering
         }
 
-        // Start game on click, touch, or keypress
-        startOverlay.addEventListener('click', startGame);
-        startOverlay.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            startGame();
-        });
-        document.addEventListener('keydown', (e) => {
-            if (!gameStarted) startGame();
-        });
-
+        // Start game function
         function startGame() {
             // Begin game, initialize audio, and set up canvas
+            if (gameStarted) return; // Prevent re-init
             initAudio();
             startOverlay.style.display = 'none';
             gameStarted = true;
@@ -212,6 +209,16 @@
             draw(); // Force initial render
             update(); // Start render loop
         }
+
+        // Event listeners for game start
+        startOverlay.addEventListener('click', startGame);
+        startOverlay.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            startGame();
+        });
+        document.addEventListener('keydown', (e) => {
+            if (!gameStarted) startGame();
+        });
 
         function adjustCanvasResolution() {
             // Adjust canvas resolution for fullscreen or default size
@@ -228,6 +235,11 @@
             cols = canvas.width / gridSize;
             rows = canvas.height / gridSize;
             ctx.scale(dpr, dpr);
+            if (gameStarted) {
+                board = Array(rows).fill().map(() => Array(cols).fill(0));
+                currentPiece = newPiece();
+                draw(); // Redraw after resize
+            }
         }
 
         function newPiece() {
@@ -566,15 +578,7 @@
         canvas.addEventListener('touchstart', e => {
             e.preventDefault();
             initAudio();
-            if (!gameStarted) {
-                startOverlay.style.display = 'none';
-                gameStarted = true;
-                adjustCanvasResolution(); // Ensure resize happens first
-                board = Array(rows).fill().map(() => Array(cols).fill(0)); // Reset board
-                currentPiece = newPiece(); // Spawn piece after resize
-                draw(); // Force initial render
-                update();
-            }
+            if (!gameStarted) startGame();
             touchStartX = e.touches[0].clientX;
             touchStartY = e.touches[0].clientY;
             touchStartTime = performance.now();
