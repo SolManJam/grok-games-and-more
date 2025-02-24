@@ -40,25 +40,26 @@
         #controls {
             display: flex;
             flex-direction: column;
-            margin-left: 10px; /* Space from canvas */
+            margin-left: 20px; /* Increased space from canvas */
         }
         /* General button styling */
         button {
-            padding: 5px 10px;
+            padding: 5px 15px; /* Wider padding for readability */
             font-size: 16px;
             margin: 5px 0;
             background: #fff;
             border: none;
             cursor: pointer;
+            min-width: 100px; /* Ensure full text visibility */
         }
         button:active { background: #ccc; } /* Button press effect */
-        /* Teleport button - colorful and bottom-center */
+        /* Teleport button - colorful and below gameplay */
         #teleport-btn {
             background: #F0F; /* Purple */
             color: #fff;
             font-weight: bold;
             position: absolute;
-            bottom: 10px;
+            bottom: -50px; /* Below canvas */
             left: 50%;
             transform: translateX(-50%);
         }
@@ -104,7 +105,7 @@
             <button id="pause-btn">Pause</button>
             <button id="fullscreen-btn">Full Screen</button>
             <button id="instructions-btn">Instructions</button>
-            <button id="teleport-btn">Teleport</button>
+            <!-- Teleport button added dynamically for touchscreens -->
         </div>
     </div>
 
@@ -130,7 +131,7 @@
         const colors = ['#FF0', '#0FF', '#F0F', '#00F', '#F00', '#0F0', '#FFA500'];
 
         // Game state variables
-        let currentPiece = newPiece(); // Current falling piece
+        let currentPiece = null; // Current falling piece, initialized later
         let dropCounter = 0; // Time since last drop
         let dropInterval = 1000; // Normal drop speed (ms)
         let fastDropInterval = 200; // Keyboard speed-up (ms)
@@ -175,12 +176,20 @@
             osc.stop(audioCtx.currentTime + 0.2);
         }
 
-        // Device detection for splash screen text
+        // Device detection for splash screen and teleport button
         const startOverlay = document.getElementById('start-overlay');
         const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
         startOverlay.textContent = isTouchDevice ? 'Tap to Play' : 'Press any key to Play';
 
-        // Start game on click or touch
+        // Add Teleport button only for touch devices
+        if (isTouchDevice) {
+            const teleportBtn = document.createElement('button');
+            teleportBtn.id = 'teleport-btn';
+            teleportBtn.textContent = 'Teleport';
+            document.getElementById('game-container').appendChild(teleportBtn);
+        }
+
+        // Start game on click, touch, or keypress
         startOverlay.addEventListener('click', startGame);
         startOverlay.addEventListener('touchstart', (e) => {
             e.preventDefault();
@@ -191,11 +200,12 @@
         });
 
         function startGame() {
-            // Begin game, initialize audio, and adjust canvas
+            // Begin game, initialize audio, and set up canvas
             initAudio();
             startOverlay.style.display = 'none';
             gameStarted = true;
             adjustCanvasResolution();
+            currentPiece = newPiece(); // Ensure piece spawns after resize
             update();
         }
 
@@ -214,7 +224,6 @@
             cols = canvas.width / gridSize;
             rows = canvas.height / gridSize;
             board = Array(rows).fill().map(() => Array(cols).fill(0));
-            currentPiece = newPiece();
             ctx.scale(dpr, dpr);
         }
 
@@ -248,7 +257,8 @@
             // Draw "SHAPE UP" title with pop animation
             const title = "SHAPE UP";
             const balloonSize = gridSize / 4;
-            const startX = (canvas.width - (title.length * gridSize * 2.2)) / 2;
+            const dpr = window.devicePixelRatio || 1;
+            const startX = ((canvas.width / dpr) - (title.length * gridSize * 2.2)) / 2; // Adjust for DPR
             const startY = 20;
             const letterShapes = [
                 [[1,1,1,1],[1,0,0,0],[1,1,1,1],[0,0,0,1],[1,1,1,1]], // S
@@ -630,18 +640,21 @@
             alert(touchInstructions.trim());
         });
 
-        const teleportBtn = document.getElementById('teleport-btn');
-        teleportBtn.addEventListener('click', () => {
-            initAudio();
-            if (!gameStarted || gameOver || paused) return;
-            teleportPiece();
-        });
-        teleportBtn.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            initAudio();
-            if (!gameStarted || gameOver || paused) return;
-            teleportPiece();
-        });
+        // Teleport button only for touch devices
+        if (isTouchDevice) {
+            const teleportBtn = document.getElementById('teleport-btn');
+            teleportBtn.addEventListener('click', () => {
+                initAudio();
+                if (!gameStarted || gameOver || paused) return;
+                teleportPiece();
+            });
+            teleportBtn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                initAudio();
+                if (!gameStarted || gameOver || paused) return;
+                teleportPiece();
+            });
+        }
 
         // Instructions text
         const keyboardInstructions = `
