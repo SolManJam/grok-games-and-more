@@ -55,6 +55,20 @@
             font-weight: bold;
             position: absolute;
             bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 5px 15px;
+            font-size: 16px;
+            border: none;
+            cursor: pointer;
+            z-index: 20;
+        }
+        #teleport-btn.fullscreen-teleport {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            left: auto;
+            transform: none;
         }
         #start-overlay {
             position: absolute;
@@ -69,6 +83,37 @@
             align-items: center;
             font-size: 24px;
             z-index: 10;
+        }
+        #settings-button {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            font-size: 24px;
+            cursor: pointer;
+            z-index: 20;
+        }
+        #settings-menu {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            z-index: 30;
+            display: none;
+            text-align: center;
+        }
+        #settings-menu button {
+            display: block;
+            margin: 10px auto;
+            padding: 5px 15px;
+            font-size: 16px;
+            background: #fff;
+            border: none;
+            cursor: pointer;
+        }
+        #settings-menu button:active {
+            background: #ccc;
         }
         @media (min-width: 600px) {
             #game-canvas { transform: scale(1.2); transform-origin: center; }
@@ -88,8 +133,8 @@
     <div id="game-container">
         <canvas id="game-canvas" width="400" height="200"></canvas>
         <div id="start-overlay"></div>
-        <div id="score">Score: 0</div>
-        <div id="controls">
+        <div id="settings-button">⚙️</div>
+        <div id="settings-menu" style="display: none;">
             <button id="pause-btn">Pause</button>
             <button id="fullscreen-btn">Full Screen</button>
             <button id="instructions-btn">Instructions</button>
@@ -164,13 +209,20 @@
             teleportBtn.id = 'teleport-btn';
             teleportBtn.textContent = 'Teleport';
             document.getElementById('game-container').appendChild(teleportBtn);
-            const centerTeleport = () => {
-                teleportBtn.style.left = `${canvas.offsetLeft + (canvas.offsetWidth / 2)}px`;
-                teleportBtn.style.transform = 'translateX(-50%)';
-            };
-            window.addEventListener('resize', centerTeleport);
-            centerTeleport();
         }
+
+        const settingsButton = document.getElementById('settings-button');
+        const settingsMenu = document.getElementById('settings-menu');
+
+        settingsButton.addEventListener('click', () => {
+            settingsMenu.style.display = settingsMenu.style.display === 'none' ? 'block' : 'none';
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!settingsMenu.contains(e.target) && e.target !== settingsButton) {
+                settingsMenu.style.display = 'none';
+            }
+        });
 
         function startGame() {
             if (gameStarted) return;
@@ -206,11 +258,35 @@
             }
             canvas.style.width = `${canvas.width / dpr}px`;
             canvas.style.height = `${canvas.height / dpr}px`;
-            ctx.scale(dpr, dpr);
+
+            // Calculate scaling to fit the game board
+            const logicalWidth = canvas.width / dpr;
+            const logicalHeight = canvas.height / dpr;
+            const gameWidth = cols * gridSize;
+            const gameHeight = rows * gridSize;
+            const scale = Math.min(logicalWidth / gameWidth, logicalHeight / gameHeight);
+
+            // Reset transform and apply scaling
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.scale(scale * dpr, scale * dpr);
+
+            // Translate to center the game board if necessary
+            const offsetX = (logicalWidth - gameWidth * scale) / 2;
+            const offsetY = (logicalHeight - gameHeight * scale) / 2;
+            ctx.translate(offsetX, offsetY);
+
             if (gameStarted) {
-                board = Array(rows).fill().map(() => Array(cols).fill(0));
-                currentPiece = newPiece();
                 draw();
+            }
+
+            // Adjust teleport button position for touchscreens
+            if (isTouchDevice) {
+                const teleportBtn = document.getElementById('teleport-btn');
+                if (document.fullscreenElement || document.webkitFullscreenElement) {
+                    teleportBtn.classList.add('fullscreen-teleport');
+                } else {
+                    teleportBtn.classList.remove('fullscreen-teleport');
+                }
             }
         }
 
@@ -230,12 +306,20 @@
             drawBoard();
             if (currentPiece) drawPiece(currentPiece);
             drawPoppingFragments();
+            wiggleTime += 0.05;
+            if (titleTimer > 0) titleTimer -= 16;
+
+            // Draw score in bottom-right corner
+            const dpr = window.devicePixelRatio || 1;
+            const logicalWidth = canvas.width / dpr;
+            const logicalHeight = canvas.height / dpr;
+            ctx.save();
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
             ctx.fillStyle = '#FFF';
             ctx.font = '16px monospace';
             ctx.textAlign = 'right';
-            ctx.fillText(`Score: ${score}`, canvas.width / (window.devicePixelRatio || 1) - 10, canvas.height / (window.devicePixelRatio || 1) - 10);
-            wiggleTime += 0.05;
-            if (titleTimer > 0) titleTimer -= 16;
+            ctx.fillText(`Score: ${score}`, logicalWidth - 10, logicalHeight - 10);
+            ctx.restore();
         }
 
         function drawTitle() {
@@ -507,6 +591,82 @@
             requestAnimationFrame(updateLoop);
         }
 
+        // Settings menu buttons
+        const pauseBtn = document.getElementById('pause-btn');
+        pauseBtn.addEventListener('click', () => {
+            initAudio();
+            if (!gameStarted) return;
+            paused = !paused;
+            pauseBtn.textContent = paused ? 'Resume' : 'Pause';
+            if (!paused) updateLoop();
+        });
+
+        const fullscreenBtn = document.getElementById('fullscreen-btn');
+        fullscreenBtn.addEventListener('click', () => {
+            initAudio();
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    console.log(`Fullscreen failed: ${err.message}`);
+                    alert('Fullscreen may not work on iPhone. Try landscape mode.');
+                });
+                fullscreenBtn.textContent = 'Exit Full Screen';
+                adjustCanvasResolution();
+            } else {
+                document.exitFullscreen();
+                fullscreenBtn.textContent = 'Full Screen';
+                adjustCanvasResolution();
+            }
+        });
+
+        const instructionsBtn = document.getElementById('instructions-btn');
+        instructionsBtn.addEventListener('click', () => {
+            initAudio();
+            alert(keyboardInstructions.trim());
+        });
+        instructionsBtn.addEventListener('touchstart', e => {
+            e.preventDefault();
+            initAudio();
+            alert(touchInstructions.trim());
+        });
+
+        // Teleport button for touchscreens
+        if (isTouchDevice) {
+            const teleportBtn = document.getElementById('teleport-btn');
+            teleportBtn.addEventListener('click', () => {
+                initAudio();
+                if (!gameStarted || gameOver || paused || !currentPiece) return;
+                teleportPiece();
+            });
+            teleportBtn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                initAudio();
+                if (!gameStarted || gameOver || paused || !currentPiece) return;
+                teleportPiece();
+            });
+        }
+
+        // Instructions text
+        const keyboardInstructions = `
+Controls (Keyboard):
+- Left Arrow or A: Move left
+- Right Arrow or D: Move right
+- Up Arrow or W: Speed up (hold 0.5s to teleport)
+- Down Arrow or S: Rotate piece
+- Pause button: Pause/Resume game
+Goal: Stack balloons as they float up. Fill a row to clear it and score 10 points per row. Game ends if balloons can't spawn.
+        `;
+        const touchInstructions = `
+Controls (Touchscreen):
+- Swipe left: Move left
+- Swipe right: Move right
+- Swipe up: Speed up (~50% faster)
+- Swipe down: Rotate piece
+- Teleport button: Drop block instantly
+- Pause button: Pause/Resume game
+Goal: Stack balloons as they float up. Fill a row to clear it and score 10 points per row. Game ends if balloons can't spawn.
+        `;
+
+        // Keyboard controls
         document.addEventListener('keydown', e => {
             if (!gameStarted || gameOver || paused) return;
             switch (e.key) {
@@ -530,6 +690,7 @@
             }
         });
 
+        // Touchscreen controls
         let touchStartX = 0;
         let touchStartY = 0;
         canvas.addEventListener('touchstart', e => {
@@ -569,78 +730,6 @@
             speedPressed = false;
             dropInterval = 1000;
         });
-
-        const pauseBtn = document.getElementById('pause-btn');
-        pauseBtn.addEventListener('click', () => {
-            initAudio();
-            if (!gameStarted) return;
-            paused = !paused;
-            pauseBtn.textContent = paused ? 'Resume' : 'Pause';
-            if (!paused) updateLoop();
-        });
-
-        const fullscreenBtn = document.getElementById('fullscreen-btn');
-        fullscreenBtn.addEventListener('click', () => {
-            initAudio();
-            if (!document.fullscreenElement) {
-                document.documentElement.requestFullscreen().catch(err => {
-                    console.log(`Fullscreen failed: ${err.message}`);
-                    alert('Fullscreen may not work on iPhone. Try landscape mode.');
-                });
-                fullscreenBtn.textContent = 'Exit Full Screen';
-                adjustCanvasResolution();
-            } else {
-                document.exitFullscreen();
-                fullscreenBtn.textContent = 'Full Screen';
-                adjustCanvasResolution();
-            }
-        });
-
-        const instructionsBtn = document.getElementById('instructions-btn');
-        instructionsBtn.addEventListener('click', () => {
-            initAudio();
-            alert(keyboardInstructions.trim());
-        });
-        instructionsBtn.addEventListener('touchstart', e => {
-            e.preventDefault();
-            initAudio();
-            alert(touchInstructions.trim());
-        });
-
-        if (isTouchDevice) {
-            const teleportBtn = document.getElementById('teleport-btn');
-            teleportBtn.addEventListener('click', () => {
-                initAudio();
-                if (!gameStarted || gameOver || paused || !currentPiece) return;
-                teleportPiece();
-            });
-            teleportBtn.addEventListener('touchstart', (e) => {
-                e.preventDefault();
-                initAudio();
-                if (!gameStarted || gameOver || paused || !currentPiece) return;
-                teleportPiece();
-            });
-        }
-
-        const keyboardInstructions = `
-Controls (Keyboard):
-- Left Arrow or A: Move left
-- Right Arrow or D: Move right
-- Up Arrow or W: Speed up (hold 0.5s to teleport)
-- Down Arrow or S: Rotate piece
-- Pause button: Pause/Resume game
-Goal: Stack balloons as they float up. Fill a row to clear it and score 10 points per row. Game ends if balloons can't spawn.
-        `;
-        const touchInstructions = `
-Controls (Touchscreen):
-- Swipe left: Move left
-- Swipe right: Move right
-- Swipe up: Speed up (~50% faster)
-- Swipe down: Rotate piece
-- Teleport button: Drop block instantly
-- Pause button: Pause/Resume game
-Goal: Stack balloons as they float up. Fill a row to clear it and score 10 points per row. Game ends if balloons can't spawn.
-        `;
 
         requestAnimationFrame(updateLoop);
     </script>
