@@ -42,14 +42,30 @@
         button:active {
             background: #ccc;
         }
+        #start-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 400px;
+            height: 200px;
+            background: rgba(0, 0, 0, 0.8);
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            z-index: 10;
+        }
         @media (min-width: 600px) {
             #game-canvas { transform: scale(1.2); transform-origin: center; }
+            #start-overlay { width: 480px; height: 240px; } /* Scaled size */
         }
     </style>
 </head>
 <body>
     <div id="game-container">
         <canvas id="game-canvas" width="400" height="200"></canvas>
+        <div id="start-overlay">Click to Start</div>
         <div id="score">Score: 0</div>
         <div id="controls">
             <button id="pause-btn">Pause</button>
@@ -68,6 +84,7 @@
         let score = 0;
         let gameOver = false;
         let paused = false;
+        let gameStarted = false;
 
         const shapes = [
             [[1,1,1,1]], [[1,1],[1,1]], [[1,1,1],[0,1,0]], [[1,1,1],[1,0,0]],
@@ -116,6 +133,14 @@
             osc.stop(audioCtx.currentTime + 0.2);
         }
 
+        const startOverlay = document.getElementById('start-overlay');
+        startOverlay.addEventListener('click', () => {
+            initAudio();
+            startOverlay.style.display = 'none';
+            gameStarted = true;
+            update();
+        });
+
         function newPiece() {
             const shapeIdx = Math.floor(Math.random() * shapes.length);
             return {
@@ -143,7 +168,7 @@
         function drawTitle() {
             const title = "SHAPE UP";
             const balloonSize = gridSize / 4;
-            const startX = (canvas.width - (title.length * gridSize * 2.2)) / 2; // ~44px/letter, total ~352px
+            const startX = (canvas.width - (title.length * gridSize * 2.2)) / 2;
             const startY = 20;
             const letterShapes = [
                 [[1,1,1,1],[1,0,0,0],[1,1,1,1],[0,0,0,1],[1,1,1,1]], // S
@@ -157,7 +182,7 @@
             ];
 
             for (let i = 0; i < title.length; i++) {
-                const shape = letterShapes[i]; // Direct index, no modulo
+                const shape = letterShapes[i];
                 shape.forEach((row, r) => {
                     row.forEach((val, c) => {
                         if (val) {
@@ -378,6 +403,7 @@
         let lastTime = 0;
         let time = 0;
         function update(timeStamp = 0) {
+            if (!gameStarted) return; // Wait for overlay click
             time = timeStamp;
             if (gameOver || paused) return;
             const deltaTime = timeStamp - lastTime;
@@ -404,7 +430,7 @@
         }
 
         document.addEventListener('keydown', e => {
-            if (gameOver || paused) return;
+            if (!gameStarted || gameOver || paused) return;
             switch (e.key) {
                 case 'ArrowLeft': case 'a': movePiece(-1, 0); break;
                 case 'ArrowRight': case 'd': movePiece(1, 0); break;
@@ -431,11 +457,17 @@
         canvas.addEventListener('touchstart', e => {
             e.preventDefault();
             initAudio();
+            if (!gameStarted) {
+                startOverlay.style.display = 'none';
+                gameStarted = true;
+                update();
+            }
             touchStartX = e.touches[0].clientX;
             touchStartY = e.touches[0].clientY;
         });
         canvas.addEventListener('touchmove', e => {
             e.preventDefault();
+            if (!gameStarted) return;
             const touchX = e.touches[0].clientX;
             const touchY = e.touches[0].clientY;
             const dx = touchX - touchStartX;
@@ -465,6 +497,7 @@
         const pauseBtn = document.getElementById('pause-btn');
         pauseBtn.addEventListener('click', () => {
             initAudio();
+            if (!gameStarted) return;
             paused = !paused;
             pauseBtn.textContent = paused ? 'Resume' : 'Pause';
             if (!paused) update();
@@ -512,7 +545,8 @@ Controls (Touchscreen):
 Goal: Stack balloons as they float up. Fill a row to clear it and score 10 points per row. Game ends if balloons can't spawn.
         `;
 
-        update();
+        // Start loop only after click
+        requestAnimationFrame(update);
 
         // --- Potential Updates from Discussions ---
         /*
@@ -527,7 +561,7 @@ Goal: Stack balloons as they float up. Fill a row to clear it and score 10 point
            - Twist: Vertical (20 rows) focuses on height, widescreen (20 cols) on lateral space.
 
         3. Sound Effects:
-           - Implemented: Pop sound for row clears and title fade, tied to button clicks with logs.
+           - Implemented: Pop sound for row clears and title fade, requires overlay click to start.
            - Todo: Add beeps for movement, rotation.
 
         4. Difficulty Progression:
@@ -553,7 +587,6 @@ Goal: Stack balloons as they float up. Fill a row to clear it and score 10 point
 
         10. Title: "SHAPE UP":
             - Implemented: Inside canvas at y=20, 5x4 balloon letters, spacing 2.2x, smaller balloons (gridSize/4), fades after 2s with pop effect.
-            - Fixed: Full 8-letter array (2 Ps), added gaps in SHAPE.
 
         11. Level System:
             - Show "LVL X" at start (e.g., 2s overlay), complete after clearing X rows (e.g., 5 per level).
