@@ -100,8 +100,8 @@
         const canvas = document.getElementById('game-canvas');
         const ctx = canvas.getContext('2d');
         const gridSize = 20;
-        let cols = canvas.width / gridSize;
-        let rows = canvas.height / gridSize;
+        const cols = 20; // Fixed number of columns
+        const rows = 10; // Fixed number of rows
         let board = Array(rows).fill().map(() => Array(cols).fill(0));
         let score = 0;
         let gameOver = false;
@@ -206,8 +206,6 @@
             }
             canvas.style.width = `${canvas.width / dpr}px`;
             canvas.style.height = `${canvas.height / dpr}px`;
-            cols = canvas.width / gridSize;
-            rows = canvas.height / gridSize;
             ctx.scale(dpr, dpr);
             if (gameStarted) {
                 board = Array(rows).fill().map(() => Array(cols).fill(0));
@@ -347,7 +345,7 @@
                         ctx.stroke();
                         ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
                         ctx.beginPath();
-                        ctx.arc(x - gridSize / 4, y - gridSize / 4, gridSize / 6, 0, Math.PI * 2);
+                        ctx.arc(x - gridSize / 4, y - gridSize / 2, gridSize / 6, 0, Math.PI * 2);
                         ctx.fill();
                         ctx.fillStyle = piece.color;
 
@@ -643,6 +641,8 @@ Controls (Touchscreen):
 - Pause button: Pause/Resume game
 Goal: Stack balloons as they float up. Fill a row to clear it and score 10 points per row. Game ends if balloons can't spawn.
         `;
+
+        requestAnimationFrame(updateLoop);
     </script>
 </body>
 </html>
