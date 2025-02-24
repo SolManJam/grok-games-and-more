@@ -61,7 +61,7 @@
             color: #fff;
             font-weight: bold;
             position: absolute;
-            bottom: 10px; /* Below canvas, adjusted by container padding */
+            bottom: -10px; /* Below canvas, clear of spawn */
             left: 50%; /* Center horizontally */
             transform: translateX(-50%);
         }
@@ -205,10 +205,11 @@
             // Begin game, initialize audio, and set up canvas
             initAudio();
             startOverlay.style.display = 'none';
+            gameStarted = true;
             adjustCanvasResolution();
             board = Array(rows).fill().map(() => Array(cols).fill(0)); // Reset board
             currentPiece = newPiece(); // Spawn first piece after resize
-            gameStarted = true;
+            draw(); // Force initial render
             update(); // Start render loop
         }
 
@@ -571,6 +572,7 @@
                 adjustCanvasResolution(); // Ensure resize happens first
                 board = Array(rows).fill().map(() => Array(cols).fill(0)); // Reset board
                 currentPiece = newPiece(); // Spawn piece after resize
+                draw(); // Force initial render
                 update();
             }
             touchStartX = e.touches[0].clientX;
