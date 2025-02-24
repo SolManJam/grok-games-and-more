@@ -28,6 +28,7 @@
             max-height: 90vh;
             width: 400px;
             height: 200px;
+            touch-action: none; /* Disable pinch/zoom */
         }
         #score {
             display: none;
@@ -122,7 +123,7 @@
         let poppingFragments = [];
         let titleTimer = 2000;
         let lastRotateTime = 0;
-        let titlePopPlayed = false; // Flag for single title pop
+        let titlePopPlayed = false;
 
         // Audio setup
         let audioCtx = null;
@@ -225,7 +226,7 @@
                             ctx.strokeStyle = '#FFF';
                             ctx.lineWidth = 1;
                             ctx.stroke();
-                            if (titleTimer <= 500 && titleTimer > 484 && !titlePopPlayed) { // Single pop at 0.5s
+                            if (titleTimer < 500 && Math.random() < 0.05) { // Multi-balloon pops
                                 for (let j = 0; j < 6; j++) {
                                     const angle = Math.random() * Math.PI * 2;
                                     const speed = 1 + Math.random() * 2;
@@ -238,8 +239,10 @@
                                         time: 500
                                     });
                                 }
-                                playPop();
-                                titlePopPlayed = true;
+                                if (!titlePopPlayed && titleTimer <= 500) { // Single sound at start of fade
+                                    playPop();
+                                    titlePopPlayed = true;
+                                }
                             }
                         }
                     });
@@ -492,7 +495,7 @@
             }
             touchStartX = e.touches[0].clientX;
             touchStartY = e.touches[0].clientY;
-            touchStartTime = performance.now(); // Track swipe start time
+            touchStartTime = performance.now();
         });
         canvas.addEventListener('touchmove', e => {
             e.preventDefault();
@@ -503,18 +506,19 @@
             const dy = touchY - touchStartY;
             const swipeTime = performance.now() - touchStartTime;
 
-            if (dy < -50 && swipeTime < 100) { // Fast flick up
+            if (dy < -50 && swipeTime < 100) { // Fast flick teleport
                 teleportPiece();
                 speedPressed = false;
-                touchStartY = touchY; // Reset to avoid further moves
+                touchStartY = touchY;
             } else {
-                if (Math.abs(dx) > 20 && !speedPressed) { // Normal left/right if not speeding
+                if (Math.abs(dx) > 20 && !speedPressed) { // Horizontal if not speeding
                     movePiece(dx > 0 ? 1 : -1, 0);
                     touchStartX = touchX;
                 }
                 if (dy < -20 && !speedPressed) {
                     speedPressed = true;
                     speedHeldTime = 0;
+                    dropInterval = 500; // Gradual 100% speed-up
                     touchStartY = touchY;
                 }
                 if (dy > 40 && (time - lastRotateTime > 300)) {
@@ -529,6 +533,7 @@
             e.preventDefault();
             speedPressed = false;
             speedHeldTime = 0;
+            dropInterval = 1000; // Reset to normal speed
         });
 
         const pauseBtn = document.getElementById('pause-btn');
@@ -600,7 +605,7 @@ Goal: Stack balloons as they float up. Fill a row to clear it and score 10 point
            - Twist: Vertical (20 rows) focuses on height, widescreen (20 cols) on lateral space.
 
         3. Sound Effects:
-           - Implemented: Pop sound for row clears (single) and title fade (single at 0.5s).
+           - Implemented: Single pop sound for row clears and title fade, multi-balloon pop animation.
            - Todo: Add beeps for movement, rotation.
 
         4. Difficulty Progression:
@@ -621,11 +626,11 @@ Goal: Stack balloons as they float up. Fill a row to clear it and score 10 point
            - Game over screen: Show score, “Restart” button.
 
         9. Balloon Pop Animation:
-           - Implemented: Balloons break into 6 fragments moving outward randomly, fading over 500ms, with pop sound.
+           - Implemented: Balloons break into 6 fragments moving outward randomly, fading over 500ms, with single pop sound.
            - Uses poppingFragments array and drawPoppingFragments() function.
 
         10. Title: "SHAPE UP":
-            - Implemented: Inside canvas at y=20, 5x4 balloon letters, spacing 2.2x, smaller balloons (gridSize/4), fades after 2s with single pop.
+            - Implemented: Inside canvas at y=20, 5x4 balloon letters, spacing 2.2x, smaller balloons (gridSize/4), fades after 2s with multi-pop animation, single sound.
 
         11. Level System:
             - Show "LVL X" at start (e.g., 2s overlay), complete after clearing X rows (e.g., 5 per level).
