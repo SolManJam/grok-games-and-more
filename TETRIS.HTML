@@ -40,7 +40,8 @@
         #controls {
             display: flex;
             flex-direction: column;
-            margin-left: 20px; /* Increased space from canvas */
+            margin-left: 30px; /* Increased space from canvas */
+            margin-right: 10px; /* Space from right edge */
         }
         /* General button styling */
         button {
@@ -59,7 +60,7 @@
             color: #fff;
             font-weight: bold;
             position: absolute;
-            bottom: -50px; /* Below canvas */
+            bottom: -60px; /* Below canvas */
             left: 50%;
             transform: translateX(-50%);
         }
@@ -131,7 +132,7 @@
         const colors = ['#FF0', '#0FF', '#F0F', '#00F', '#F00', '#0F0', '#FFA500'];
 
         // Game state variables
-        let currentPiece = null; // Current falling piece, initialized later
+        let currentPiece = null; // Current falling piece, set in startGame
         let dropCounter = 0; // Time since last drop
         let dropInterval = 1000; // Normal drop speed (ms)
         let fastDropInterval = 200; // Keyboard speed-up (ms)
@@ -203,9 +204,10 @@
             // Begin game, initialize audio, and set up canvas
             initAudio();
             startOverlay.style.display = 'none';
-            gameStarted = true;
             adjustCanvasResolution();
-            currentPiece = newPiece(); // Ensure piece spawns after resize
+            board = Array(rows).fill().map(() => Array(cols).fill(0)); // Reset board
+            currentPiece = newPiece(); // Spawn first piece after resize
+            gameStarted = true;
             update();
         }
 
@@ -223,7 +225,6 @@
             canvas.style.height = canvas.height / dpr + 'px';
             cols = canvas.width / gridSize;
             rows = canvas.height / gridSize;
-            board = Array(rows).fill().map(() => Array(cols).fill(0));
             ctx.scale(dpr, dpr);
         }
 
@@ -243,7 +244,7 @@
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             if (titleTimer > 0) drawTitle();
             drawBoard();
-            drawPiece(currentPiece);
+            if (currentPiece) drawPiece(currentPiece); // Ensure piece exists
             drawPoppingFragments();
             ctx.fillStyle = '#FFF';
             ctx.font = '16px monospace';
