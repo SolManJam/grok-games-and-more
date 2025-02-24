@@ -23,7 +23,7 @@
             flex-direction: row; /* Canvas on left, controls on right */
             align-items: center;
             position: relative;
-            padding-right: 50px; /* Increased gap between canvas and buttons */
+            padding-right: 50px; /* Gap between canvas and buttons */
             padding-bottom: 60px; /* Space for teleport button */
         }
         /* Game canvas styling */
@@ -61,8 +61,7 @@
             color: #fff;
             font-weight: bold;
             position: absolute;
-            bottom: -10px; /* Below canvas, clear of spawn */
-            /* Centering handled in JS */
+            bottom: -10px; /* Below canvas */
         }
         /* Start overlay covers canvas until game begins */
         #start-overlay {
@@ -182,30 +181,30 @@
         const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
         startOverlay.textContent = isTouchDevice ? 'Tap to Play' : 'Press any key to Play';
 
-        // Add Teleport button only for touch devices
+        // Add Teleport button only for touch devices and center it
         if (isTouchDevice) {
             const teleportBtn = document.createElement('button');
             teleportBtn.id = 'teleport-btn';
             teleportBtn.textContent = 'Teleport';
             document.getElementById('game-container').appendChild(teleportBtn);
-            // Center teleport button relative to canvas
             const centerTeleport = () => {
-                teleportBtn.style.left = `${canvas.offsetLeft + (canvas.offsetWidth / 2)}px`;
+                const dpr = window.devicePixelRatio || 1;
+                teleportBtn.style.left = `${canvas.offsetLeft + (canvas.offsetWidth / 2) / dpr}px`;
+                teleportBtn.style.transform = 'translateX(-50%)'; // Keep centered
             };
             window.addEventListener('resize', centerTeleport);
             centerTeleport(); // Initial centering
         }
 
-        // Start game function
+        // Initialize game state once
         function startGame() {
-            // Begin game, initialize audio, and set up canvas
             if (gameStarted) return; // Prevent re-init
             initAudio();
             startOverlay.style.display = 'none';
             gameStarted = true;
             adjustCanvasResolution();
             board = Array(rows).fill().map(() => Array(cols).fill(0)); // Reset board
-            currentPiece = newPiece(); // Spawn first piece after resize
+            currentPiece = newPiece(); // Spawn first piece
             draw(); // Force initial render
             update(); // Start render loop
         }
@@ -229,9 +228,10 @@
             } else {
                 canvas.width = 400 * dpr;
                 canvas.height = 200 * dpr;
+                canvas.style.transform = ''; // Reset scale on exit
             }
-            canvas.style.width = canvas.width / dpr + 'px';
-            canvas.style.height = canvas.height / dpr + 'px';
+            canvas.style.width = `${canvas.width / dpr}px`;
+            canvas.style.height = `${canvas.height / dpr}px`;
             cols = canvas.width / gridSize;
             rows = canvas.height / gridSize;
             ctx.scale(dpr, dpr);
