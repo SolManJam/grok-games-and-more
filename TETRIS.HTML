@@ -2,11 +2,9 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <!-- Prevent zooming on mobile devices -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>SHAPE UP</title>
     <style>
-        /* Center everything on the screen */
         body {
             display: flex;
             justify-content: center;
@@ -15,55 +13,49 @@
             margin: 0;
             background: #000;
             font-family: monospace;
-            overflow: hidden; /* Prevent scrolling */
+            overflow: hidden;
         }
-        /* Flex container for canvas and controls */
         #game-container {
             display: flex;
-            flex-direction: row; /* Canvas on left, controls on right */
+            flex-direction: row;
             align-items: center;
             position: relative;
-            padding-right: 50px; /* Gap between canvas and buttons */
-            padding-bottom: 60px; /* Space for teleport button */
+            padding-right: 50px;
+            padding-bottom: 60px;
         }
-        /* Game canvas styling */
         #game-canvas {
             background: #111;
             border: 2px solid #fff;
-            max-width: 90vw; /* Responsive width */
-            max-height: 90vh; /* Responsive height */
+            max-width: 90vw;
+            max-height: 90vh;
             width: 400px;
             height: 200px;
-            touch-action: none; /* Disable pinch/zoom on touchscreens */
+            touch-action: none;
         }
-        #score { display: none; } /* Score drawn in canvas */
-        /* Vertical button column on right */
+        #score { display: none; }
         #controls {
             display: flex;
             flex-direction: column;
-            margin-left: 30px; /* Space from canvas */
-            margin-right: 10px; /* Space from right edge */
+            margin-left: 30px;
+            margin-right: 10px;
         }
-        /* General button styling */
         button {
-            padding: 5px 15px; /* Wider padding for readability */
+            padding: 5px 15px;
             font-size: 16px;
             margin: 5px 0;
             background: #fff;
             border: none;
             cursor: pointer;
-            min-width: 100px; /* Ensure full text visibility */
+            min-width: 100px;
         }
-        button:active { background: #ccc; } /* Button press effect */
-        /* Teleport button - colorful and below gameplay */
+        button:active { background: #ccc; }
         #teleport-btn {
-            background: #F0F; /* Purple */
+            background: #F0F;
             color: #fff;
             font-weight: bold;
             position: absolute;
-            bottom: -10px; /* Below canvas */
+            bottom: -10px;
         }
-        /* Start overlay covers canvas until game begins */
         #start-overlay {
             position: absolute;
             top: 0;
@@ -78,11 +70,9 @@
             font-size: 24px;
             z-index: 10;
         }
-        /* Scale canvas on larger screens */
         @media (min-width: 600px) {
             #game-canvas { transform: scale(1.2); transform-origin: center; }
         }
-        /* Fullscreen adjustments for canvas */
         :fullscreen #game-canvas,
         :-webkit-full-screen #game-canvas {
             width: 100vw;
@@ -95,70 +85,59 @@
     </style>
 </head>
 <body>
-    <!-- Main game container -->
     <div id="game-container">
         <canvas id="game-canvas" width="400" height="200"></canvas>
-        <div id="start-overlay"></div> <!-- Splash screen, text set in JS -->
-        <div id="score">Score: 0</div> <!-- Hidden, drawn in canvas -->
-        <!-- Control buttons on right -->
+        <div id="start-overlay"></div>
+        <div id="score">Score: 0</div>
         <div id="controls">
             <button id="pause-btn">Pause</button>
             <button id="fullscreen-btn">Full Screen</button>
             <button id="instructions-btn">Instructions</button>
-            <!-- Teleport button added dynamically for touchscreens -->
         </div>
     </div>
 
     <script>
-        // Core game elements
         const canvas = document.getElementById('game-canvas');
         const ctx = canvas.getContext('2d');
-        const gridSize = 20; // Size of each grid square
-        let cols = canvas.width / gridSize; // Initial columns (20)
-        let rows = canvas.height / gridSize; // Initial rows (10)
-        let board = Array(rows).fill().map(() => Array(cols).fill(0)); // Game board array
-        let score = 0; // Player score
-        let gameOver = false; // Game over flag
-        let paused = false; // Pause state
-        let gameStarted = false; // Start flag
+        const gridSize = 20;
+        let cols = canvas.width / gridSize;
+        let rows = canvas.height / gridSize;
+        let board = Array(rows).fill().map(() => Array(cols).fill(0));
+        let score = 0;
+        let gameOver = false;
+        let paused = false;
+        let gameStarted = false;
 
-        // Tetromino shapes (4x1, 2x2, T, L, etc.)
         const shapes = [
             [[1,1,1,1]], [[1,1],[1,1]], [[1,1,1],[0,1,0]], [[1,1,1],[1,0,0]],
             [[1,1,1],[0,0,1]], [[1,1,0],[0,1,1]], [[0,1,1],[1,1,0]]
         ];
-        // Colors for shapes
         const colors = ['#FF0', '#0FF', '#F0F', '#00F', '#F00', '#0F0', '#FFA500'];
 
-        // Game state variables
-        let currentPiece = null; // Current falling piece, set in startGame
-        let dropCounter = 0; // Time since last drop
-        let dropInterval = 1000; // Normal drop speed (ms)
-        let fastDropInterval = 200; // Keyboard speed-up (ms)
-        let speedHeldTime = 0; // Time held for teleport (keyboard)
-        const teleportThreshold = 500; // Keyboard teleport delay (ms)
-        let speedPressed = false; // Speed-up active flag
-        let wiggleTime = 0; // Animation wiggle for strings
-        let poppingFragments = []; // Balloon pop animation particles
-        let titleTimer = 2000; // Title fade duration (ms)
-        let lastRotateTime = 0; // Rotation cooldown tracker
-        let titlePopPlayed = false; // Flag for title pop sound
+        let currentPiece = null;
+        let dropCounter = 0;
+        let dropInterval = 1000;
+        let fastDropInterval = 200;
+        let speedHeldTime = 0;
+        const teleportThreshold = 500;
+        let speedPressed = false;
+        let wiggleTime = 0;
+        let poppingFragments = [];
+        let titleTimer = 2000;
+        let lastRotateTime = 0;
+        let titlePopPlayed = false;
 
-        // Audio setup for pop sound
         let audioCtx = null;
         function initAudio() {
-            // Initialize audio context on first user interaction
             if (!audioCtx) {
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 console.log('Audio context initialized');
             }
-            // Resume if suspended (e.g., after tab switch)
             if (audioCtx.state === 'suspended') {
                 audioCtx.resume().then(() => console.log('Audio context resumed'));
             }
         }
         function playPop() {
-            // Play a single pop sound (800Hz sine wave, 0.2s)
             if (!audioCtx) {
                 console.log('Audio not initialized yet');
                 return;
@@ -176,51 +155,46 @@
             osc.stop(audioCtx.currentTime + 0.2);
         }
 
-        // Device detection for splash screen and teleport button
         const startOverlay = document.getElementById('start-overlay');
         const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
         startOverlay.textContent = isTouchDevice ? 'Tap to Play' : 'Press any key to Play';
 
-        // Add Teleport button only for touch devices and center it
         if (isTouchDevice) {
             const teleportBtn = document.createElement('button');
             teleportBtn.id = 'teleport-btn';
             teleportBtn.textContent = 'Teleport';
             document.getElementById('game-container').appendChild(teleportBtn);
             const centerTeleport = () => {
-                const dpr = window.devicePixelRatio || 1;
-                teleportBtn.style.left = `${canvas.offsetLeft + (canvas.offsetWidth / 2) / dpr}px`;
-                teleportBtn.style.transform = 'translateX(-50%)'; // Keep centered
+                teleportBtn.style.left = `${canvas.offsetLeft + (canvas.offsetWidth / 2)}px`;
+                teleportBtn.style.transform = 'translateX(-50%)';
             };
             window.addEventListener('resize', centerTeleport);
-            centerTeleport(); // Initial centering
+            centerTeleport();
         }
 
-        // Initialize game state once
         function startGame() {
-            if (gameStarted) return; // Prevent re-init
+            if (gameStarted) return;
             initAudio();
             startOverlay.style.display = 'none';
             gameStarted = true;
             adjustCanvasResolution();
-            board = Array(rows).fill().map(() => Array(cols).fill(0)); // Reset board
-            currentPiece = newPiece(); // Spawn first piece
-            draw(); // Force initial render
-            update(); // Start render loop
+            board = Array(rows).fill().map(() => Array(cols).fill(0));
+            currentPiece = newPiece();
+            draw();
+            requestAnimationFrame(updateLoop);
         }
 
-        // Event listeners for game start
         startOverlay.addEventListener('click', startGame);
         startOverlay.addEventListener('touchstart', (e) => {
             e.preventDefault();
-            startGame();
+            initAudio();
+            if (!gameStarted) startGame();
         });
         document.addEventListener('keydown', (e) => {
             if (!gameStarted) startGame();
         });
 
         function adjustCanvasResolution() {
-            // Adjust canvas resolution for fullscreen or default size
             const dpr = window.devicePixelRatio || 1;
             if (document.fullscreenElement || document.webkitFullscreenElement) {
                 canvas.width = window.innerWidth * dpr;
@@ -228,7 +202,7 @@
             } else {
                 canvas.width = 400 * dpr;
                 canvas.height = 200 * dpr;
-                canvas.style.transform = ''; // Reset scale on exit
+                canvas.style.transform = '';
             }
             canvas.style.width = `${canvas.width / dpr}px`;
             canvas.style.height = `${canvas.height / dpr}px`;
@@ -238,12 +212,11 @@
             if (gameStarted) {
                 board = Array(rows).fill().map(() => Array(cols).fill(0));
                 currentPiece = newPiece();
-                draw(); // Redraw after resize
+                draw();
             }
         }
 
         function newPiece() {
-            // Create a new random tetromino piece
             const shapeIdx = Math.floor(Math.random() * shapes.length);
             return {
                 shape: shapes[shapeIdx],
@@ -254,11 +227,10 @@
         }
 
         function draw() {
-            // Main render function
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             if (titleTimer > 0) drawTitle();
             drawBoard();
-            if (currentPiece) drawPiece(currentPiece); // Ensure piece exists
+            if (currentPiece) drawPiece(currentPiece);
             drawPoppingFragments();
             ctx.fillStyle = '#FFF';
             ctx.font = '16px monospace';
@@ -269,11 +241,10 @@
         }
 
         function drawTitle() {
-            // Draw "SHAPE UP" title with pop animation
             const title = "SHAPE UP";
             const balloonSize = gridSize / 4;
             const dpr = window.devicePixelRatio || 1;
-            const startX = ((canvas.width / dpr) - (title.length * gridSize * 2.2)) / 2; // Adjust for DPR
+            const startX = ((canvas.width / dpr) - (title.length * gridSize * 2.2)) / 2;
             const startY = 20;
             const letterShapes = [
                 [[1,1,1,1],[1,0,0,0],[1,1,1,1],[0,0,0,1],[1,1,1,1]], // S
@@ -329,7 +300,6 @@
         }
 
         function drawBoard() {
-            // Render the game board
             for (let r = 0; r < rows; r++) {
                 for (let c = 0; c < cols; c++) {
                     if (board[r][c]) {
@@ -346,7 +316,6 @@
         }
 
         function drawPoppingFragments() {
-            // Animate balloon pop fragments
             poppingFragments = poppingFragments.filter(f => f.time > 0);
             poppingFragments.forEach(fragment => {
                 ctx.globalAlpha = fragment.time / 500;
@@ -362,7 +331,6 @@
         }
 
         function drawPiece(piece) {
-            // Draw the current falling piece with strings
             ctx.fillStyle = piece.color;
             ctx.strokeStyle = '#FFF';
             ctx.lineWidth = 1;
@@ -413,7 +381,6 @@
         }
 
         function collide(piece) {
-            // Check for collisions with walls or other pieces
             for (let r = 0; r < piece.shape.length; r++) {
                 for (let c = 0; c < piece.shape[r].length; c++) {
                     if (!piece.shape[r][c]) continue;
@@ -428,7 +395,6 @@
         }
 
         function merge(piece) {
-            // Lock piece into the board
             piece.shape.forEach((row, r) => {
                 row.forEach((val, c) => {
                     if (val) {
@@ -439,7 +405,6 @@
         }
 
         function clearRows() {
-            // Clear full rows and update score
             let linesCleared = 0;
             for (let r = rows - 1; r >= 0; r--) {
                 let isFull = true;
@@ -477,7 +442,6 @@
         }
 
         function rotatePiece() {
-            // Rotate the current piece clockwise
             const rotated = currentPiece.shape[0].map((_, idx) =>
                 currentPiece.shape.map(row => row[idx]).reverse()
             );
@@ -489,7 +453,6 @@
         }
 
         function movePiece(dx, dy) {
-            // Move piece and handle collision
             currentPiece.x += dx;
             currentPiece.y += dy;
             if (collide(currentPiece)) {
@@ -513,15 +476,13 @@
         }
 
         function teleportPiece() {
-            // Instantly drop piece to bottom
             while (movePiece(0, -1)) {}
         }
 
         let lastTime = 0;
         let time = 0;
         let touchStartTime = 0;
-        function update(timeStamp = 0) {
-            // Main game loop
+        function updateLoop(timeStamp = 0) {
             if (!gameStarted) return;
             time = timeStamp;
             if (gameOver || paused) return;
@@ -545,10 +506,9 @@
             }
 
             draw();
-            requestAnimationFrame(update);
+            requestAnimationFrame(updateLoop);
         }
 
-        // Keyboard controls
         document.addEventListener('keydown', e => {
             if (!gameStarted || gameOver || paused) return;
             switch (e.key) {
@@ -572,7 +532,6 @@
             }
         });
 
-        // Touchscreen controls
         let touchStartX = 0;
         let touchStartY = 0;
         canvas.addEventListener('touchstart', e => {
@@ -585,7 +544,7 @@
         });
         canvas.addEventListener('touchmove', e => {
             e.preventDefault();
-            if (!gameStarted || !currentPiece) return; // Guard against no piece
+            if (!gameStarted || !currentPiece) return;
             const touchX = e.touches[0].clientX;
             const touchY = e.touches[0].clientY;
             const dx = touchX - touchStartX;
@@ -597,7 +556,7 @@
             }
             if (dy < -20 && !speedPressed) {
                 speedPressed = true;
-                dropInterval = 667; // ~50% faster for touch
+                dropInterval = 667;
                 touchStartY = touchY;
             }
             if (dy > 40 && (time - lastRotateTime > 300)) {
@@ -610,17 +569,16 @@
         canvas.addEventListener('touchend', e => {
             e.preventDefault();
             speedPressed = false;
-            dropInterval = 1000; // Reset to normal speed
+            dropInterval = 1000;
         });
 
-        // Button controls
         const pauseBtn = document.getElementById('pause-btn');
         pauseBtn.addEventListener('click', () => {
             initAudio();
             if (!gameStarted) return;
             paused = !paused;
             pauseBtn.textContent = paused ? 'Resume' : 'Pause';
-            if (!paused) update();
+            if (!paused) updateLoop();
         });
 
         const fullscreenBtn = document.getElementById('fullscreen-btn');
@@ -651,7 +609,6 @@
             alert(touchInstructions.trim());
         });
 
-        // Teleport button only for touch devices
         if (isTouchDevice) {
             const teleportBtn = document.getElementById('teleport-btn');
             teleportBtn.addEventListener('click', () => {
@@ -667,7 +624,6 @@
             });
         }
 
-        // Instructions text
         const keyboardInstructions = `
 Controls (Keyboard):
 - Left Arrow or A: Move left
@@ -687,9 +643,6 @@ Controls (Touchscreen):
 - Pause button: Pause/Resume game
 Goal: Stack balloons as they float up. Fill a row to clear it and score 10 points per row. Game ends if balloons can't spawn.
         `;
-
-        // Start the game loop
-        requestAnimationFrame(update);
     </script>
 </body>
 </html>
