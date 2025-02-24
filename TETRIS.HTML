@@ -23,7 +23,8 @@
             flex-direction: row; /* Canvas on left, controls on right */
             align-items: center;
             position: relative;
-            padding: 0;
+            padding-right: 40px; /* Gap between canvas and buttons */
+            padding-bottom: 60px; /* Space for teleport button */
         }
         /* Game canvas styling */
         #game-canvas {
@@ -40,7 +41,7 @@
         #controls {
             display: flex;
             flex-direction: column;
-            margin-left: 30px; /* Increased space from canvas */
+            margin-left: 30px; /* Space from canvas */
             margin-right: 10px; /* Space from right edge */
         }
         /* General button styling */
@@ -60,8 +61,8 @@
             color: #fff;
             font-weight: bold;
             position: absolute;
-            bottom: -60px; /* Below canvas */
-            left: 50%;
+            bottom: 10px; /* Below canvas, adjusted by container padding */
+            left: 50%; /* Center horizontally */
             transform: translateX(-50%);
         }
         /* Start overlay covers canvas until game begins */
@@ -208,7 +209,7 @@
             board = Array(rows).fill().map(() => Array(cols).fill(0)); // Reset board
             currentPiece = newPiece(); // Spawn first piece after resize
             gameStarted = true;
-            update();
+            update(); // Start render loop
         }
 
         function adjustCanvasResolution() {
@@ -567,6 +568,9 @@
             if (!gameStarted) {
                 startOverlay.style.display = 'none';
                 gameStarted = true;
+                adjustCanvasResolution(); // Ensure resize happens first
+                board = Array(rows).fill().map(() => Array(cols).fill(0)); // Reset board
+                currentPiece = newPiece(); // Spawn piece after resize
                 update();
             }
             touchStartX = e.touches[0].clientX;
@@ -575,7 +579,7 @@
         });
         canvas.addEventListener('touchmove', e => {
             e.preventDefault();
-            if (!gameStarted) return;
+            if (!gameStarted || !currentPiece) return; // Guard against no piece
             const touchX = e.touches[0].clientX;
             const touchY = e.touches[0].clientY;
             const dx = touchX - touchStartX;
@@ -646,13 +650,13 @@
             const teleportBtn = document.getElementById('teleport-btn');
             teleportBtn.addEventListener('click', () => {
                 initAudio();
-                if (!gameStarted || gameOver || paused) return;
+                if (!gameStarted || gameOver || paused || !currentPiece) return;
                 teleportPiece();
             });
             teleportBtn.addEventListener('touchstart', (e) => {
                 e.preventDefault();
                 initAudio();
-                if (!gameStarted || gameOver || paused) return;
+                if (!gameStarted || gameOver || paused || !currentPiece) return;
                 teleportPiece();
             });
         }
