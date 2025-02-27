@@ -187,11 +187,16 @@
             console.log('Page loaded');
             document.body.focus();
             gearIcon.focus();
-            startMiniGame();
+            initializeGame();
         });
 
         window.addEventListener('orientationchange', () => {
             console.log('Orientation changed');
+            adjustGameLayout();
+        });
+
+        window.addEventListener('resize', () => {
+            console.log('Window resized');
             adjustGameLayout();
         });
 
@@ -220,31 +225,25 @@
             }, 300);
         }
 
-        function adjustGameLayout() {
-            const isLandscape = window.innerWidth > window.innerHeight;
-            console.log(`Adjusting layout - Landscape: ${isLandscape}, Level: ${currentLevel}`);
-            redrawGrid(isLandscape);
-        }
-
-        function startMiniGame() {
-            console.log(`Starting Level ${currentLevel}`);
+        function initializeGame() {
+            console.log(`Initializing Level ${currentLevel}`);
             flippedCards = [];
             matchedPairs = 0;
             winMessage.style.display = "none";
 
-            let rows, cols, cardsPerLevel;
+            let cardsPerLevel;
             switch (currentLevel) {
-                case 1: rows = 3; cols = 4; cardsPerLevel = 12; break;
-                case 2: rows = 4; cols = 4; cardsPerLevel = 16; break;
-                case 3: rows = 4; cols = 5; cardsPerLevel = 20; break;
-                case 4: rows = 4; cols = 6; cardsPerLevel = 24; break;
-                case 5: rows = 5; cols = 6; cardsPerLevel = 30; break;
-                case 6: rows = 4; cols = 8; cardsPerLevel = 32; break;
-                case 7: rows = 6; cols = 6; cardsPerLevel = 36; break;
-                case 8: rows = 5; cols = 8; cardsPerLevel = 40; break;
-                case 9: rows = 6; cols = 7; cardsPerLevel = 42; break;
-                case 10: rows = 6; cols = 8; cardsPerLevel = 48; break;
-                default: rows = 6; cols = 8; cardsPerLevel = 48;
+                case 1: cardsPerLevel = 12; break;
+                case 2: cardsPerLevel = 16; break;
+                case 3: cardsPerLevel = 20; break;
+                case 4: cardsPerLevel = 24; break;
+                case 5: cardsPerLevel = 30; break;
+                case 6: cardsPerLevel = 32; break;
+                case 7: cardsPerLevel = 36; break;
+                case 8: cardsPerLevel = 40; break;
+                case 9: cardsPerLevel = 42; break;
+                case 10: cardsPerLevel = 48; break;
+                default: cardsPerLevel = 48;
             }
             totalPairs = cardsPerLevel / 2;
 
@@ -253,17 +252,35 @@
                 console.log(`Generated ${currentBreeds.length} breeds for Level ${currentLevel}`);
             }
 
-            const isLandscape = window.innerWidth > window.innerHeight;
-            redrawGrid(isLandscape, rows, cols);
+            adjustGameLayout();
         }
 
-        function redrawGrid(isLandscape, baseRows, baseCols) {
-            console.log(`Redrawing grid - Landscape: ${isLandscape}, Rows: ${baseRows}, Cols: ${baseCols}`);
-            canvas.innerHTML = "";
-            let rows = baseRows;
-            let cols = baseCols;
+        function adjustGameLayout() {
+            const isLandscape = window.innerWidth > window.innerHeight;
+            console.log(`Adjusting layout - Landscape: ${isLandscape}, Level: ${currentLevel}`);
+            let rows, cols;
+            switch (currentLevel) {
+                case 1: rows = 3; cols = 4; break;
+                case 2: rows = 4; cols = 4; break;
+                case 3: rows = 4; cols = 5; break;
+                case 4: rows = 4; cols = 6; break;
+                case 5: rows = 5; cols = 6; break;
+                case 6: rows = 4; cols = 8; break;
+                case 7: rows = 6; cols = 6; break;
+                case 8: rows = 5; cols = 8; break;
+                case 9: rows = 6; cols = 7; break;
+                case 10: rows = 6; cols = 8; break;
+                default: rows = 6; cols = 8;
+            }
 
             if (!isLandscape) [rows, cols] = [cols, rows];
+
+            renderCards(rows, cols);
+        }
+
+        function renderCards(rows, cols) {
+            console.log(`Rendering ${rows}x${cols} grid`);
+            canvas.innerHTML = "";
 
             const maxHeight = window.innerHeight * 0.75 - 40;
             const maxWidth = window.innerWidth * 0.9 - 40;
@@ -274,8 +291,8 @@
             canvas.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
 
             if (!currentBreeds.length) {
-                console.error('No breeds available, restarting game');
-                startMiniGame();
+                console.error('No breeds available, reinitializing');
+                initializeGame();
                 return;
             }
 
@@ -305,7 +322,6 @@
                 card.appendChild(back);
                 card.addEventListener(isTouchDevice ? "touchstart" : "click", flipCard);
 
-                // Restore state
                 const flippedCard = flippedCards.find(fc => fc.dataset.breed === breed && fc.dataset.index == index);
                 if (flippedCard) card.classList.add("flipped");
                 if (index < matchedPairs * 2) card.classList.add("matched");
@@ -313,7 +329,7 @@
                 canvas.appendChild(card);
             });
 
-            console.log(`Redrew ${currentBreeds.length} cards`);
+            console.log(`Rendered ${currentBreeds.length} cards`);
             levelDisplay.textContent = `Level ${currentLevel}`;
         }
 
@@ -344,7 +360,7 @@
                             winMessage.style.display = "none";
                             currentLevel = currentLevel < 10 ? currentLevel + 1 : 1;
                             currentBreeds = [];
-                            startMiniGame();
+                            initializeGame();
                         }, 2000);
                     }
                 }, 1000);
@@ -373,7 +389,7 @@
             e.preventDefault();
             currentLevel = currentLevel < 10 ? currentLevel + 1 : 1;
             currentBreeds = [];
-            startMiniGame();
+            initializeGame();
             closeSettingsMenu();
         });
 
@@ -382,11 +398,11 @@
             alert("Returning to main menu...");
             currentLevel = 1;
             currentBreeds = [];
-            startMiniGame();
+            initializeGame();
             closeSettingsMenu();
         });
 
-        startMiniGame();
+        initializeGame();
     </script>
 </body>
 </html>
