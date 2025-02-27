@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Dog Breed Matching Game</title>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
@@ -17,6 +17,7 @@
             align-items: center;
             height: 100vh;
             width: 100vw;
+            touch-action: none; /* Disable pinch-to-zoom */
         }
         #game-container {
             width: 100vw;
@@ -41,6 +42,7 @@
             cursor: pointer;
             border-radius: 8px;
             user-select: none;
+            overflow: hidden; /* Prevent overflow */
         }
         .card .front, .card .back {
             position: absolute;
@@ -58,12 +60,12 @@
         }
         .card .front::before {
             content: '🐾';
-            font-size: 40px;
-            color: #fff;
+            font-size: 2em; /* Relative sizing */
+            color: orange; /* Orange paw prints */
         }
         .card .back {
             background: #fff;
-            font-size: 18px;
+            font-size: clamp(12px, 2vw, 18px); /* Responsive font size */
             font-weight: bold;
             transform: rotateY(180deg);
             text-align: center;
@@ -71,6 +73,7 @@
             box-sizing: border-box;
             overflow: hidden;
             white-space: normal;
+            word-wrap: break-word; /* Wrap long words */
         }
         .card.flipped .front { transform: rotateY(180deg); }
         .card.flipped .back { transform: rotateY(0deg); }
@@ -79,8 +82,8 @@
             position: absolute;
             top: 10px;
             right: 30px;
-            font-size: 30px; /* Size of the emoji */
-            color: #fff; /* White gear on black background */
+            font-size: 30px;
+            color: #fff;
             cursor: pointer;
             z-index: 1000;
             pointer-events: auto;
@@ -176,6 +179,7 @@
         let matchedPairs = 0;
         let currentLevel = 1;
         let totalPairs = 0;
+        const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
         window.addEventListener('load', () => {
             document.body.focus();
@@ -261,7 +265,7 @@
 
                 card.appendChild(front);
                 card.appendChild(back);
-                card.addEventListener("click", flipCard);
+                card.addEventListener(isTouchDevice ? "touchstart" : "click", flipCard);
                 canvas.appendChild(card);
             });
 
@@ -308,7 +312,7 @@
 
         howToPlayBtn.addEventListener("click", (e) => {
             e.preventDefault();
-            alert("Click cards to flip them. Match all dog breed pairs to advance!");
+            alert(`${isTouchDevice ? "Tap" : "Click"} cards to flip them. Match all dog breed pairs to advance!`);
             closeSettingsMenu();
         });
 
