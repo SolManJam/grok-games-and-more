@@ -181,6 +181,7 @@
         let currentLevel = 1;
         let totalPairs = 0;
         let currentBreeds = [];
+        let cardStates = []; // Track breed and matched state
         const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
         window.addEventListener('load', () => {
@@ -247,10 +248,9 @@
             }
             totalPairs = cardsPerLevel / 2;
 
-            if (!currentBreeds.length || currentBreeds.length !== cardsPerLevel) {
-                currentBreeds = allDogBreeds.slice(0, cardsPerLevel).sort(() => Math.random() - 0.5);
-                console.log(`Generated ${currentBreeds.length} breeds for Level ${currentLevel}`);
-            }
+            currentBreeds = allDogBreeds.slice(0, cardsPerLevel).sort(() => Math.random() - 0.5);
+            cardStates = currentBreeds.map(breed => ({ breed, matched: false }));
+            console.log(`Generated ${currentBreeds.length} breeds for Level ${currentLevel}`);
 
             adjustGameLayout();
         }
@@ -290,22 +290,16 @@
             canvas.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
             canvas.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
 
-            if (!currentBreeds.length) {
-                console.error('No breeds available, reinitializing');
-                initializeGame();
-                return;
-            }
-
             const uniqueBreeds = [...new Set(currentBreeds)];
             const breedColors = {};
             uniqueBreeds.forEach((breed, index) => {
                 breedColors[breed] = colors[index % colors.length];
             });
 
-            currentBreeds.forEach((breed, index) => {
+            cardStates.forEach((state, index) => {
                 const card = document.createElement("div");
                 card.classList.add("card");
-                card.dataset.breed = breed;
+                card.dataset.breed = state.breed;
                 card.dataset.index = index;
                 card.style.width = `${cardWidth}px`;
                 card.style.height = `${cardHeight}px`;
@@ -315,21 +309,21 @@
 
                 const back = document.createElement("div");
                 back.classList.add("back");
-                back.textContent = breed;
-                back.style.color = breedColors[breed];
+                back.textContent = state.breed;
+                back.style.color = breedColors[state.breed];
 
                 card.appendChild(front);
                 card.appendChild(back);
                 card.addEventListener(isTouchDevice ? "touchstart" : "click", flipCard);
 
-                const flippedCard = flippedCards.find(fc => fc.dataset.breed === breed && fc.dataset.index == index);
+                const flippedCard = flippedCards.find(fc => fc.dataset.breed === state.breed && fc.dataset.index == index);
                 if (flippedCard) card.classList.add("flipped");
-                if (index < matchedPairs * 2) card.classList.add("matched");
+                if (state.matched) card.classList.add("matched");
 
                 canvas.appendChild(card);
             });
 
-            console.log(`Rendered ${currentBreeds.length} cards`);
+            console.log(`Rendered ${cardStates.length} cards`);
             levelDisplay.textContent = `Level ${currentLevel}`;
         }
 
@@ -353,6 +347,10 @@
                 setTimeout(() => {
                     card1.classList.add("matched");
                     card2.classList.add("matched");
+                    const index1 = parseInt(card1.dataset.index);
+                    const index2 = parseInt(card2.dataset.index);
+                    cardStates[index1].matched = true;
+                    cardStates[index2].matched = true;
                     matchedPairs++;
                     if (matchedPairs === totalPairs) {
                         winMessage.style.display = "block";
@@ -360,6 +358,7 @@
                             winMessage.style.display = "none";
                             currentLevel = currentLevel < 10 ? currentLevel + 1 : 1;
                             currentBreeds = [];
+                            cardStates = [];
                             initializeGame();
                         }, 2000);
                     }
@@ -389,6 +388,7 @@
             e.preventDefault();
             currentLevel = currentLevel < 10 ? currentLevel + 1 : 1;
             currentBreeds = [];
+            cardStates = [];
             initializeGame();
             closeSettingsMenu();
         });
@@ -398,6 +398,7 @@
             alert("Returning to main menu...");
             currentLevel = 1;
             currentBreeds = [];
+            cardStates = [];
             initializeGame();
             closeSettingsMenu();
         });
