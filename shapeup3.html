@@ -61,8 +61,8 @@
         .card .front::before {
             content: '🐾';
             font-size: 2em;
-            color: #ffa500 !important; /* Hex orange */
-            -webkit-text-fill-color: #ffa500 !important; /* Force for WebKit */
+            color: #ffa500 !important;
+            -webkit-text-fill-color: #ffa500 !important;
         }
         .card .back {
             background: #fff;
@@ -180,12 +180,13 @@
         let matchedPairs = 0;
         let currentLevel = 1;
         let totalPairs = 0;
+        let currentBreeds = [];
         const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
         window.addEventListener('load', () => {
             document.body.focus();
             gearIcon.focus();
-            adjustGameLayout();
+            startMiniGame();
         });
 
         window.addEventListener('orientationchange', adjustGameLayout);
@@ -217,11 +218,10 @@
 
         function adjustGameLayout() {
             const isLandscape = window.innerWidth > window.innerHeight;
-            startMiniGame(isLandscape);
+            redrawGrid(isLandscape);
         }
 
-        function startMiniGame(isLandscape = window.innerWidth > window.innerHeight) {
-            canvas.innerHTML = "";
+        function startMiniGame() {
             flippedCards = [];
             matchedPairs = 0;
             winMessage.style.display = "none";
@@ -240,11 +240,23 @@
                 case 10: rows = 6; cols = 8; cardsPerLevel = 48; break;
                 default: rows = 6; cols = 8; cardsPerLevel = 48;
             }
-
-            // Swap rows and cols in portrait mode
-            if (!isLandscape) [rows, cols] = [cols, rows];
-
             totalPairs = cardsPerLevel / 2;
+
+            // Set breeds once per level
+            if (!currentBreeds.length || currentBreeds.length !== cardsPerLevel) {
+                currentBreeds = allDogBreeds.slice(0, cardsPerLevel).sort(() => Math.random() - 0.5);
+            }
+
+            const isLandscape = window.innerWidth > window.innerHeight;
+            redrawGrid(isLandscape, rows, cols);
+        }
+
+        function redrawGrid(isLandscape, baseRows, baseCols) {
+            canvas.innerHTML = "";
+            let rows = baseRows;
+            let cols = baseCols;
+
+            if (!isLandscape) [rows, cols] = [cols, rows];
 
             const maxHeight = window.innerHeight * 0.75 - 40;
             const maxWidth = window.innerWidth * 0.9 - 40;
@@ -254,14 +266,13 @@
             canvas.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
             canvas.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
 
-            const levelBreeds = allDogBreeds.slice(0, cardsPerLevel).sort(() => Math.random() - 0.5);
-            const uniqueBreeds = [...new Set(levelBreeds)];
+            const uniqueBreeds = [...new Set(currentBreeds)];
             const breedColors = {};
             uniqueBreeds.forEach((breed, index) => {
                 breedColors[breed] = colors[index % colors.length];
             });
 
-            levelBreeds.forEach(breed => {
+            currentBreeds.forEach((breed, index) => {
                 const card = document.createElement("div");
                 card.classList.add("card");
                 card.dataset.breed = breed;
@@ -279,6 +290,16 @@
                 card.appendChild(front);
                 card.appendChild(back);
                 card.addEventListener(isTouchDevice ? "touchstart" : "click", flipCard);
+
+                // Restore state
+                if (flippedCards.some(fc => fc.dataset.breed === breed && fc.dataset.index == index)) {
+                    card.classList.add("flipped");
+                }
+                if (index < matchedPairs * 2) {
+                    card.classList.add("matched");
+                }
+
+                card.dataset.index = index; // Track position
                 canvas.appendChild(card);
             });
 
@@ -311,6 +332,7 @@
                         setTimeout(() => {
                             winMessage.style.display = "none";
                             currentLevel = currentLevel < 10 ? currentLevel + 1 : 1;
+                            currentBreeds = []; // Reset breeds for new level
                             startMiniGame();
                         }, 2000);
                     }
@@ -339,6 +361,7 @@
         nextLevelBtn.addEventListener("click", (e) => {
             e.preventDefault();
             currentLevel = currentLevel < 10 ? currentLevel + 1 : 1;
+            currentBreeds = [];
             startMiniGame();
             closeSettingsMenu();
         });
@@ -347,6 +370,7 @@
             e.preventDefault();
             alert("Returning to main menu...");
             currentLevel = 1;
+            currentBreeds = [];
             startMiniGame();
             closeSettingsMenu();
         });
