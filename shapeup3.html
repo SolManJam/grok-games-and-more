@@ -17,7 +17,7 @@
             align-items: center;
             height: 100vh;
             width: 100vw;
-            touch-action: pan-x pan-y; /* Allow touch panning for orientation, block pinch */
+            touch-action: pan-x pan-y;
         }
         #game-container {
             width: 100vw;
@@ -61,7 +61,8 @@
         .card .front::before {
             content: '🐾';
             font-size: 2em;
-            color: #ffa500 !important; /* Explicit orange with hex */
+            color: #ffa500 !important; /* Hex orange */
+            -webkit-text-fill-color: #ffa500 !important; /* Force for WebKit */
         }
         .card .back {
             background: #fff;
@@ -184,7 +185,7 @@
         window.addEventListener('load', () => {
             document.body.focus();
             gearIcon.focus();
-            adjustGameLayout(); // Initial layout adjustment
+            adjustGameLayout();
         });
 
         window.addEventListener('orientationchange', adjustGameLayout);
@@ -215,10 +216,11 @@
         }
 
         function adjustGameLayout() {
-            startMiniGame(); // Re-run layout logic on orientation change
+            const isLandscape = window.innerWidth > window.innerHeight;
+            startMiniGame(isLandscape);
         }
 
-        function startMiniGame() {
+        function startMiniGame(isLandscape = window.innerWidth > window.innerHeight) {
             canvas.innerHTML = "";
             flippedCards = [];
             matchedPairs = 0;
@@ -238,6 +240,10 @@
                 case 10: rows = 6; cols = 8; cardsPerLevel = 48; break;
                 default: rows = 6; cols = 8; cardsPerLevel = 48;
             }
+
+            // Swap rows and cols in portrait mode
+            if (!isLandscape) [rows, cols] = [cols, rows];
+
             totalPairs = cardsPerLevel / 2;
 
             const maxHeight = window.innerHeight * 0.75 - 40;
