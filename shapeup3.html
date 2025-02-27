@@ -17,7 +17,7 @@
             align-items: center;
             height: 100vh;
             width: 100vw;
-            touch-action: none; /* Disable pinch-to-zoom */
+            touch-action: pan-x pan-y; /* Allow touch panning for orientation, block pinch */
         }
         #game-container {
             width: 100vw;
@@ -42,7 +42,7 @@
             cursor: pointer;
             border-radius: 8px;
             user-select: none;
-            overflow: hidden; /* Prevent overflow */
+            overflow: hidden;
         }
         .card .front, .card .back {
             position: absolute;
@@ -60,12 +60,12 @@
         }
         .card .front::before {
             content: '🐾';
-            font-size: 2em; /* Relative sizing */
-            color: orange; /* Orange paw prints */
+            font-size: 2em;
+            color: #ffa500 !important; /* Explicit orange with hex */
         }
         .card .back {
             background: #fff;
-            font-size: clamp(12px, 2vw, 18px); /* Responsive font size */
+            font-size: clamp(12px, 2vw, 18px);
             font-weight: bold;
             transform: rotateY(180deg);
             text-align: center;
@@ -73,7 +73,7 @@
             box-sizing: border-box;
             overflow: hidden;
             white-space: normal;
-            word-wrap: break-word; /* Wrap long words */
+            word-wrap: break-word;
         }
         .card.flipped .front { transform: rotateY(180deg); }
         .card.flipped .back { transform: rotateY(0deg); }
@@ -184,7 +184,10 @@
         window.addEventListener('load', () => {
             document.body.focus();
             gearIcon.focus();
+            adjustGameLayout(); // Initial layout adjustment
         });
+
+        window.addEventListener('orientationchange', adjustGameLayout);
 
         gearIcon.addEventListener('click', (e) => {
             e.preventDefault();
@@ -209,6 +212,10 @@
                 settingsMenu.style.display = 'none';
                 settingsMenu.style.opacity = '1';
             }, 300);
+        }
+
+        function adjustGameLayout() {
+            startMiniGame(); // Re-run layout logic on orientation change
         }
 
         function startMiniGame() {
