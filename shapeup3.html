@@ -184,12 +184,16 @@
         const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
         window.addEventListener('load', () => {
+            console.log('Page loaded');
             document.body.focus();
             gearIcon.focus();
             startMiniGame();
         });
 
-        window.addEventListener('orientationchange', adjustGameLayout);
+        window.addEventListener('orientationchange', () => {
+            console.log('Orientation changed');
+            adjustGameLayout();
+        });
 
         gearIcon.addEventListener('click', (e) => {
             e.preventDefault();
@@ -218,10 +222,12 @@
 
         function adjustGameLayout() {
             const isLandscape = window.innerWidth > window.innerHeight;
+            console.log(`Adjusting layout - Landscape: ${isLandscape}, Level: ${currentLevel}`);
             redrawGrid(isLandscape);
         }
 
         function startMiniGame() {
+            console.log(`Starting Level ${currentLevel}`);
             flippedCards = [];
             matchedPairs = 0;
             winMessage.style.display = "none";
@@ -242,9 +248,9 @@
             }
             totalPairs = cardsPerLevel / 2;
 
-            // Set breeds once per level
             if (!currentBreeds.length || currentBreeds.length !== cardsPerLevel) {
                 currentBreeds = allDogBreeds.slice(0, cardsPerLevel).sort(() => Math.random() - 0.5);
+                console.log(`Generated ${currentBreeds.length} breeds for Level ${currentLevel}`);
             }
 
             const isLandscape = window.innerWidth > window.innerHeight;
@@ -252,6 +258,7 @@
         }
 
         function redrawGrid(isLandscape, baseRows, baseCols) {
+            console.log(`Redrawing grid - Landscape: ${isLandscape}, Rows: ${baseRows}, Cols: ${baseCols}`);
             canvas.innerHTML = "";
             let rows = baseRows;
             let cols = baseCols;
@@ -266,6 +273,12 @@
             canvas.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
             canvas.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
 
+            if (!currentBreeds.length) {
+                console.error('No breeds available, restarting game');
+                startMiniGame();
+                return;
+            }
+
             const uniqueBreeds = [...new Set(currentBreeds)];
             const breedColors = {};
             uniqueBreeds.forEach((breed, index) => {
@@ -276,6 +289,7 @@
                 const card = document.createElement("div");
                 card.classList.add("card");
                 card.dataset.breed = breed;
+                card.dataset.index = index;
                 card.style.width = `${cardWidth}px`;
                 card.style.height = `${cardHeight}px`;
 
@@ -292,17 +306,14 @@
                 card.addEventListener(isTouchDevice ? "touchstart" : "click", flipCard);
 
                 // Restore state
-                if (flippedCards.some(fc => fc.dataset.breed === breed && fc.dataset.index == index)) {
-                    card.classList.add("flipped");
-                }
-                if (index < matchedPairs * 2) {
-                    card.classList.add("matched");
-                }
+                const flippedCard = flippedCards.find(fc => fc.dataset.breed === breed && fc.dataset.index == index);
+                if (flippedCard) card.classList.add("flipped");
+                if (index < matchedPairs * 2) card.classList.add("matched");
 
-                card.dataset.index = index; // Track position
                 canvas.appendChild(card);
             });
 
+            console.log(`Redrew ${currentBreeds.length} cards`);
             levelDisplay.textContent = `Level ${currentLevel}`;
         }
 
@@ -332,7 +343,7 @@
                         setTimeout(() => {
                             winMessage.style.display = "none";
                             currentLevel = currentLevel < 10 ? currentLevel + 1 : 1;
-                            currentBreeds = []; // Reset breeds for new level
+                            currentBreeds = [];
                             startMiniGame();
                         }, 2000);
                     }
