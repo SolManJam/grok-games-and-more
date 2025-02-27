@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dog Breed Matching Game</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+            background: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            width: 100vw;
+        }
+        #game-container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        #game-canvas {
+            position: relative;
+            display: grid;
+            gap: 8px;
+            max-width: 90vw;
+            max-height: 75vh;
+            margin: auto;
+        }
+        .card {
+            position: relative;
+            cursor: pointer;
+            border-radius: 8px;
+            user-select: none;
+        }
+        .card .front, .card .back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            backface-visibility: hidden;
+            transition: transform 0.3s ease;
+            border-radius: 8px;
+        }
+        .card .front {
+            background: #333;
+        }
+        .card .front::before {
+            content: '🐾';
+            font-size: 40px;
+            color: #fff;
+        }
+        .card .back {
+            background: #fff;
+            font-size: 18px;
+            font-weight: bold;
+            transform: rotateY(180deg);
+            text-align: center;
+            padding: 5px;
+            box-sizing: border-box;
+            overflow: hidden;
+            white-space: normal;
+        }
+        .card.flipped .front { transform: rotateY(180deg); }
+        .card.flipped .back { transform: rotateY(0deg); }
+        .card.matched { visibility: hidden; }
+        #gear-icon {
+            position: absolute;
+            top: 10px;
+            right: 30px;
+            font-size: 30px; /* Size of the emoji */
+            color: #fff; /* White gear on black background */
+            cursor: pointer;
+            z-index: 1000;
+            pointer-events: auto;
+        }
+        #settings-menu {
+            position: absolute;
+            top: 50px;
+            right: 10px;
+            background: #222;
+            border: 1px solid #444;
+            padding: 15px;
+            display: none;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            border-radius: 8px;
+            z-index: 10;
+            transition: opacity 0.3s ease;
+        }
+        #settings-menu button {
+            display: block;
+            width: 140px;
+            padding: 10px;
+            margin: 8px 0;
+            background: #444;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.2s ease;
+        }
+        #settings-menu button:hover { background: #666; }
+        #win-message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 48px;
+            color: #fff;
+            display: none;
+            z-index: 5;
+        }
+        #level-display {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 20px;
+            color: #fff;
+            z-index: 5;
+            font-family: 'Press Start 2P', cursive;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <div id="game-canvas"></div>
+        <div id="gear-icon">⚙️</div>
+        <div id="settings-menu">
+            <button id="how-to-play">How to Play</button>
+            <button id="full-screen">Full Screen</button>
+            <button id="next-level">Next Level</button>
+            <button id="return-menu">Return to Main Menu</button>
+        </div>
+        <div id="win-message">You Won!</div>
+        <div id="level-display">Level 1</div>
+    </div>
+
+    <script>
+        const allDogBreeds = [
+            "Labrador", "Poodle", "Bulldog", "Beagle", "Husky", "Dachshund",
+            "German Shepherd", "Golden Retriever", "Chihuahua", "Boxer",
+            "Rottweiler", "Shih Tzu", "Dalmatian", "Pug", "Great Dane",
+            "Border Collie", "Siberian Husky", "Corgi", "Maltese", "Pit Bull",
+            "Doberman", "French Bulldog", "Australian Shepherd", "Yorkshire Terrier",
+            "Jack Russell", "Basset Hound", "Saint Bernard", "Cocker Spaniel",
+            "Bernese Mountain Dog", "Newfoundland", "Weimaraner", "Vizsla",
+            "Akita", "Shiba Inu", "Greyhound", "Whippet", "Samoyed",
+            "Bull Terrier", "English Setter", "Irish Wolfhound", "Scottish Terrier"
+        ].flatMap(breed => [breed, breed]);
+
+        const colors = ['red', 'blue', 'green', 'purple', 'orange', 'brown', 'darkcyan', 'darkmagenta', 'darkslategray', 'maroon'];
+
+        const canvas = document.getElementById("game-canvas");
+        const gearIcon = document.getElementById("gear-icon");
+        const settingsMenu = document.getElementById("settings-menu");
+        const howToPlayBtn = document.getElementById("how-to-play");
+        const fullScreenBtn = document.getElementById("full-screen");
+        const nextLevelBtn = document.getElementById("next-level");
+        const returnMenuBtn = document.getElementById("return-menu");
+        const winMessage = document.getElementById("win-message");
+        const levelDisplay = document.getElementById("level-display");
+
+        let flippedCards = [];
+        let matchedPairs = 0;
+        let currentLevel = 1;
+        let totalPairs = 0;
+
+        window.addEventListener('load', () => {
+            document.body.focus();
+            gearIcon.focus();
+        });
+
+        gearIcon.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (settingsMenu.style.display === 'none' || settingsMenu.style.display === '') {
+                settingsMenu.style.display = 'block';
+                settingsMenu.style.opacity = '1';
+            } else {
+                closeSettingsMenu();
+            }
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!settingsMenu.contains(e.target) && e.target !== gearIcon && settingsMenu.style.display === 'block') {
+                closeSettingsMenu();
+            }
+        });
+
+        function closeSettingsMenu() {
+            settingsMenu.style.opacity = '0';
+            setTimeout(() => {
+                settingsMenu.style.display = 'none';
+                settingsMenu.style.opacity = '1';
+            }, 300);
+        }
+
+        function startMiniGame() {
+            canvas.innerHTML = "";
+            flippedCards = [];
+            matchedPairs = 0;
+            winMessage.style.display = "none";
+
+            let rows, cols, cardsPerLevel;
+            switch (currentLevel) {
+                case 1: rows = 3; cols = 4; cardsPerLevel = 12; break;
+                case 2: rows = 4; cols = 4; cardsPerLevel = 16; break;
+                case 3: rows = 4; cols = 5; cardsPerLevel = 20; break;
+                case 4: rows = 4; cols = 6; cardsPerLevel = 24; break;
+                case 5: rows = 5; cols = 6; cardsPerLevel = 30; break;
+                case 6: rows = 4; cols = 8; cardsPerLevel = 32; break;
+                case 7: rows = 6; cols = 6; cardsPerLevel = 36; break;
+                case 8: rows = 5; cols = 8; cardsPerLevel = 40; break;
+                case 9: rows = 6; cols = 7; cardsPerLevel = 42; break;
+                case 10: rows = 6; cols = 8; cardsPerLevel = 48; break;
+                default: rows = 6; cols = 8; cardsPerLevel = 48;
+            }
+            totalPairs = cardsPerLevel / 2;
+
+            const maxHeight = window.innerHeight * 0.75 - 40;
+            const maxWidth = window.innerWidth * 0.9 - 40;
+            const cardHeight = Math.floor(maxHeight / rows) - 8;
+            const cardWidth = Math.floor(maxWidth / cols) - 8;
+
+            canvas.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+            canvas.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
+
+            const levelBreeds = allDogBreeds.slice(0, cardsPerLevel).sort(() => Math.random() - 0.5);
+            const uniqueBreeds = [...new Set(levelBreeds)];
+            const breedColors = {};
+            uniqueBreeds.forEach((breed, index) => {
+                breedColors[breed] = colors[index % colors.length];
+            });
+
+            levelBreeds.forEach(breed => {
+                const card = document.createElement("div");
+                card.classList.add("card");
+                card.dataset.breed = breed;
+                card.style.width = `${cardWidth}px`;
+                card.style.height = `${cardHeight}px`;
+
+                const front = document.createElement("div");
+                front.classList.add("front");
+
+                const back = document.createElement("div");
+                back.classList.add("back");
+                back.textContent = breed;
+                back.style.color = breedColors[breed];
+
+                card.appendChild(front);
+                card.appendChild(back);
+                card.addEventListener("click", flipCard);
+                canvas.appendChild(card);
+            });
+
+            levelDisplay.textContent = `Level ${currentLevel}`;
+        }
+
+        function flipCard(e) {
+            e.preventDefault();
+            if (settingsMenu.style.display === 'block') {
+                closeSettingsMenu();
+            }
+            if (flippedCards.length < 2 && !this.classList.contains("flipped") && !this.classList.contains("matched")) {
+                this.classList.add("flipped");
+                flippedCards.push(this);
+                if (flippedCards.length === 2) checkMatch();
+            }
+        }
+
+        function checkMatch() {
+            const [card1, card2] = flippedCards;
+            flippedCards = [];
+
+            if (card1.dataset.breed === card2.dataset.breed) {
+                setTimeout(() => {
+                    card1.classList.add("matched");
+                    card2.classList.add("matched");
+                    matchedPairs++;
+                    if (matchedPairs === totalPairs) {
+                        winMessage.style.display = "block";
+                        setTimeout(() => {
+                            winMessage.style.display = "none";
+                            currentLevel = currentLevel < 10 ? currentLevel + 1 : 1;
+                            startMiniGame();
+                        }, 2000);
+                    }
+                }, 1000);
+            } else {
+                setTimeout(() => {
+                    card1.classList.remove("flipped");
+                    card2.classList.remove("flipped");
+                }, 1000);
+            }
+        }
+
+        howToPlayBtn.addEventListener("click", (e) => {
+            e.preventDefault();
+            alert("Click cards to flip them. Match all dog breed pairs to advance!");
+            closeSettingsMenu();
+        });
+
+        fullScreenBtn.addEventListener("click", (e) => {
+            e.preventDefault();
+            if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+            else document.exitFullscreen();
+            closeSettingsMenu();
+        });
+
+        nextLevelBtn.addEventListener("click", (e) => {
+            e.preventDefault();
+            currentLevel = currentLevel < 10 ? currentLevel + 1 : 1;
+            startMiniGame();
+            closeSettingsMenu();
+        });
+
+        returnMenuBtn.addEventListener("click", (e) => {
+            e.preventDefault();
+            alert("Returning to main menu...");
+            currentLevel = 1;
+            startMiniGame();
+            closeSettingsMenu();
+        });
+
+        startMiniGame();
+    </script>
+</body>
+</html>
