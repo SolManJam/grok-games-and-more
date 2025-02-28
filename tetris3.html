@@ -44,8 +44,8 @@
             position: fixed;
             bottom: 10px;
             left: 10px;
-            width: 80px; /* Enough for 4 blocks at half size */
-            height: 40px; /* Enough for 2 blocks at half size */
+            width: 80px; /* Width for 4 blocks at half size */
+            height: 120px; /* Height for 3 pieces stacked (40px each) */
             background: #111;
             border: 1px solid #fff;
             z-index: 10;
@@ -111,7 +111,7 @@
         }
         #teleport-btn {
             position: fixed;
-            bottom: 40px; /* Moved up to avoid score overlap */
+            bottom: 40px;
             right: 20px;
             background: #f0f;
             color: #fff;
@@ -171,7 +171,7 @@
 <body>
     <div id="game-container">
         <canvas id="game-canvas" width="480" height="270"></canvas>
-        <canvas id="preview-canvas" width="80" height="40"></canvas> <!-- New preview canvas -->
+        <canvas id="preview-canvas" width="80" height="120"></canvas> <!-- Updated height for 3 pieces -->
         <div id="start-overlay"></div>
         <div id="gear-icon">⚙️</div>
         <button id="pause-play-btn">⏸️</button>
@@ -189,7 +189,7 @@
         const previewCtx = previewCanvas.getContext('2d');
         const scoreDisplay = document.getElementById('score-display');
         const gridSize = 20;
-        const previewGridSize = gridSize / 2; // Half size for preview (10px)
+        const previewGridSize = gridSize / 2; // 10px
         const cols = 24;
         const rows = 13.5;
         let board = Array(Math.ceil(rows)).fill().map(() => Array(cols).fill(0));
@@ -205,7 +205,7 @@
         const colors = ['#FF0', '#0FF', '#F0F', '#00F', '#F00', '#0F0', '#FFA500'];
 
         let currentPiece = null;
-        let nextPiece = null; // Store the next piece
+        let nextPieces = []; // Array for next three pieces
         let dropCounter = 0;
         let dropInterval = 1000;
         let fastDropInterval = 200;
@@ -306,7 +306,7 @@
             adjustCanvasResolution();
             board = Array(Math.ceil(rows)).fill().map(() => Array(cols).fill(0));
             currentPiece = newPiece();
-            nextPiece = newPiece(); // Generate next piece
+            nextPieces = [newPiece(), newPiece(), newPiece()]; // Initialize 3 next pieces
             score = 0;
             scoreDisplay.textContent = `Score: ${score}`;
             draw();
@@ -354,10 +354,10 @@
             canvas.style.height = `${displayHeight}px`;
             ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-            previewCanvas.width = 80 * dpr; // Scale preview canvas
-            previewCanvas.height = 40 * dpr;
+            previewCanvas.width = 80 * dpr;
+            previewCanvas.height = 120 * dpr; // Updated for 3 pieces
             previewCanvas.style.width = '80px';
-            previewCanvas.style.height = '40px';
+            previewCanvas.style.height = '120px';
             previewCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
             if (gameStarted) {
@@ -398,25 +398,28 @@
 
         function drawPreview() {
             previewCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
-            if (!nextPiece) return;
+            if (!nextPieces.length) return;
 
-            previewCtx.fillStyle = nextPiece.color;
-            previewCtx.strokeStyle = '#FFF';
-            previewCtx.lineWidth = 1;
+            const pieceHeight = 40; // 40px per piece vertically
+            nextPieces.forEach((piece, index) => {
+                previewCtx.fillStyle = piece.color;
+                previewCtx.strokeStyle = '#FFF';
+                previewCtx.lineWidth = 1;
 
-            const offsetX = (previewCanvas.width / window.devicePixelRatio - nextPiece.shape[0].length * previewGridSize) / 2;
-            const offsetY = (previewCanvas.height / window.devicePixelRatio - nextPiece.shape.length * previewGridSize) / 2;
+                const offsetX = (previewCanvas.width / window.devicePixelRatio - piece.shape[0].length * previewGridSize) / 2;
+                const offsetY = index * pieceHeight + (pieceHeight - piece.shape.length * previewGridSize) / 2;
 
-            nextPiece.shape.forEach((row, r) => {
-                row.forEach((val, c) => {
-                    if (val) {
-                        const x = offsetX + c * previewGridSize + previewGridSize / 2;
-                        const y = offsetY + r * previewGridSize + previewGridSize / 2;
-                        previewCtx.beginPath();
-                        previewCtx.arc(x, y, previewGridSize / 2 - 1, 0, Math.PI * 2);
-                        previewCtx.fill();
-                        previewCtx.stroke();
-                    }
+                piece.shape.forEach((row, r) => {
+                    row.forEach((val, c) => {
+                        if (val) {
+                            const x = offsetX + c * previewGridSize + previewGridSize / 2;
+                            const y = offsetY + r * previewGridSize + previewGridSize / 2;
+                            previewCtx.beginPath();
+                            previewCtx.arc(x, y, previewGridSize / 2 - 1, 0, Math.PI * 2);
+                            previewCtx.fill();
+                            previewCtx.stroke();
+                        }
+                    });
                 });
             });
         }
@@ -645,8 +648,8 @@
                 if (dy < 0) {
                     merge(currentPiece);
                     clearRows();
-                    currentPiece = nextPiece; // Use the previewed piece
-                    nextPiece = newPiece(); // Generate a new next piece
+                    currentPiece = nextPieces.shift(); // Take the first piece from the queue
+                    nextPieces.push(newPiece()); // Add a new piece to the end
                     drawPreview(); // Update preview
                     if (collide(currentPiece) && dropCounter > 0) {
                         gameOver = true;
@@ -655,7 +658,7 @@
                         score = 0;
                         scoreDisplay.textContent = `Score: ${score}`;
                         gameOver = false;
-                        nextPiece = newPiece();
+                        nextPieces = [newPiece(), newPiece(), newPiece()];
                         drawPreview();
                     }
                 }
