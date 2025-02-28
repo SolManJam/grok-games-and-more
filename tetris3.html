@@ -36,12 +36,12 @@
             border: 2px solid #fff;
             max-width: 90vw;
             max-height: 75vh;
-            width: 480px; /* New base width */
-            height: 260px; /* New base height */
+            width: 480px; /* New 16:9 base width */
+            height: 270px; /* New 16:9 base height */
             touch-action: none;
         }
         #score-display {
-            position: absolute;
+            position: fixed; /* Changed to fixed for viewport anchoring */
             bottom: 10px;
             right: 10px;
             color: #fff;
@@ -66,7 +66,7 @@
             z-index: 10;
         }
         #gear-icon {
-            position: absolute;
+            position: fixed; /* Changed to fixed */
             top: 10px;
             right: 10px;
             font-size: 30px;
@@ -75,7 +75,7 @@
             z-index: 20;
         }
         #pause-play-btn {
-            position: absolute;
+            position: fixed; /* Changed to fixed */
             top: 10px;
             right: 50px;
             font-size: 30px;
@@ -87,7 +87,7 @@
             padding: 0;
         }
         #settings-menu {
-            position: absolute;
+            position: fixed; /* Changed to fixed */
             top: 50px;
             right: 10px;
             background: #222;
@@ -100,7 +100,7 @@
             transition: opacity 0.3s ease;
         }
         #teleport-btn {
-            position: absolute;
+            position: fixed; /* Changed to fixed */
             bottom: 20px;
             right: 20px;
             background: #f0f;
@@ -113,9 +113,8 @@
             z-index: 20;
         }
         #teleport-btn.fullscreen-teleport {
-            position: fixed;
             bottom: 20px;
-            right: 20px;
+            right: 20px; /* Already fixed, no change needed */
         }
         button {
             padding: 5px 15px;
@@ -161,7 +160,7 @@
 </head>
 <body>
     <div id="game-container">
-        <canvas id="game-canvas" width="480" height="260"></canvas> <!-- Updated dimensions -->
+        <canvas id="game-canvas" width="480" height="270"></canvas> <!-- Updated to 480x270 -->
         <div id="start-overlay"></div>
         <div id="gear-icon">⚙️</div>
         <button id="pause-play-btn">⏸️</button>
@@ -177,9 +176,9 @@
         const ctx = canvas.getContext('2d');
         const scoreDisplay = document.getElementById('score-display');
         const gridSize = 20;
-        const cols = 24; // Updated to 480 / 20
-        const rows = 13; // Updated to 260 / 20
-        let board = Array(rows).fill().map(() => Array(cols).fill(0));
+        const cols = 24; // 480 / 20 = 24
+        const rows = 13.5; // 270 / 20 = 13.5, adjusted to 13 in practice
+        let board = Array(Math.ceil(rows)).fill().map(() => Array(cols).fill(0)); // Use 13 rows
         let score = 0;
         let gameOver = false;
         let paused = false;
@@ -242,14 +241,23 @@
         const settingsMenu = document.getElementById('settings-menu');
         const pausePlayBtn = document.getElementById('pause-play-btn');
 
+        // Lock orientation to landscape if supported
         window.addEventListener('load', () => {
             document.body.focus();
             gearIcon.focus();
             adjustCanvasResolution();
+            if (screen.orientation && screen.orientation.lock) {
+                screen.orientation.lock('landscape').catch(() => console.log('Orientation lock failed'));
+            }
         });
 
+        // Debounce resize events
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(adjustCanvasResolution, 100);
+        });
         window.addEventListener('orientationchange', adjustCanvasResolution);
-        window.addEventListener('resize', adjustCanvasResolution);
 
         gearIcon.addEventListener('click', (e) => {
             e.preventDefault();
@@ -283,7 +291,7 @@
             startOverlay.style.display = 'none';
             gameStarted = true;
             adjustCanvasResolution();
-            board = Array(rows).fill().map(() => Array(cols).fill(0));
+            board = Array(Math.ceil(rows)).fill().map(() => Array(cols).fill(0));
             currentPiece = newPiece();
             score = 0;
             scoreDisplay.textContent = `Score: ${score}`;
@@ -303,13 +311,13 @@
         function adjustCanvasResolution() {
             const dpr = window.devicePixelRatio || 1;
             const gridWidth = cols * gridSize; // 480
-            const gridHeight = rows * gridSize; // 260
+            const gridHeight = rows * gridSize; // 270
             let displayWidth, displayHeight;
 
             if (document.fullscreenElement || document.webkitFullscreenElement) {
                 const windowAspect = window.innerWidth / window.innerHeight;
-                const gameAspect = gridWidth / gridHeight; // 480/260 ≈ 1.846
-                const padding = 20; // Reduced padding to minimize clipping
+                const gameAspect = gridWidth / gridHeight; // 480/270 = 16:9
+                const padding = 20; // Reduced for better fit
                 if (windowAspect > gameAspect) {
                     displayHeight = window.innerHeight - padding;
                     displayWidth = displayHeight * gameAspect;
@@ -349,7 +357,7 @@
                 shape: shapes[shapeIdx],
                 color: colors[shapeIdx],
                 x: Math.floor(cols / 2) - Math.floor(shapes[shapeIdx][0].length / 2),
-                y: rows - 1
+                y: Math.ceil(rows) - 1 // Adjusted for 13 rows
             };
         }
 
@@ -424,7 +432,7 @@
         }
 
         function drawBoard() {
-            for (let r = 0; r < rows; r++) {
+            for (let r = 0; r < Math.ceil(rows); r++) {
                 for (let c = 0; c < cols; c++) {
                     if (board[r][c]) {
                         ctx.fillStyle = board[r][c];
@@ -512,7 +520,7 @@
                     if (!piece.shape[r][c]) continue;
                     let newX = piece.x + c;
                     let newY = piece.y - r;
-                    if (newY < 0 || newX < 0 || newX >= cols || newY >= rows || board[newY][newX]) {
+                    if (newY < 0 || newX < 0 || newX >= cols || newY >= Math.ceil(rows) || board[newY][newX]) {
                         return true;
                     }
                 }
@@ -532,7 +540,7 @@
 
         function clearRows() {
             let linesCleared = 0;
-            for (let r = rows - 1; r >= 0; r--) {
+            for (let r = Math.ceil(rows) - 1; r >= 0; r--) {
                 let isFull = true;
                 for (let c = 0; c < cols; c++) {
                     if (!board[r][c]) {
@@ -592,7 +600,7 @@
                     if (collide(currentPiece) && dropCounter > 0) {
                         gameOver = true;
                         alert(`Game Over! Score: ${score}`);
-                        board = Array(rows).fill().map(() => Array(cols).fill(0));
+                        board = Array(Math.ceil(rows)).fill().map(() => Array(cols).fill(0));
                         score = 0;
                         scoreDisplay.textContent = `Score: ${score}`;
                         gameOver = false;
@@ -657,7 +665,8 @@
         instructionsBtn.addEventListener('click', (e) => {
             e.preventDefault();
             initAudio();
-            alert(isTouchDevice ? touchInstructions.trim() : keyboardInstructions.trim());
+            alert((isTouchDevice ? touchInstructions : keyboardInstructions).trim() + 
+                '\n\nNote: On iPad in fullscreen, the teleport button may trigger a security warning. Tap "Allow" or adjust browser settings to continue.');
             closeSettingsMenu();
         });
 
