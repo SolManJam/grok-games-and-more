@@ -14,7 +14,9 @@
             background: #000;
             font-family: monospace;
             overflow: hidden;
-            touch-action: none; /* Prevents pinch-to-zoom and default touch behaviors */
+            touch-action: none;
+            -webkit-user-select: none; /* Extra iOS zoom prevention */
+            user-select: none;
         }
         #game-container {
             position: relative;
@@ -34,9 +36,9 @@
             border: 2px solid #fff;
             max-width: 90vw;
             max-height: 75vh;
-            width: 400px;
-            height: 200px;
-            touch-action: none; /* Reinforces no pinch-to-zoom on canvas */
+            width: 480px; /* New base width */
+            height: 260px; /* New base height */
+            touch-action: none;
         }
         #score-display {
             position: absolute;
@@ -159,7 +161,7 @@
 </head>
 <body>
     <div id="game-container">
-        <canvas id="game-canvas" width="400" height="200"></canvas>
+        <canvas id="game-canvas" width="480" height="260"></canvas> <!-- Updated dimensions -->
         <div id="start-overlay"></div>
         <div id="gear-icon">⚙️</div>
         <button id="pause-play-btn">⏸️</button>
@@ -175,8 +177,8 @@
         const ctx = canvas.getContext('2d');
         const scoreDisplay = document.getElementById('score-display');
         const gridSize = 20;
-        const cols = 20;
-        const rows = 10;
+        const cols = 24; // Updated to 480 / 20
+        const rows = 13; // Updated to 260 / 20
         let board = Array(rows).fill().map(() => Array(cols).fill(0));
         let score = 0;
         let gameOver = false;
@@ -300,14 +302,14 @@
 
         function adjustCanvasResolution() {
             const dpr = window.devicePixelRatio || 1;
-            const gridWidth = cols * gridSize;
-            const gridHeight = rows * gridSize;
+            const gridWidth = cols * gridSize; // 480
+            const gridHeight = rows * gridSize; // 260
             let displayWidth, displayHeight;
 
             if (document.fullscreenElement || document.webkitFullscreenElement) {
                 const windowAspect = window.innerWidth / window.innerHeight;
-                const gameAspect = gridWidth / gridHeight;
-                const padding = 40;
+                const gameAspect = gridWidth / gridHeight; // 480/260 ≈ 1.846
+                const padding = 20; // Reduced padding to minimize clipping
                 if (windowAspect > gameAspect) {
                     displayHeight = window.innerHeight - padding;
                     displayWidth = displayHeight * gameAspect;
@@ -724,7 +726,7 @@ Goal: Stack balloons as they float up. Fill a row to clear it and score 10 point
             e.preventDefault();
             initAudio();
             if (!gameStarted) startGame();
-            if (e.touches.length > 1) return; // Ignore multi-touch for zoom
+            if (e.touches.length > 1) return;
             touchStartX = e.touches[0].clientX;
             touchStartY = e.touches[0].clientY;
         });
@@ -758,17 +760,12 @@ Goal: Stack balloons as they float up. Fill a row to clear it and score 10 point
             dropInterval = 1000;
         });
 
-        // Explicitly prevent pinch-to-zoom with touch event listener
         document.addEventListener('touchstart', e => {
-            if (e.touches.length > 1) {
-                e.preventDefault(); // Block multi-touch gestures
-            }
+            if (e.touches.length > 1) e.preventDefault();
         }, { passive: false });
 
         document.addEventListener('touchmove', e => {
-            if (e.touches.length > 1) {
-                e.preventDefault(); // Block multi-touch gestures
-            }
+            if (e.touches.length > 1) e.preventDefault();
         }, { passive: false });
 
         requestAnimationFrame(updateLoop);
