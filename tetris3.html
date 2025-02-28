@@ -14,7 +14,7 @@
             background: #000;
             font-family: monospace;
             overflow: hidden;
-            touch-action: pan-x pan-y;
+            touch-action: none; /* Prevents pinch-to-zoom and default touch behaviors */
         }
         #game-container {
             position: relative;
@@ -36,7 +36,7 @@
             max-height: 75vh;
             width: 400px;
             height: 200px;
-            touch-action: none;
+            touch-action: none; /* Reinforces no pinch-to-zoom on canvas */
         }
         #score-display {
             position: absolute;
@@ -724,12 +724,13 @@ Goal: Stack balloons as they float up. Fill a row to clear it and score 10 point
             e.preventDefault();
             initAudio();
             if (!gameStarted) startGame();
+            if (e.touches.length > 1) return; // Ignore multi-touch for zoom
             touchStartX = e.touches[0].clientX;
             touchStartY = e.touches[0].clientY;
         });
         canvas.addEventListener('touchmove', e => {
             e.preventDefault();
-            if (!gameStarted || !currentPiece || paused) return;
+            if (!gameStarted || !currentPiece || paused || e.touches.length > 1) return;
             const touchX = e.touches[0].clientX;
             const touchY = e.touches[0].clientY;
             const dx = touchX - touchStartX;
@@ -756,6 +757,19 @@ Goal: Stack balloons as they float up. Fill a row to clear it and score 10 point
             speedPressed = false;
             dropInterval = 1000;
         });
+
+        // Explicitly prevent pinch-to-zoom with touch event listener
+        document.addEventListener('touchstart', e => {
+            if (e.touches.length > 1) {
+                e.preventDefault(); // Block multi-touch gestures
+            }
+        }, { passive: false });
+
+        document.addEventListener('touchmove', e => {
+            if (e.touches.length > 1) {
+                e.preventDefault(); // Block multi-touch gestures
+            }
+        }, { passive: false });
 
         requestAnimationFrame(updateLoop);
     </script>
