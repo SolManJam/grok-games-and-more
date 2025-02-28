@@ -36,7 +36,7 @@
             border: 2px solid #fff;
             max-width: 90vw;
             max-height: 75vh;
-            width: 480px;
+            width: 480px; /* Total width including walls */
             height: 270px;
             touch-action: none;
         }
@@ -44,8 +44,8 @@
             position: fixed;
             bottom: 10px;
             left: 10px;
-            width: 80px; /* Width for 4 blocks at half size */
-            height: 120px; /* Height for 3 pieces stacked (40px each) */
+            width: 80px;
+            height: 120px;
             background: #111;
             border: 1px solid #fff;
             z-index: 10;
@@ -171,7 +171,7 @@
 <body>
     <div id="game-container">
         <canvas id="game-canvas" width="480" height="270"></canvas>
-        <canvas id="preview-canvas" width="80" height="120"></canvas> <!-- Updated height for 3 pieces -->
+        <canvas id="preview-canvas" width="80" height="120"></canvas>
         <div id="start-overlay"></div>
         <div id="gear-icon">⚙️</div>
         <button id="pause-play-btn">⏸️</button>
@@ -190,8 +190,9 @@
         const scoreDisplay = document.getElementById('score-display');
         const gridSize = 20;
         const previewGridSize = gridSize / 2; // 10px
-        const cols = 24;
+        const cols = 12; // Reduced playfield to 12 columns
         const rows = 13.5;
+        const wallWidth = (480 - cols * gridSize) / 2; // 120px per wall (480 - 240 = 240 / 2)
         let board = Array(Math.ceil(rows)).fill().map(() => Array(cols).fill(0));
         let score = 0;
         let gameOver = false;
@@ -205,7 +206,7 @@
         const colors = ['#FF0', '#0FF', '#F0F', '#00F', '#F00', '#0F0', '#FFA500'];
 
         let currentPiece = null;
-        let nextPieces = []; // Array for next three pieces
+        let nextPieces = [];
         let dropCounter = 0;
         let dropInterval = 1000;
         let fastDropInterval = 200;
@@ -306,7 +307,7 @@
             adjustCanvasResolution();
             board = Array(Math.ceil(rows)).fill().map(() => Array(cols).fill(0));
             currentPiece = newPiece();
-            nextPieces = [newPiece(), newPiece(), newPiece()]; // Initialize 3 next pieces
+            nextPieces = [newPiece(), newPiece(), newPiece()];
             score = 0;
             scoreDisplay.textContent = `Score: ${score}`;
             draw();
@@ -325,7 +326,7 @@
 
         function adjustCanvasResolution() {
             const dpr = window.devicePixelRatio || 1;
-            const gridWidth = cols * gridSize;
+            const gridWidth = cols * gridSize + 2 * wallWidth; // 240 + 240 = 480
             const gridHeight = rows * gridSize;
             let displayWidth, displayHeight;
 
@@ -355,7 +356,7 @@
             ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
             previewCanvas.width = 80 * dpr;
-            previewCanvas.height = 120 * dpr; // Updated for 3 pieces
+            previewCanvas.height = 120 * dpr;
             previewCanvas.style.width = '80px';
             previewCanvas.style.height = '120px';
             previewCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -387,6 +388,7 @@
 
         function draw() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawWalls();
             if (titleTimer > 0) drawTitle();
             drawBoard();
             if (currentPiece) drawPiece(currentPiece);
@@ -396,24 +398,50 @@
             scoreDisplay.textContent = `Score: ${score}`;
         }
 
+        function drawWalls() {
+            const brickWidth = 20;
+            const brickHeight = 10;
+            ctx.fillStyle = '#8B4513'; // Brown brick color
+            ctx.strokeStyle = '#D3D3D3'; // Light gray mortar
+
+            // Left wall
+            for (let y = 0; y < canvas.height / window.devicePixelRatio; y += brickHeight) {
+                for (let x = 0; x < wallWidth; x += brickWidth * 2) {
+                    const offsetX = (y / brickHeight % 2) * brickWidth; // Stagger bricks
+                    ctx.fillRect(x + offsetX, y, brickWidth, brickHeight);
+                    ctx.strokeRect(x + offsetX, y, brickWidth, brickHeight);
+                }
+            }
+
+            // Right wall
+            for (let y = 0; y < canvas.height / window.devicePixelRatio; y += brickHeight) {
+                for (let x = wallWidth + cols * gridSize; x < canvas.width / window.devicePixelRatio; x += brickWidth * 2) {
+                    const offsetX = (y / brickHeight % 2) * brickWidth;
+                    ctx.fillRect(x + offsetX, y, brickWidth, brickHeight);
+                    ctx.strokeRect(x + offsetX, y, brickWidth, brickHeight);
+                }
+            }
+        }
+
         function drawPreview() {
             previewCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
             if (!nextPieces.length) return;
 
-            const pieceHeight = 40; // 40px per piece vertically
+            const pieceHeight = 40;
             nextPieces.forEach((piece, index) => {
                 previewCtx.fillStyle = piece.color;
                 previewCtx.strokeStyle = '#FFF';
                 previewCtx.lineWidth = 1;
 
                 const offsetX = (previewCanvas.width / window.devicePixelRatio - piece.shape[0].length * previewGridSize) / 2;
-                const offsetY = index * pieceHeight + (pieceHeight - piece.shape.length * previewGridSize) / 2;
+                const offsetYBase = index * pieceHeight + (pieceHeight - piece.shape.length * previewGridSize) / 2;
+                const maxR = piece.shape.length - 1;
 
                 piece.shape.forEach((row, r) => {
                     row.forEach((val, c) => {
                         if (val) {
                             const x = offsetX + c * previewGridSize + previewGridSize / 2;
-                            const y = offsetY + r * previewGridSize + previewGridSize / 2;
+                            const y = offsetYBase + (maxR - r) * previewGridSize + previewGridSize / 2;
                             previewCtx.beginPath();
                             previewCtx.arc(x, y, previewGridSize / 2 - 1, 0, Math.PI * 2);
                             previewCtx.fill();
@@ -489,7 +517,7 @@
                     if (board[r][c]) {
                         ctx.fillStyle = board[r][c];
                         ctx.beginPath();
-                        ctx.arc(c * gridSize + gridSize / 2, r * gridSize + gridSize / 2, gridSize / 2 - 1, 0, Math.PI * 2);
+                        ctx.arc(wallWidth + c * gridSize + gridSize / 2, r * gridSize + gridSize / 2, gridSize / 2 - 1, 0, Math.PI * 2);
                         ctx.fill();
                         ctx.strokeStyle = '#FFF';
                         ctx.lineWidth = 1;
@@ -523,7 +551,7 @@
             piece.shape.forEach((row, r) => {
                 row.forEach((val, c) => {
                     if (val) {
-                        const x = (piece.x + c) * gridSize + gridSize / 2;
+                        const x = wallWidth + (piece.x + c) * gridSize + gridSize / 2;
                         const y = (piece.y - r) * gridSize + gridSize / 2;
                         ctx.beginPath();
                         ctx.arc(x, y, gridSize / 2 - 1, 0, Math.PI * 2);
@@ -548,7 +576,7 @@
             ctx.lineWidth = 1.5;
             lowestPoints.forEach(point => {
                 if (point) {
-                    const startX = point.x * gridSize + gridSize / 2;
+                    const startX = wallWidth + point.x * gridSize + gridSize / 2;
                     const startY = point.y * gridSize + gridSize;
                     const endY = startY + gridSize * 2;
                     const wiggle1 = Math.sin(wiggleTime) * (gridSize / 3);
@@ -602,7 +630,7 @@
                 }
                 if (isFull) {
                     for (let c = 0; c < cols; c++) {
-                        const centerX = c * gridSize + gridSize / 2;
+                        const centerX = wallWidth + c * gridSize + gridSize / 2;
                         const centerY = r * gridSize + gridSize / 2;
                         for (let i = 0; i < 6; i++) {
                             const angle = Math.random() * Math.PI * 2;
@@ -648,9 +676,9 @@
                 if (dy < 0) {
                     merge(currentPiece);
                     clearRows();
-                    currentPiece = nextPieces.shift(); // Take the first piece from the queue
-                    nextPieces.push(newPiece()); // Add a new piece to the end
-                    drawPreview(); // Update preview
+                    currentPiece = nextPieces.shift();
+                    nextPieces.push(newPiece());
+                    drawPreview();
                     if (collide(currentPiece) && dropCounter > 0) {
                         gameOver = true;
                         alert(`Game Over! Score: ${score}`);
