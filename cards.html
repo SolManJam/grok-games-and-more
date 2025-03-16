@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    .card {
+      width: 100px;
+      height: 150px;
+      border: 1px solid black;
+      display: inline-block;
+      text-align: center;
+      line-height: 150px;
+      font-size: 20px;
+      transition: transform 0.3s;
+    }
+    .card-back {
+      background-image: url('https://github.com/SolManJam/grok-games-and-more/main/cardsdesgin.png'); /* Replace with real URL */
+      background-size: cover;
+    }
+    .card-front {
+      background-color: white;
+    }
+    .flipped {
+      transform: rotateY(180deg);
+    }
+  </style>
+</head>
+<body>
+  <div id="game">
+    <div class="card card-back" onclick="flipCard(this)">Click to Flip</div>
+  </div>
+
+  <script>
+    function flipCard(card) {
+      card.classList.toggle('card-back');
+      card.classList.toggle('card-front');
+      if (card.classList.contains('card-front')) {
+        card.textContent = 'Ace of Spades'; // Example front value
+      } else {
+        card.textContent = ''; // Hide text when showing back
+      }
+    }
+  </script>
+</body>
+</html>
