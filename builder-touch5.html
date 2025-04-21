@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Map Builder</title>
+    <style>
+        body {
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f0f0f0;
+        }
+        #gameContainer {
+            position: relative;
+            display: inline-block;
+        }
+        #gameCanvas {
+            border: 1px solid #000;
+        }
+        #tools {
+            margin-top: 10px;
+            text-align: center;
+        }
+        #selectedColor {
+            width: 20px;
+            height: 20px;
+            display: inline-block;
+            margin: 5px;
+            border: 1px solid #000;
+        }
+        #roomCode {
+            margin-top: 10px;
+            width: 400px;
+            height: 200px;
+        }
+        #toggleLabels {
+            margin-top: 10px;
+            padding: 5px 10px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas"></canvas>
+    </div>
+    <div id="tools">
+        <input type="color" id="colorPicker">
+        <div id="selectedColor"></div>
+        <select id="gameObjectSelect">
+            <option value="">None</option>
+            <optgroup label="Current Elements">
+                <option value="😆">😆 Laughing Face</option>
+                <option value="🤖">🤖 Robot</option>
+                <option value="🧙">🧙 Wizard</option>
+                <option value="🐉">🐉 Dragon</option>
+                <option value="💎">💎 Gem</option>
+            </optgroup>
+            <optgroup label="Monsters">
+                <option value="🧛">🧛 Vampire</option>
+                <option value="🐺">🐺 Wolf</option>
+                <option value="🧟">🧟 Zombie</option>
+                <option value="👻">👻 Ghost</option>
+                <option value="😈">😈 Demon</option>
+                <option value="👹">👹 Ogre</option>
+                <option value="💀">💀 Skeleton</option>
+                <option value="👺">👺 Troll</option>
+                <option value="👾">👾 Alien Monster</option>
+            </optgroup>
+            <optgroup label="Animals">
+                <option value="🐵">🐵 Monkey Face</option>
+                <option value="🐒">🐒 Monkey</option>
+                <option value="🦍">🦍 Gorilla</option>
+                <option value="🦧">🦧 Orangutan</option>
+                <option value="🐶">🐶 Dog Face</option>
+                <option value="🐕">🐕 Dog</option>
+                <option value="🦮">🦮 Guide Dog</option>
+                <option value="🐕‍🦺">🐕‍🦺 Service Dog</option>
+                <option value="🐩">🐩 Poodle</option>
+                <option value="🐺">🐺 Wolf</option>
+                <option value="🦊">🦊 Fox</option>
+                <option value="🦝">🦝 Raccoon</option>
+                <option value="🐱">🐱 Cat Face</option>
+                <option value="🐈">🐈 Cat</option>
+                <option value="🐈‍⬛">🐈‍⬛ Black Cat</option>
+                <option value="🦁">🦁 Lion</option>
+                <option value="🐯">🐯 Tiger Face</option>
+                <option value="🐅">🐅 Tiger</option>
+                <option value="🐆">🐆 Leopard</option>
+                <option value="🐴">🐴 Horse Face</option>
+                <option value="🫎">🫎 Moose</option>
+                <option value="🫏">🫏 Donkey</option>
+                <option value="🐎">🐎 Horse</option>
+                <option value="🦄">🦄 Unicorn</option>
+                <option value="🦓">🦓 Zebra</option>
+                <option value="🦌">🦌 Deer</option>
+                <option value="🦬">🦬 Bison</option>
+                <option value="🐮">🐮 Cow Face</option>
+                <option value="🐂">🐂 Ox</option>
+                <option value="🐃">🐃 Water Buffalo</option>
+                <option value="🐄">🐄 Cow</option>
+                <option value="🐷">🐷 Pig Face</option>
+                <option value="🐖">🐖 Pig</option>
+                <option value="🐗">🐗 Boar</option>
+                <option value="🐽">🐽 Pig Nose</option>
+                <option value="🐏">🐏 Ram</option>
+                <option value="🐑">🐑 Ewe</option>
+                <option value="🐐">🐐 Goat</option>
+                <option value="🐪">🐪 Camel</option>
+                <option value="🐫">🐫 Two-Hump Camel</option>
+                <option value="🦙">🦙 Llama</option>
+                <option value="🦒">🦒 Giraffe</option>
+                <option value="🐘">🐘 Elephant</option>
+                <option value="🦣">🦣 Mammoth</option>
+                <option value="🦏">🦏 Rhinoceros</option>
+                <option value="🦛">🦛 Hippopotamus</option>
+                <option value="🐭">🐭 Mouse Face</option>
+                <option value="🐁">🐁 Mouse</option>
+                <option value="🐀">🐀 Rat</option>
+                <option value="🐹">🐹 Hamster</option>
+                <option value="🐰">🐰 Rabbit Face</option>
+                <option value="🐇">🐇 Rabbit</option>
+                <option value="🐿">🐿 Chipmunk</option>
+                <option value="🦫">🦫 Beaver</option>
+                <option value="🦔">🦔 Hedgehog</option>
+                <option value="🦇">🦇 Bat</option>
+                <option value="🐻">🐻 Bear</option>
+                <option value="🐻‍❄️">🐻‍❄️ Polar Bear</option>
+                <option value="🐨">🐨 Koala</option>
+                <option value="🐼">🐼 Panda</option>
+                <option value="🦥">🦥 Sloth</option>
+                <option value="🦦">🦦 Otter</option>
+                <option value="🦨">🦨 Skunk</option>
+                <option value="🦘">🦘 Kangaroo</option>
+                <option value="🦡">🦡 Badger</option>
+                <option value="🐾">🐾 Paw Prints</option>
+                <option value="🦃">🦃 Turkey</option>
+                <option value="🐔">🐔 Chicken</option>
+                <option value="🐓">🐓 Rooster</option>
+                <option value="🐣">🐣 Hatching Chick</option>
+                <option value="🐤">🐤 Baby Chick</option>
+                <option value="🐥">🐥 Front-Facing Baby Chick</option>
+                <option value="🐦">🐦 Bird</option>
+                <option value="🐧">🐧 Penguin</option>
+                <option value="🕊">🕊 Dove</option>
+                <option value="🦅">🦅 Eagle</option>
+                <option value="🦆">🦆 Duck</option>
+                <option value="🦢">🦢 Swan</option>
+                <option value="🦉">🦉 Owl</option>
+                <option value="🦤">🦤 Dodo</option>
+                <option value="🪶">🪶 Feather</option>
+                <option value="🦩">🦩 Flamingo</option>
+                <option value="🦚">🦚 Peacock</option>
+                <option value="🦜">🦜 Parrot</option>
+                <option value="🪽">🪽 Wing</option>
+                <option value="🐦‍⬛">🐦‍⬛ Black Bird</option>
+                <option value="🪿">🪿 Goose</option>
+                <option value="🐦‍🔥">🐦‍🔥 Phoenix</option>
+                <option value="🐸">🐸 Frog</option>
+                <option value="🐊">🐊 Crocodile</option>
+                <option value="🐢">🐢 Turtle</option>
+                <option value="🦎">🦎 Lizard</option>
+                <option value="🐍">🐍 Snake</option>
+                <option value="🐲">🐲 Dragon Face</option>
+                <option value="🦕">🦕 Sauropod</option>
+                <option value="🦖">🦖 T-Rex</option>
+                <option value="🐳">🐳 Spouting Whale</option>
+                <option value="🐋">🐋 Whale</option>
+                <option value="🐬">🐬 Dolphin</option>
+                <option value="🦭">🦭 Seal</option>
+                <option value="🐟">🐟 Fish</option>
+                <option value="🐠">🐠 Tropical Fish</option>
+                <option value="🐡">🐡 Blowfish</option>
+                <option value="🦈">🦈 Shark</option>
+                <option value="🐙">🐙 Octopus</option>
+                <option value="🐚">🐚 Spiral Shell</option>
+                <option value="🪸">🪸 Coral</option>
+                <option value="🪼">🪼 Jellyfish</option>
+                <option value="🦀">🦀 Crab</option>
+                <option value="🦞">🦞 Lobster</option>
+                <option value="🦐">🦐 Shrimp</option>
+                <option value="🦑">🦑 Squid</option>
+                <option value="🦪">🦪 Oyster</option>
+                <option value="🐌">🐌 Snail</option>
+                <option value="🦋">🦋 Butterfly</option>
+                <option value="🐛">🐛 Bug</option>
+                <option value="🐜">🐜 Ant</option>
+                <option value="🐝">🐝 Honeybee</option>
+                <option value="🪲">🪲 Beetle</option>
+                <option value="🐞">🐞 Lady Beetle</option>
+                <option value="🦗">🦗 Cricket</option>
+                <option value="🪳">🪳 Cockroach</option>
+                <option value="🕷">🕷 Spider</option>
+                <option value="🕸">🕸 Spider Web</option>
+                <option value="🦂">🦂 Scorpion</option>
+                <option value="🦟">🦟 Mosquito</option>
+                <option value="🪰">🪰 Fly</option>
+                <option value="🪱">🪱 Worm</option>
+            </optgroup>
+        </select>
+        <button id="undo">Undo</button>
+        <button id="redo">Redo</button>
+        <button id="generateCode">Generate Code</button>
+        <button id="emailCode">Email Code</button>
+        <button id="colorAllSquares">Color All Squares</button>
+        <button id="colorAllOctagons">Color All Octagons</button>
+        <textarea id="roomCode" placeholder="Your room code will appear here"></textarea>
+    </div>
+    <button id="toggleLabels">Hide Labels</button>
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Grid and octagon settings
+        const gridRows = 5;
+        const gridCols = 7;
+        const sideLength = 30;
+        const lineWidth = 2;
+        const sidewallThickness = 10;
+
+        // Calculate octagon dimensions
+        const diagonalProjection = sideLength * Math.SQRT2 / 2;
+        const octagonSpan = sideLength + 2 * diagonalProjection;
+        const padding = diagonalProjection;
+        const canvasWidth = gridCols * octagonSpan + 2 * padding;
+        const canvasHeight = gridRows * octagonSpan + 2 * padding;
+
+        // Handle device pixel ratio for high-DPI screens
+        const dpr = window.devicePixelRatio || 1;
+        canvas.width = canvasWidth * dpr;
+        canvas.height = canvasHeight * dpr;
+        canvas.style.width = `${canvasWidth}px`;
+        canvas.style.height = `${canvasHeight}px`;
+        ctx.scale(dpr, dpr);
+
+        // Fixed room coordinates for designing
+        let roomX = 0;
+        let roomY = 0;
+
+        // Label visibility toggle
+        let showLabels = true;
+
+        // Track selected color and game object
+        let selectedColor = '#FF0000'; // Default color
+        let selectedGameObject = null; // Default no game object
+
+        // Color storage
+        let backgroundColor = '#f0f0f0'; // Default background color
+        let octagonColors = {}; // e.g., {"0,0": {color: "#FF0000", gameObject: "😆"}}
+        let squareColors = {};  // e.g., {"0,0": "#00FF00"}
+        let sidewallColors = {
+            top: 'gray',
+            right: 'gray',
+            bottom: 'gray',
+            left: 'gray'
+        };
+
+        // Undo and redo stacks
+        let undoStack = [];
+        let redoStack = [];
+
+        // Color picker handler
+        document.getElementById('colorPicker').addEventListener('input', (event) => {
+            selectedColor = event.target.value;
+            document.getElementById('selectedColor').style.backgroundColor = selectedColor;
+        });
+
+        // Initially set selected color display
+        document.getElementById('selectedColor').style.backgroundColor = selectedColor;
+
+        // Game object select handler
+        document.getElementById('gameObjectSelect').addEventListener('change', (event) => {
+            selectedGameObject = event.target.value || null;
+        });
+
+        // Convert index to letter label for squares
+        function indexToLetter(index) {
+            return String.fromCharCode(65 + index);
+        }
+
+        // Generate cells for the current room
+        function getVisibleCells() {
+            const octagons = [];
+            const squares = [];
+
+            const baseRow = roomY * gridRows;
+            const baseCol = roomX * gridCols;
+
+            for (let row = 0; row < gridRows; row++) {
+                for (let col = 0; col < gridCols; col++) {
+                    const globalRow = baseRow + row;
+                    const globalCol = baseCol + col;
+                    const baseX = col * octagonSpan + padding;
+                    const baseY = row * octagonSpan + padding;
+                    const points = [
+                        { x: baseX, y: baseY + diagonalProjection },
+                        { x: baseX + diagonalProjection, y: baseY },
+                        { x: baseX + diagonalProjection + sideLength, y: baseY },
+                        { x: baseX + octagonSpan, y: baseY + diagonalProjection },
+                        { x: baseX + octagonSpan, y: baseY + diagonalProjection + sideLength },
+                        { x: baseX + diagonalProjection + sideLength, y: baseY + octagonSpan },
+                        { x: baseX + diagonalProjection, y: baseY + octagonSpan },
+                        { x: baseX, y: baseY + diagonalProjection + sideLength }
+                    ];
+                    const id = `${globalRow},${globalCol}`;
+                    const displayId = `${roomX},${roomY}:${row * gridCols + col}`;
+                    octagons.push({
+                        id,
+                        displayId,
+                        row: globalRow,
+                        col: globalCol,
+                        points,
+                        isCore: true
+                    });
+                }
+            }
+
+            for (let row = 0; row < gridRows - 1; row++) {
+                for (let col = 0; col < gridCols - 1; col++) {
+                    const globalRow = baseRow + row;
+                    const globalCol = baseCol + col;
+                    const points = [
+                        { x: col * octagonSpan + padding + octagonSpan, y: row * octagonSpan + padding + diagonalProjection + sideLength },
+                        { x: (col + 1) * octagonSpan + padding + diagonalProjection, y: row * octagonSpan + padding + octagonSpan },
+                        { x: (col + 1) * octagonSpan + padding, y: (row + 1) * octagonSpan + padding + diagonalProjection },
+                        { x: col * octagonSpan + padding + diagonalProjection + sideLength, y: (row + 1) * octagonSpan + padding }
+                    ];
+                    const id = `${globalRow},${globalCol}`;
+                    const index = (row * (gridCols - 1) + col);
+                    const displayId = `${roomX},${roomY}:${indexToLetter(index)}`;
+                    squares.push({
+                        id,
+                        displayId,
+                        row: globalRow,
+                        col: globalCol,
+                        points,
+                        isCore: true
+                    });
+                }
+            }
+
+            return { octagons, squares };
+        }
+
+        // Draw the grid, background, and sidewalls
+        function drawGrid() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw background (natural border)
+            ctx.fillStyle = backgroundColor;
+            ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+            // Draw sidewalls
+            ctx.fillStyle = sidewallColors.top || 'gray';
+            ctx.fillRect(0, 0, canvasWidth, sidewallThickness);
+
+            ctx.fillStyle = sidewallColors.right || 'gray';
+            ctx.fillRect(canvasWidth - sidewallThickness, 0, sidewallThickness, canvasHeight);
+
+            ctx.fillStyle = sidewallColors.bottom || 'gray';
+            ctx.fillRect(0, canvasHeight - sidewallThickness, canvasWidth, sidewallThickness);
+
+            ctx.fillStyle = sidewallColors.left || 'gray';
+            ctx.fillRect(0, 0, sidewallThickness, canvasHeight);
+
+            const { octagons, squares } = getVisibleCells();
+
+            octagons.forEach(drawOctagon);
+            squares.forEach(drawSquare);
+        }
+
+        // Draw an octagon
+        function drawOctagon(octagon) {
+            const data = octagonColors[octagon.id] || { color: 'teal', gameObject: null };
+
+            ctx.beginPath();
+            for (let i = 0; i < 8; i++) {
+                const p = octagon.points[i];
+                if (i === 0) ctx.moveTo(p.x, p.y);
+                else ctx.lineTo(p.x, p.y);
+            }
+            ctx.closePath();
+
+            ctx.fillStyle = data.color;
+            ctx.fill();
+
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = lineWidth;
+            ctx.stroke();
+
+            // Draw game object if present
+            if (data.gameObject) {
+                const centerX = (octagon.points[1].x + octagon.points[5].x) / 2;
+                const centerY = (octagon.points[1].y + octagon.points[5].y) / 2;
+                ctx.font = '20px Arial';
+                ctx.fillStyle = '#000';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(data.gameObject, centerX, centerY);
+            }
+
+            if (showLabels) {
+                const centerX = (octagon.points[1].x + octagon.points[5].x) / 2;
+                const centerY = (octagon.points[1].y + octagon.points[5].y) / 2;
+                ctx.fillStyle = '#FFF';
+                ctx.font = '12px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(octagon.displayId, centerX, centerY + 20);
+            }
+        }
+
+        // Draw a square
+        function drawSquare(square) {
+            const color = squareColors[square.id] || 'magenta';
+
+            ctx.beginPath();
+            for (let i = 0; i < 4; i++) {
+                const p = square.points[i];
+                if (i === 0) ctx.moveTo(p.x, p.y);
+                else ctx.lineTo(p.x, p.y);
+            }
+            ctx.closePath();
+
+            ctx.fillStyle = color;
+            ctx.fill();
+
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = lineWidth;
+            ctx.stroke();
+
+            if (showLabels) {
+                const centerX = (square.points[0].x + square.points[2].x) / 2;
+                const centerY = (square.points[0].y + square.points[2].y) / 2;
+                ctx.fillStyle = '#FFF';
+                ctx.font = '12px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(square.displayId, centerX, centerY);
+            }
+        }
+
+        // Find octagon under touch/mouse
+        function getOctagonAtPoint(x, y) {
+            const { octagons } = getVisibleCells();
+            for (let i = octagons.length - 1; i >= 0; i--) {
+                const octagon = octagons[i];
+                ctx.save();
+                ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset transformation to identity
+                ctx.beginPath();
+                for (let j = 0; j < 8; j++) {
+                    const p = octagon.points[j];
+                    if (j === 0) ctx.moveTo(p.x * dpr, p.y * dpr);
+                    else ctx.lineTo(p.x * dpr, p.y * dpr);
+                }
+                ctx.closePath();
+                if (ctx.isPointInPath(x * dpr, y * dpr)) {
+                    ctx.restore();
+                    return octagon;
+                }
+                ctx.restore();
+            }
+            return null;
+        }
+
+        // Find square under touch/mouse
+        function getSquareAtPoint(x, y) {
+            const { squares } = getVisibleCells();
+            for (let i = squares.length - 1; i >= 0; i--) {
+                const square = squares[i];
+                ctx.save();
+                ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset transformation to identity
+                ctx.beginPath();
+                for (let j = 0; j < 4; j++) {
+                    const p = square.points[j];
+                    if (j === 0) ctx.moveTo(p.x * dpr, p.y * dpr);
+                    else ctx.lineTo(p.x * dpr, p.y * dpr);
+                }
+                ctx.closePath();
+                if (ctx.isPointInPath(x * dpr, y * dpr)) {
+                    ctx.restore();
+                    return square;
+                }
+                ctx.restore();
+            }
+            return null;
+        }
+
+        // Helper function to get touch/mouse coordinates
+        function getCoordinates(event) {
+            const rect = canvas.getBoundingClientRect();
+            let clientX, clientY;
+            if (event.touches) {
+                clientX = event.touches[0].clientX;
+                clientY = event.touches[0].clientY;
+            } else {
+                clientX = event.clientX;
+                clientY = event.clientY;
+            }
+            const mouseX = (clientX - rect.left) * (canvasWidth / rect.width);
+            const mouseY = (clientY - rect.top) * (canvasHeight / rect.height);
+            return { mouseX, mouseY };
+        }
+
+        // Perform action and record for undo
+        function performAction(action) {
+            undoStack.push(action);
+            redoStack = [];
+        }
+
+        // Generate room data
+        function generateRoomData() {
+            return {
+                room: [roomX, roomY],
+                backgroundColor: backgroundColor,
+                octagons: Object.entries(octagonColors).map(([id, data]) => ({
+                    id,
+                    color: data.color,
+                    gameObject: data.gameObject || null
+                })),
+                squares: Object.entries(squareColors).map(([id, color]) => ({ id, color })),
+                sidewalls: sidewallColors
+            };
+        }
+
+        // Handle touch/mouse down events
+        function handlePointerDown(event) {
+            event.preventDefault();
+            const { mouseX, mouseY } = getCoordinates(event);
+            let painted = false;
+
+            // Check for sidewall clicks
+            if (mouseY < sidewallThickness) {
+                const oldColor = sidewallColors.top || 'gray';
+                performAction({ type: 'sidewall', direction: 'top', oldColor, newColor: selectedColor });
+                sidewallColors.top = selectedColor;
+                painted = true;
+            } else if (mouseX > canvasWidth - sidewallThickness) {
+                const oldColor = sidewallColors.right || 'gray';
+                performAction({ type: 'sidewall', direction: 'right', oldColor, newColor: selectedColor });
+                sidewallColors.right = selectedColor;
+                painted = true;
+            } else if (mouseY > canvasHeight - sidewallThickness) {
+                const oldColor = sidewallColors.bottom || 'gray';
+                performAction({ type: 'sidewall', direction: 'bottom', oldColor, newColor: selectedColor });
+                sidewallColors.bottom = selectedColor;
+                painted = true;
+            } else if (mouseX < sidewallThickness) {
+                const oldColor = sidewallColors.left || 'gray';
+                performAction({ type: 'sidewall', direction: 'left', oldColor, newColor: selectedColor });
+                sidewallColors.left = selectedColor;
+                painted = true;
+            }
+
+            if (!painted) {
+                const octagon = getOctagonAtPoint(mouseX, mouseY);
+                if (octagon) {
+                    const id = octagon.id;
+                    const oldData = octagonColors[id] || { color: 'teal', gameObject: null };
+                    const newColor = selectedColor;
+                    const newGameObject = selectedGameObject;
+                    performAction({
+                        type: 'octagon',
+                        id,
+                        oldColor: oldData.color,
+                        oldGameObject: oldData.gameObject,
+                        newColor,
+                        newGameObject
+                    });
+                    octagonColors[id] = { color: newColor, gameObject: newGameObject };
+                    painted = true;
+                }
+            }
+
+            if (!painted) {
+                const square = getSquareAtPoint(mouseX, mouseY);
+                if (square) {
+                    const id = square.id;
+                    const oldColor = squareColors[id] || 'magenta';
+                    performAction({ type: 'square', id, oldColor, newColor: selectedColor });
+                    squareColors[id] = selectedColor;
+                    painted = true;
+                }
+            }
+
+            if (!painted) {
+                const oldBackgroundColor = backgroundColor;
+                performAction({ type: 'background', oldColor: oldBackgroundColor, newColor: selectedColor });
+                backgroundColor = selectedColor;
+            }
+
+            drawGrid();
+        }
+
+        // Add event listeners for both mouse and touch
+        canvas.addEventListener('mousedown', handlePointerDown);
+        canvas.addEventListener('touchstart', handlePointerDown);
+
+        // Undo button handler
+        document.getElementById('undo').addEventListener('click', () => {
+            if (undoStack.length > 0) {
+                const action = undoStack.pop();
+                if (action.type === 'octagon') {
+                    octagonColors[action.id] = { color: action.oldColor, gameObject: action.oldGameObject };
+                } else if (action.type === 'square') {
+                    squareColors[action.id] = action.oldColor;
+                } else if (action.type === 'sidewall') {
+                    sidewallColors[action.direction] = action.oldColor;
+                } else if (action.type === 'background') {
+                    backgroundColor = action.oldColor;
+                } else if (action.type === 'bulkSquareColor') {
+                    Object.entries(action.oldColors).forEach(([id, color]) => {
+                        squareColors[id] = color;
+                    });
+                } else if (action.type === 'bulkOctagonColor') {
+                    Object.entries(action.oldColors).forEach(([id, color]) => {
+                        octagonColors[id].color = color;
+                    });
+                }
+                redoStack.push(action);
+                drawGrid();
+            }
+        });
+
+        // Redo button handler
+        document.getElementById('redo').addEventListener('click', () => {
+            if (redoStack.length > 0) {
+                const action = redoStack.pop();
+                if (action.type === 'octagon') {
+                    octagonColors[action.id] = { color: action.newColor, gameObject: action.newGameObject };
+                } else if (action.type === 'square') {
+                    squareColors[action.id] = action.newColor;
+                } else if (action.type === 'sidewall') {
+                    sidewallColors[action.direction] = action.newColor;
+                } else if (action.type === 'background') {
+                    backgroundColor = action.newColor;
+                } else if (action.type === 'bulkSquareColor') {
+                    Object.keys(action.oldColors).forEach(id => {
+                        squareColors[id] = action.newColor;
+                    });
+                } else if (action.type === 'bulkOctagonColor') {
+                    Object.keys(action.oldColors).forEach(id => {
+                        octagonColors[id].color = action.newColor;
+                    });
+                }
+                undoStack.push(action);
+                drawGrid();
+            }
+        });
+
+        // Generate code button handler
+        document.getElementById('generateCode').addEventListener('click', () => {
+            const roomData = generateRoomData();
+            const code = JSON.stringify(roomData, null, 2);
+            document.getElementById('roomCode').value = code;
+        });
+
+        // Email code button handler
+        document.getElementById('emailCode').addEventListener('click', () => {
+            const roomData = generateRoomData();
+            const json = JSON.stringify(roomData, null, 2);
+            const encodedJson = encodeURIComponent(json);
+            const mailtoLink = `mailto:JCWwork@mail.com?subject=Room Design&body=${encodedJson}`;
+            window.location.href = mailtoLink;
+        });
+
+        // Color all squares button handler
+        document.getElementById('colorAllSquares').addEventListener('click', () => {
+            const oldColors = {};
+            const { squares } = getVisibleCells();
+            squares.forEach(square => {
+                oldColors[square.id] = squareColors[square.id] || 'magenta';
+                squareColors[square.id] = selectedColor;
+            });
+            performAction({
+                type: 'bulkSquareColor',
+                oldColors,
+                newColor: selectedColor
+            });
+            drawGrid();
+        });
+
+        // Color all octagons button handler
+        document.getElementById('colorAllOctagons').addEventListener('click', () => {
+            const oldColors = {};
+            const { octagons } = getVisibleCells();
+            octagons.forEach(octagon => {
+                const data = octagonColors[octagon.id] || { color: 'teal', gameObject: null };
+                oldColors[octagon.id] = data.color;
+                octagonColors[octagon.id] = { ...data, color: selectedColor };
+            });
+            performAction({
+                type: 'bulkOctagonColor',
+                oldColors,
+                newColor: selectedColor
+            });
+            drawGrid();
+        });
+
+        // Toggle labels button handler
+        document.getElementById('toggleLabels').addEventListener('click', () => {
+            showLabels = !showLabels;
+            document.getElementById('toggleLabels').textContent = showLabels ? 'Hide Labels' : 'Show Labels';
+            drawGrid();
+        });
+
+        // Initial draw
+        drawGrid();
+    </script>
+</body>
+</html>
