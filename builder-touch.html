@@ -82,7 +82,7 @@
         const canvasWidth = gridCols * octagonSpan + 2 * padding;
         const canvasHeight = gridRows * octagonSpan + 2 * padding;
 
-        // Handle device pixel ratio for high-DPI screens (e.g., Retina)
+        // Handle device pixel ratio for high-DPI screens
         const dpr = window.devicePixelRatio || 1;
         canvas.width = canvasWidth * dpr;
         canvas.height = canvasHeight * dpr;
@@ -302,16 +302,20 @@
             const { octagons } = getVisibleCells();
             for (let i = octagons.length - 1; i >= 0; i--) {
                 const octagon = octagons[i];
+                ctx.save();
+                ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset transformation to identity
                 ctx.beginPath();
                 for (let j = 0; j < 8; j++) {
                     const p = octagon.points[j];
-                    if (j === 0) ctx.moveTo(p.x, p.y);
-                    else ctx.lineTo(p.x, p.y);
+                    if (j === 0) ctx.moveTo(p.x * dpr, p.y * dpr);
+                    else ctx.lineTo(p.x * dpr, p.y * dpr);
                 }
                 ctx.closePath();
-                if (ctx.isPointInPath(x, y)) {
+                if (ctx.isPointInPath(x * dpr, y * dpr)) {
+                    ctx.restore();
                     return octagon;
                 }
+                ctx.restore();
             }
             return null;
         }
@@ -321,16 +325,20 @@
             const { squares } = getVisibleCells();
             for (let i = squares.length - 1; i >= 0; i--) {
                 const square = squares[i];
+                ctx.save();
+                ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset transformation to identity
                 ctx.beginPath();
                 for (let j = 0; j < 4; j++) {
                     const p = square.points[j];
-                    if (j === 0) ctx.moveTo(p.x, p.y);
-                    else ctx.lineTo(p.x, p.y);
+                    if (j === 0) ctx.moveTo(p.x * dpr, p.y * dpr);
+                    else ctx.lineTo(p.x * dpr, p.y * dpr);
                 }
                 ctx.closePath();
-                if (ctx.isPointInPath(x, y)) {
+                if (ctx.isPointInPath(x * dpr, y * dpr)) {
+                    ctx.restore();
                     return square;
                 }
+                ctx.restore();
             }
             return null;
         }
