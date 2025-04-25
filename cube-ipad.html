@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Isometric Cube Game</title>
+    <style>
+        body { 
+            margin: 0; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            background-color: #f0f0f0; 
+            font-family: Arial, sans-serif; 
+            touch-action: none; /* Prevents default touch behaviors */
+        }
+        #gameContainer { 
+            position: relative; 
+            display: inline-block; 
+        }
+        #gameCanvas { 
+            border: 1px solid #000; 
+        }
+        #controls { 
+            margin-top: 10px; 
+            text-align: center; 
+        }
+        #status, #keyCount { 
+            margin-top: 10px; 
+            font-size: 16px; 
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas" width="540" height="380"></canvas>
+    </div>
+    <div id="controls">
+        <button onclick="move('north')">North</button>
+        <button onclick="move('south')">South</button>
+        <button onclick="move('east')">East</button>
+        <button onclick="move('west')">West</button>
+    </div>
+    <div id="status">Current Room: (0,0) | Player at (6,4)</div>
+    <div id="keyCount">Keys: 0 | Timer: 5s</div>
+
+    <script>
+        // Canvas setup
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Grid settings
+        const M = 9;  // rows
+        const N = 13; // columns
+        const W = 40; // isometric tile width
+        const H = 20; // isometric tile height
+
+        // Calculate offsets to center the grid
+        const minX = - (M - 1) * (W / 2);
+        const maxX = (N - 1) * (W / 2);
+        const gridWidth = maxX - minX;
+        const offsetX = (canvas.width - gridWidth) / 2 - minX;
+        const offsetY = 50;
+
+        // Handle device pixel ratio for high-DPI screens like iPad
+        const dpr = window.devicePixelRatio || 1;
+        canvas.width *= dpr;
+        canvas.height *= dpr;
+        canvas.style.width = '540px';
+        canvas.style.height = '380px';
+        ctx.scale(dpr, dpr);
+
+        let currentRoom = null;
+        let currentX = 0;
+        let currentY = 0;
+
+        // Player object
+        const player = {
+            row: 4, // center row
+            col: 6, // center col
+            orientation: {
+                up: 'blue',
+                down: 'red',
+                north: 'magenta',
+                south: 'cyan',
+                east: 'green',
+                west: 'yellow'
+            }
+        };
+
+        // Key state variables
+        let keyVisible = false;
+        let keyCollectible = false;
+        let keysCollected = 0;
+        const keyPosition = { row: 4, col: 6 };
+        const enemyPosition = { row: 5, col: 6, color: 'red' }; // Colored square starts at (5,6)
+
+        // Cube colors
+        const cubeColors = ['blue', 'red', 'magenta', 'cyan', 'green', 'yellow'];
+
+        // Timer settings
+        const moveInterval = 5000; // 5 seconds
+        let moveTimer = null;
+        let lastMoveTime = 0;
+
+        // Touch control variables
+        let isDragging = false;
+        let startX, startY;
+        const dragThreshold = 20; // pixels, adjust as needed for iPad sensitivity
+
+        // Initialize the game
+        function init() {
+            currentRoom = {
+                backgroundColor: '#f0f0f0',
+                tiles: Array.from({ length: M }, () => 
+                    Array.from({ length: N }, () => ({ color: 'white' }))
+                )
+            };
+            currentRoom.tiles[enemyPosition.row][enemyPosition.col] = { color: enemyPosition.color };
+            drawRoom(currentRoom);
+            updateStatus();
+            setupInput();
+            lastMoveTime = Date.now();
+            scheduleNextMove();
+            setInterval(updateTimerDisplay, 1000);
+            updateTimerDisplay();
+            setupTouchControls();
+        }
+
+        // Timer functions (unchanged)
+        function startSquareMovementTimer() {
+            if (moveTimer !== null) clearInterval(moveTimer);
+            moveTimer = setInterval(moveColoredSquare, moveInterval);
+        }
+
+        function moveColoredSquare() {
+            currentRoom.tiles[enemyPosition.row][enemyPosition.col] = { color: 'white' };
+            let newRow, newCol;
+            do {
+                newRow = Math.floor(Math.random() * M);
+                newCol = Math.floor(Math.random() * N);
+            } while (newRow === enemyPosition.row && newCol === enemyPosition.col);
+            let newColor;
+            do {
+                newColor = cubeColors[Math.floor(Math.random() * cubeColors.length)];
+            } while (newColor === enemyPosition.color);
+            enemyPosition.row = newRow;
+            enemyPosition.col = newCol;
+            enemyPosition.color = newColor;
+            currentRoom.tiles[newRow][newCol] = { color: newColor };
+            drawRoom(currentRoom);
+            startSquareMovementTimer();
+        }
+
+        function scheduleNextMove() {
+            startSquareMovementTimer();
+        }
+
+        function updateTimerDisplay() {
+            const elapsed = Math.floor((Date.now() - lastMoveTime) / 1000);
+            const timeLeft = Math.max(0, Math.floor((moveInterval - elapsed * 1000) / 1000));
+            document.getElementById('keyCount').textContent = `Keys: ${keysCollected} | Timer: ${timeLeft}s`;
+        }
+
+        // Coordinate transformations
+        function gridToScreen(col, row) {
+            const screenX = offsetX + (col - row) * (W / 2);
+            const screenY = offsetY + (col + row) * (H / 2);
+            return { x: screenX, y: screenY };
+        }
+
+        function screenToGrid(screenX, screenY) {
+            const dx = screenX - offsetX;
+            const dy = screenY - offsetY;
+            const a = W / 2;
+            const b = H / 2;
+            const col = Math.round((dx / a + dy / b) / 2);
+            const row = Math.round((dy / b - dx / a) / 2);
+            return { col, row };
+        }
+
+        function worldToScreen(x, y, z) {
+            const screenX = offsetX + (x - y) * (W / 2);
+            const screenY = offsetY + (x + y) * (H / 2) - z * H;
+            return { x: screenX, y: screenY };
+        }
+
+        // Drawing functions (unchanged)
+        function drawPolygon(points, color) {
+            ctx.beginPath();
+            ctx.moveTo(points[0].x, points[0].y);
+            for (let i = 1; i < points.length; i++) {
+                ctx.lineTo(points[i].x, points[i].y);
+            }
+            ctx.closePath();
+            ctx.fillStyle = color;
+            ctx.fill();
+            ctx.strokeStyle = '#000';
+            ctx.stroke();
+        }
+
+        function drawRoom(roomData) {
+            ctx.clearRect(0, 0, canvas.width / dpr, canvas.height / dpr);
+            ctx.fillStyle = roomData.backgroundColor;
+            ctx.fillRect(0, 0, canvas.width / dpr, canvas.height / dpr);
+
+            for (let row = 0; row < M; row++) {
+                for (let col = 0; col < N; col++) {
+                    const tile = roomData.tiles[row][col];
+                    const p1 = gridToScreen(col, row);
+                    const p2 = gridToScreen(col + 1, row);
+                    const p3 = gridToScreen(col + 1, row + 1);
+                    const p4 = gridToScreen(col, row + 1);
+                    drawPolygon([p1, p2, p3, p4], tile.color || 'white');
+                    const centerX = (p1.x + p2.x + p3.x + p4.x) / 4;
+                    const centerY = (p1.y + p2.y + p3.y + p4.y) / 4;
+                    const number = row * N + col + 1;
+                    ctx.fillStyle = 'black';
+                    ctx.font = '10px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(number.toString(), centerX, centerY);
+                }
+            }
+
+            drawArrowAt(0, 0);
+            if (keyVisible) {
+                drawEmojiAt(keyPosition.col, keyPosition.row, "🗝", 10);
+            }
+            drawPlayerCube();
+        }
+
+        function drawArrowAt(col, row) {
+            const p1 = gridToScreen(col, row);
+            const p2 = gridToScreen(col + 1, row);
+            const p3 = gridToScreen(col + 1, row + 1);
+            const p4 = gridToScreen(col, row + 1);
+            const centerX = (p1.x + p2.x + p3.x + p4.x) / 4;
+            const centerY = (p1.y + p2.y + p3.y + p4.y) / 4;
+            const dx = W / 2;
+            const dy = -H / 2;
+            const angle = Math.atan2(dy, dx);
+
+            ctx.save();
+            ctx.translate(centerX, centerY);
+            ctx.rotate(angle);
+            const length = 20;
+            const arrowSize = 5;
+            ctx.beginPath();
+            ctx.moveTo(-length / 2, 0);
+            ctx.lineTo(length / 2, 0);
+            ctx.moveTo(length / 2, 0);
+            ctx.lineTo(length / 2 - arrowSize, arrowSize);
+            ctx.moveTo(length / 2, 0);
+            ctx.lineTo(length / 2 - arrowSize, -arrowSize);
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        function drawEmojiAt(col, row, emoji, fontSize) {
+            const p1 = gridToScreen(col, row);
+            const p2 = gridToScreen(col + 1, row);
+            const p3 = gridToScreen(col + 1, row + 1);
+            const p4 = gridToScreen(col, row + 1);
+            const centerX = (p1.x + p2.x + p3.x + p4.x) / 4;
+            const centerY = (p1.y + p2.y + p3.y + p4.y) / 4;
+
+            ctx.save();
+            ctx.translate(centerX, centerY);
+            const angle = Math.atan(H / W);
+            ctx.rotate(angle);
+            ctx.font = `${fontSize}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = 'black';
+            ctx.fillText(emoji, 0, 0);
+            ctx.restore();
+        }
+
+        function drawPlayerCube() {
+            const col = player.col;
+            const row = player.row;
+            const frontPoints = [
+                worldToScreen(col, row + 1, 0),
+                worldToScreen(col + 1, row + 1, 0),
+                worldToScreen(col + 1, row + 1, 1),
+                worldToScreen(col, row + 1, 1)
+            ];
+            drawPolygon(frontPoints, player.orientation.south);
+            const rightPoints = [
+                worldToScreen(col + 1, row, 0),
+                worldToScreen(col + 1, row + 1, 0),
+                worldToScreen(col + 1, row + 1, 1),
+                worldToScreen(col + 1, row, 1)
+            ];
+            drawPolygon(rightPoints, player.orientation.east);
+            const topPoints = [
+                worldToScreen(col, row, 1),
+                worldToScreen(col + 1, row, 1),
+                worldToScreen(col + 1, row + 1, 1),
+                worldToScreen(col, row + 1, 1)
+            ];
+            drawPolygon(topPoints, player.orientation.up);
+        }
+
+        // Rotate cube function
+        function rotateCube(orientation, direction) {
+            const newOrientation = {};
+            if (direction === 'north') {
+                newOrientation.up = orientation.south;
+                newOrientation.down = orientation.north;
+                newOrientation.north = orientation.up;
+                newOrientation.south = orientation.down;
+                newOrientation.east = orientation.east;
+                newOrientation.west = orientation.west;
+            } else if (direction === 'south') {
+                newOrientation.up = orientation.north;
+                newOrientation.down = orientation.south;
+                newOrientation.north = orientation.down;
+                newOrientation.south = orientation.up;
+                newOrientation.east = orientation.east;
+                newOrientation.west = orientation.west;
+            } else if (direction === 'east') {
+                newOrientation.up = orientation.west;
+                newOrientation.down = orientation.east;
+                newOrientation.east = orientation.up;
+                newOrientation.west = orientation.down;
+                newOrientation.north = orientation.north;
+                newOrientation.south = orientation.south;
+            } else if (direction === 'west') {
+                newOrientation.up = orientation.east;
+                newOrientation.down = orientation.west;
+                newOrientation.east = orientation.down;
+                newOrientation.west = orientation.up;
+                newOrientation.north = orientation.north;
+                newOrientation.south = orientation.south;
+            }
+            return newOrientation;
+        }
+
+        // Check key condition (unchanged)
+        function checkKeyCondition() {
+            if (player.row === enemyPosition.row && 
+                player.col === enemyPosition.col && 
+                player.orientation.up === enemyPosition.color) {
+                keyVisible = true;
+                keyCollectible = true;
+                moveColoredSquare();
+            }
+        }
+
+        // Keyboard input (unchanged, kept for testing)
+        function setupInput() {
+            document.addEventListener('keydown', (event) => {
+                let direction;
+                switch (event.key) {
+                    case 'ArrowUp': direction = 'north'; break;
+                    case 'ArrowDown': direction = 'south'; break;
+                    case 'ArrowLeft': direction = 'west'; break;
+                    case 'ArrowRight': direction = 'east'; break;
+                    default: return;
+                }
+                move(direction);
+            });
+        }
+
+        // Touch controls
+        function setupTouchControls() {
+            canvas.addEventListener('touchstart', (event) => {
+                event.preventDefault(); // Prevent scrolling
+                const touch = event.touches[0];
+                const rect = canvas.getBoundingClientRect();
+                const canvasX = (touch.clientX - rect.left) * (canvas.width / rect.width);
+                const canvasY = (touch.clientY - rect.top) * (canvas.height / rect.height);
+                const gridPos = screenToGrid(canvasX, canvasY);
+                if (gridPos.col === player.col && gridPos.row === player.row) {
+                    isDragging = true;
+                    startX = canvasX;
+                    startY = canvasY;
+                }
+            });
+
+            canvas.addEventListener('touchmove', (event) => {
+                event.preventDefault();
+                if (isDragging) {
+                    const touch = event.touches[0];
+                    const rect = canvas.getBoundingClientRect();
+                    const canvasCurrentX = (touch.clientX - rect.left) * (canvas.width / rect.width);
+                    const canvasCurrentY = (touch.clientY - rect.top) * (canvas.height / rect.height);
+                    const dx = canvasCurrentX - startX;
+                    const dy = canvasCurrentY - startY;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    if (distance > dragThreshold) {
+                        const angle = Math.atan2(dy, dx);
+                        let direction;
+                        if (angle > -Math.PI / 4 && angle < Math.PI / 4) {
+                            direction = 'east'; // Right
+                        } else if (angle >= Math.PI / 4 && angle < 3 * Math.PI / 4) {
+                            direction = 'south'; // Down-left
+                        } else if (angle >= -3 * Math.PI / 4 && angle < -Math.PI / 4) {
+                            direction = 'north'; // Up-right
+                        } else {
+                            direction = 'west'; // Up-left
+                        }
+                        let newRow = player.row;
+                        let newCol = player.col;
+                        if (direction === 'north') newRow--;
+                        else if (direction === 'south') newRow++;
+                        else if (direction === 'west') newCol--;
+                        else if (direction === 'east') newCol++;
+                        if (newRow >= 0 && newRow < M && newCol >= 0 && newCol < N) {
+                            player.orientation = rotateCube(player.orientation, direction);
+                            player.row = newRow;
+                            player.col = newCol;
+                            checkKeyCondition();
+                            drawRoom(currentRoom);
+                            updateStatus();
+                            // Update start position for continuous dragging
+                            startX = canvasCurrentX;
+                            startY = canvasCurrentY;
+                        }
+                    }
+                }
+            });
+
+            canvas.addEventListener('touchend', (event) => {
+                event.preventDefault();
+                isDragging = false;
+            });
+        }
+
+        // Move function for buttons and keyboard
+        function move(direction) {
+            let newRow = player.row;
+            let newCol = player.col;
+            if (direction === 'north') newRow--;
+            else if (direction === 'south') newRow++;
+            else if (direction === 'east') newCol++;
+            else if (direction === 'west') newCol--;
+            if (newRow >= 0 && newRow < M && newCol >= 0 && newCol < N) {
+                player.orientation = rotateCube(player.orientation, direction);
+                player.row = newRow;
+                player.col = newCol;
+                checkKeyCondition();
+                drawRoom(currentRoom);
+                updateStatus();
+            }
+        }
+
+        function updateStatus() {
+            document.getElementById('status').textContent = 
+                `Current Room: (${currentX},${currentY}) | Player at (${player.col},${player.row})`;
+        }
+
+        init();
+    </script>
+</body>
+</html>
