@@ -122,15 +122,15 @@
             setupInput();
             lastMoveTime = Date.now();
             scheduleNextMove();
-            setInterval(updateTimerDisplay, 1000);
+            setInterval(updateTimerDisplay, 1000); // Update timer every second
             updateTimerDisplay();
             setupTouchControls();
         }
 
-        // Timer functions (unchanged)
-        function startSquareMovementTimer() {
-            if (moveTimer !== null) clearInterval(moveTimer);
-            moveTimer = setInterval(moveColoredSquare, moveInterval);
+        // Timer functions
+        function scheduleNextMove() {
+            if (moveTimer) clearTimeout(moveTimer);
+            moveTimer = setTimeout(moveColoredSquare, moveInterval);
         }
 
         function moveColoredSquare() {
@@ -149,17 +149,16 @@
             enemyPosition.color = newColor;
             currentRoom.tiles[newRow][newCol] = { color: newColor };
             drawRoom(currentRoom);
-            startSquareMovementTimer();
-        }
-
-        function scheduleNextMove() {
-            startSquareMovementTimer();
+            lastMoveTime = Date.now();
+            scheduleNextMove();
+            updateTimerDisplay();
         }
 
         function updateTimerDisplay() {
-            const elapsed = Math.floor((Date.now() - lastMoveTime) / 1000);
-            const timeLeft = Math.max(0, Math.floor((moveInterval - elapsed * 1000) / 1000));
-            document.getElementById('keyCount').textContent = `Keys: ${keysCollected} | Timer: ${timeLeft}s`;
+            const timeSinceLastMove = Date.now() - lastMoveTime;
+            const remainingTime = Math.max(0, moveInterval - timeSinceLastMove);
+            const secondsLeft = Math.ceil(remainingTime / 1000);
+            document.getElementById('keyCount').textContent = `Keys: ${keysCollected} | Timer: ${secondsLeft}s`;
         }
 
         // Coordinate transformations
@@ -185,7 +184,7 @@
             return { x: screenX, y: screenY };
         }
 
-        // Drawing functions (unchanged)
+        // Drawing functions
         function drawPolygon(points, color) {
             ctx.beginPath();
             ctx.moveTo(points[0].x, points[0].y);
@@ -340,18 +339,18 @@
             return newOrientation;
         }
 
-        // Check key condition (unchanged)
+        // Check key condition
         function checkKeyCondition() {
             if (player.row === enemyPosition.row && 
                 player.col === enemyPosition.col && 
                 player.orientation.up === enemyPosition.color) {
                 keyVisible = true;
                 keyCollectible = true;
-                moveColoredSquare();
+                moveColoredSquare(); // Move square immediately after key appears
             }
         }
 
-        // Keyboard input (unchanged, kept for testing)
+        // Keyboard input (for PC compatibility)
         function setupInput() {
             document.addEventListener('keydown', (event) => {
                 let direction;
@@ -366,14 +365,14 @@
             });
         }
 
-        // Touch controls
+        // Touch controls for iPad
         function setupTouchControls() {
             canvas.addEventListener('touchstart', (event) => {
                 event.preventDefault(); // Prevent scrolling
                 const touch = event.touches[0];
                 const rect = canvas.getBoundingClientRect();
-                const canvasX = (touch.clientX - rect.left) * (canvas.width / rect.width);
-                const canvasY = (touch.clientY - rect.top) * (canvas.height / rect.height);
+                const canvasX = (touch.clientX - rect.left) * (canvas.width / rect.width / dpr);
+                const canvasY = (touch.clientY - rect.top) * (canvas.height / rect.height / dpr);
                 const gridPos = screenToGrid(canvasX, canvasY);
                 if (gridPos.col === player.col && gridPos.row === player.row) {
                     isDragging = true;
@@ -387,8 +386,8 @@
                 if (isDragging) {
                     const touch = event.touches[0];
                     const rect = canvas.getBoundingClientRect();
-                    const canvasCurrentX = (touch.clientX - rect.left) * (canvas.width / rect.width);
-                    const canvasCurrentY = (touch.clientY - rect.top) * (canvas.height / rect.height);
+                    const canvasCurrentX = (touch.clientX - rect.left) * (canvas.width / rect.width / dpr);
+                    const canvasCurrentY = (touch.clientY - rect.top) * (canvas.height / rect.height / dpr);
                     const dx = canvasCurrentX - startX;
                     const dy = canvasCurrentY - startY;
                     const distance = Math.sqrt(dx * dx + dy * dy);
@@ -398,11 +397,11 @@
                         if (angle > -Math.PI / 4 && angle < Math.PI / 4) {
                             direction = 'east'; // Right
                         } else if (angle >= Math.PI / 4 && angle < 3 * Math.PI / 4) {
-                            direction = 'south'; // Down-left
+                            direction = 'south'; // Down
                         } else if (angle >= -3 * Math.PI / 4 && angle < -Math.PI / 4) {
-                            direction = 'north'; // Up-right
+                            direction = 'north'; // Up
                         } else {
-                            direction = 'west'; // Up-left
+                            direction = 'west'; // Left
                         }
                         let newRow = player.row;
                         let newCol = player.col;
@@ -415,10 +414,15 @@
                             player.row = newRow;
                             player.col = newCol;
                             checkKeyCondition();
+                            if (player.row === keyPosition.row && player.col === keyPosition.col && keyCollectible) {
+                                keysCollected++;
+                                keyVisible = false;
+                                keyCollectible = false;
+                                updateTimerDisplay();
+                            }
                             drawRoom(currentRoom);
                             updateStatus();
-                            // Update start position for continuous dragging
-                            startX = canvasCurrentX;
+                            startX = canvasCurrentX; // Update start position for continuous dragging
                             startY = canvasCurrentY;
                         }
                     }
@@ -444,6 +448,12 @@
                 player.row = newRow;
                 player.col = newCol;
                 checkKeyCondition();
+                if (player.row === keyPosition.row && player.col === keyPosition.col && keyCollectible) {
+                    keysCollected++;
+                    keyVisible = false;
+                    keyCollectible = false;
+                    updateTimerDisplay();
+                }
                 drawRoom(currentRoom);
                 updateStatus();
             }
