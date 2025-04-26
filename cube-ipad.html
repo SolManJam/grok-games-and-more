@@ -17,14 +17,14 @@
         #gameContainer { 
             position: relative; 
             width: 100vw; 
-            height: 100vh; 
+            height: 60vh; /* Adjusted height */
             display: flex; 
             justify-content: center; 
             align-items: center; 
         }
         #gameCanvas { 
-            width: 90vw; 
-            height: 90vh; 
+            width: 100%; 
+            height: 100%; 
             border: 1px solid #000; 
         }
         #controls { 
@@ -58,8 +58,6 @@
         // Grid settings
         const M = 9;  // rows
         const N = 13; // columns
-        const W = 40; // isometric tile width
-        const H = 20; // isometric tile height
 
         // Handle device pixel ratio for high-DPI screens like iPad
         const dpr = window.devicePixelRatio || 1;
@@ -67,12 +65,23 @@
         canvas.height = canvas.clientHeight * dpr;
         ctx.scale(dpr, dpr);
 
+        // Dynamically set tile dimensions
+        const H = canvas.clientHeight / 12;
+        const W = 2 * H;
+
         // Calculate offsets to center the grid
-        const minX = - (M - 1) * (W / 2);
-        const maxX = (N - 1) * (W / 2);
-        const gridWidth = maxX - minX;
-        const offsetX = (canvas.clientWidth - gridWidth) / 2 - minX;
-        const offsetY = 50;
+        function calculateOffsets() {
+            const gridMinX = - (M - 1) * W / 2;
+            const gridMaxX = (N - 1) * W / 2;
+            const gridWidth = gridMaxX - gridMinX;
+            const gridMinY = 0;
+            const gridMaxY = (M + N - 2) * H / 2;
+            const gridHeight = gridMaxY - gridMinY;
+            offsetX = (canvas.clientWidth - gridWidth) / 2 - gridMinX;
+            offsetY = (canvas.clientHeight - gridHeight) / 2 - gridMinY;
+        }
+        let offsetX, offsetY;
+        calculateOffsets();
 
         let currentRoom = null;
         let currentX = 0;
@@ -109,8 +118,8 @@
 
         // Touch control variables for swipe detection
         let touchStartX, touchStartY, touchStartTime;
-        const swipeThreshold = 50; // pixels
-        const swipeDelay = 100; // milliseconds
+        const swipeThreshold = 30; // pixels, adjusted for responsiveness
+        const swipeDelay = 50; // milliseconds, adjusted for responsiveness
 
         // Initialize the game
         function init() {
