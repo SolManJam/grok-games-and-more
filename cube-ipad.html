@@ -16,9 +16,15 @@
         }
         #gameContainer { 
             position: relative; 
-            display: inline-block; 
+            width: 100vw; 
+            height: 100vh; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
         }
         #gameCanvas { 
+            width: 90vw; 
+            height: 90vh; 
             border: 1px solid #000; 
         }
         #controls { 
@@ -33,7 +39,7 @@
 </head>
 <body>
     <div id="gameContainer">
-        <canvas id="gameCanvas" width="540" height="380"></canvas>
+        <canvas id="gameCanvas"></canvas>
     </div>
     <div id="controls">
         <button onclick="move('north')">North</button>
@@ -55,20 +61,18 @@
         const W = 40; // isometric tile width
         const H = 20; // isometric tile height
 
+        // Handle device pixel ratio for high-DPI screens like iPad
+        const dpr = window.devicePixelRatio || 1;
+        canvas.width = canvas.clientWidth * dpr;
+        canvas.height = canvas.clientHeight * dpr;
+        ctx.scale(dpr, dpr);
+
         // Calculate offsets to center the grid
         const minX = - (M - 1) * (W / 2);
         const maxX = (N - 1) * (W / 2);
         const gridWidth = maxX - minX;
-        const offsetX = (canvas.width - gridWidth) / 2 - minX;
+        const offsetX = (canvas.clientWidth - gridWidth) / 2 - minX;
         const offsetY = 50;
-
-        // Handle device pixel ratio for high-DPI screens like iPad
-        const dpr = window.devicePixelRatio || 1;
-        canvas.width *= dpr;
-        canvas.height *= dpr;
-        canvas.style.width = '540px';
-        canvas.style.height = '380px';
-        ctx.scale(dpr, dpr);
 
         let currentRoom = null;
         let currentX = 0;
@@ -103,10 +107,10 @@
         let moveTimer = null;
         let lastMoveTime = 0;
 
-        // Touch control variables
-        let isDragging = false;
-        let startX, startY;
-        const dragThreshold = 20; // pixels, adjust as needed for iPad sensitivity
+        // Touch control variables for swipe detection
+        let touchStartX, touchStartY, touchStartTime;
+        const swipeThreshold = 50; // pixels
+        const swipeDelay = 100; // milliseconds
 
         // Initialize the game
         function init() {
@@ -122,7 +126,7 @@
             setupInput();
             lastMoveTime = Date.now();
             scheduleNextMove();
-            setInterval(updateTimerDisplay, 1000); // Update timer every second
+            setInterval(updateTimerDisplay, 1000);
             updateTimerDisplay();
             setupTouchControls();
         }
@@ -346,7 +350,7 @@
                 player.orientation.up === enemyPosition.color) {
                 keyVisible = true;
                 keyCollectible = true;
-                moveColoredSquare(); // Move square immediately after key appears
+                moveColoredSquare();
             }
         }
 
@@ -365,77 +369,45 @@
             });
         }
 
-        // Touch controls for iPad
+        // Touch controls for swipe detection
         function setupTouchControls() {
             canvas.addEventListener('touchstart', (event) => {
-                event.preventDefault(); // Prevent scrolling
-                const touch = event.touches[0];
-                const rect = canvas.getBoundingClientRect();
-                const canvasX = (touch.clientX - rect.left) * (canvas.width / rect.width / dpr);
-                const canvasY = (touch.clientY - rect.top) * (canvas.height / rect.height / dpr);
-                const gridPos = screenToGrid(canvasX, canvasY);
-                if (gridPos.col === player.col && gridPos.row === player.row) {
-                    isDragging = true;
-                    startX = canvasX;
-                    startY = canvasY;
-                }
-            });
-
-            canvas.addEventListener('touchmove', (event) => {
                 event.preventDefault();
-                if (isDragging) {
-                    const touch = event.touches[0];
-                    const rect = canvas.getBoundingClientRect();
-                    const canvasCurrentX = (touch.clientX - rect.left) * (canvas.width / rect.width / dpr);
-                    const canvasCurrentY = (touch.clientY - rect.top) * (canvas.height / rect.height / dpr);
-                    const dx = canvasCurrentX - startX;
-                    const dy = canvasCurrentY - startY;
-                    const distance = Math.sqrt(dx * dx + dy * dy);
-                    if (distance > dragThreshold) {
-                        const angle = Math.atan2(dy, dx);
-                        let direction;
-                        if (angle > -Math.PI / 4 && angle < Math.PI / 4) {
-                            direction = 'east'; // Right
-                        } else if (angle >= Math.PI / 4 && angle < 3 * Math.PI / 4) {
-                            direction = 'south'; // Down
-                        } else if (angle >= -3 * Math.PI / 4 && angle < -Math.PI / 4) {
-                            direction = 'north'; // Up
-                        } else {
-                            direction = 'west'; // Left
-                        }
-                        let newRow = player.row;
-                        let newCol = player.col;
-                        if (direction === 'north') newRow--;
-                        else if (direction === 'south') newRow++;
-                        else if (direction === 'west') newCol--;
-                        else if (direction === 'east') newCol++;
-                        if (newRow >= 0 && newRow < M && newCol >= 0 && newCol < N) {
-                            player.orientation = rotateCube(player.orientation, direction);
-                            player.row = newRow;
-                            player.col = newCol;
-                            checkKeyCondition();
-                            if (player.row === keyPosition.row && player.col === keyPosition.col && keyCollectible) {
-                                keysCollected++;
-                                keyVisible = false;
-                                keyCollectible = false;
-                                updateTimerDisplay();
-                            }
-                            drawRoom(currentRoom);
-                            updateStatus();
-                            startX = canvasCurrentX; // Update start position for continuous dragging
-                            startY = canvasCurrentY;
-                        }
-                    }
-                }
+                const touch = event.touches[0];
+                touchStartX = touch.clientX;
+                touchStartY = touch.clientY;
+                touchStartTime = Date.now();
             });
 
             canvas.addEventListener('touchend', (event) => {
                 event.preventDefault();
-                isDragging = false;
+                const touch = event.changedTouches[0];
+                const touchEndX = touch.clientX;
+                const touchEndY = touch.clientY;
+                const touchEndTime = Date.now();
+                const dx = touchEndX - touchStartX;
+                const dy = touchEndY - touchStartY;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                const timeElapsed = touchEndTime - touchStartTime;
+
+                if (distance > swipeThreshold && timeElapsed > swipeDelay) {
+                    const angle = Math.atan2(dy, dx);
+                    let direction;
+                    if (angle > -Math.PI / 4 && angle < Math.PI / 4) {
+                        direction = 'east'; // Right
+                    } else if (angle >= Math.PI / 4 && angle < 3 * Math.PI / 4) {
+                        direction = 'south'; // Down
+                    } else if (angle >= -3 * Math.PI / 4 && angle < -Math.PI / 4) {
+                        direction = 'north'; // Up
+                    } else {
+                        direction = 'west'; // Left
+                    }
+                    move(direction);
+                }
             });
         }
 
-        // Move function for buttons and keyboard
+        // Move function for buttons, keyboard, and touch
         function move(direction) {
             let newRow = player.row;
             let newCol = player.col;
