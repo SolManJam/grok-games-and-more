@@ -17,7 +17,7 @@
         #gameContainer { 
             position: relative; 
             width: 100vw; 
-            height: 60vh; /* Adjusted height */
+            height: 60vh; 
             display: flex; 
             justify-content: center; 
             align-items: center; 
@@ -35,6 +35,20 @@
             margin-top: 10px; 
             font-size: 16px; 
         }
+        #touchSettings { 
+            margin-top: 10px; 
+            font-size: 16px; 
+            display: flex; 
+            gap: 10px; 
+            align-items: center; 
+        }
+        #touchSettings label { 
+            margin-right: 5px; 
+        }
+        #touchSettings input { 
+            width: 50px; 
+            padding: 2px; 
+        }
     </style>
 </head>
 <body>
@@ -49,6 +63,12 @@
     </div>
     <div id="status">Current Room: (0,0) | Player at (6,4)</div>
     <div id="keyCount">Keys: 0 | Timer: 5s</div>
+    <div id="touchSettings">
+        <label for="thresholdInput">Threshold:</label>
+        <input type="number" id="thresholdInput" value="30" min="10" max="100" step="5">
+        <label for="delayInput">Delay:</label>
+        <input type="number" id="delayInput" value="50" min="10" max="200" step="10">
+    </div>
 
     <script>
         // Canvas setup
@@ -118,8 +138,20 @@
 
         // Touch control variables for swipe detection
         let touchStartX, touchStartY, touchStartTime;
-        const swipeThreshold = 30; // pixels, adjusted for responsiveness
-        const swipeDelay = 50; // milliseconds, adjusted for responsiveness
+        let swipeThreshold = 30; // pixels, default value
+        let swipeDelay = 50; // milliseconds, default value
+
+        // Input elements for adjusting swipe settings
+        const thresholdInput = document.getElementById('thresholdInput');
+        const delayInput = document.getElementById('delayInput');
+
+        // Update swipe settings when inputs change
+        thresholdInput.addEventListener('input', () => {
+            swipeThreshold = parseInt(thresholdInput.value, 10);
+        });
+        delayInput.addEventListener('input', () => {
+            swipeDelay = parseInt(delayInput.value, 10);
+        });
 
         // Initialize the game
         function init() {
