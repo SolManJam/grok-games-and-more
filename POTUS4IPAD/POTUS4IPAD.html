@@ -266,6 +266,12 @@
             border: 2px solid yellow;
             box-shadow: 0 0 10px yellow;
         }
+        .drag-ghost {
+            position: absolute;
+            pointer-events: none;
+            z-index: 1001;
+            opacity: 0.7;
+        }
     </style>
 </head>
 <body>
@@ -393,6 +399,7 @@
         let initialCards = [];
         let selectedCard = null;
         let cardTapTimes = new Map();
+        let dragGhost = null;
 
         function shuffle(array) {
             for (let i = array.length - 1; i > 0; i--) {
@@ -746,20 +753,24 @@
                 cardTapTimes.delete(target);
             } else {
                 cardTapTimes.set(target, now);
+                if (!dragGhost) {
+                    dragGhost = target.cloneNode(true);
+                    dragGhost.classList.add('drag-ghost');
+                    document.body.appendChild(dragGhost);
+                }
+                dragGhost.style.left = `${touch.pageX - dragGhost.offsetWidth / 2}px`;
+                dragGhost.style.top = `${touch.pageY - dragGhost.offsetHeight / 2}px`;
                 target.classList.add('dragging');
-                target.style.position = 'absolute';
-                target.style.zIndex = 1000;
-                target.style.left = `${touch.pageX - target.offsetWidth / 2}px`;
-                target.style.top = `${touch.pageY - target.offsetHeight / 2}px`;
             }
         }
 
         function touchMove(e) {
             e.preventDefault();
             const touch = e.touches[0];
-            const target = e.currentTarget;
-            target.style.left = `${touch.pageX - target.offsetWidth / 2}px`;
-            target.style.top = `${touch.pageY - target.offsetHeight / 2}px`;
+            if (dragGhost) {
+                dragGhost.style.left = `${touch.pageX - dragGhost.offsetWidth / 2}px`;
+                dragGhost.style.top = `${touch.pageY - dragGhost.offsetHeight / 2}px`;
+            }
         }
 
         function touchEnd(e) {
@@ -800,11 +811,11 @@
                     }
                 }
             }
+            if (dragGhost) {
+                dragGhost.remove();
+                dragGhost = null;
+            }
             e.currentTarget.classList.remove('dragging');
-            e.currentTarget.style.position = '';
-            e.currentTarget.style.zIndex = '';
-            e.currentTarget.style.left = '';
-            e.currentTarget.style.top = '';
             renderGame();
         }
 
