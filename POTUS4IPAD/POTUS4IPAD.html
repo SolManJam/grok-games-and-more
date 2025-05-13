@@ -11,7 +11,7 @@
             background-image: url('bg.jpg');
             background-repeat: repeat-y;
             background-size: cover;
-            background-position: center -300px; /* Adjusted background position */
+            background-position: center -300px;
             margin: 0;
             padding: 20px;
             display: flex;
@@ -19,7 +19,7 @@
         }
         #game-area {
             max-width: 1200px;
-            display: none; /* Hidden until splash screen is closed */
+            display: none;
         }
         #status-bar {
             display: flex;
@@ -34,7 +34,7 @@
             flex-wrap: nowrap;
             margin-top: 25px;
         }
-        .pile, .foundation {
+        .pile {
             width: 135px;
             height: 450px;
             margin-right: 10px;
@@ -42,10 +42,17 @@
             overflow-y: auto;
             overflow-x: hidden;
             box-sizing: border-box;
-            /* Borders removed for a cleaner look */
+            border: 3px solid #ccc; /* Restored border for tableau */
+            border-radius: 10px; /* Rounded corners */
         }
         .foundation {
+            width: 135px;
             height: 600px;
+            margin-right: 10px;
+            position: relative;
+            overflow-y: auto;
+            overflow-x: hidden;
+            box-sizing: border-box;
         }
         .stock-waste-container {
             width: 140px;
@@ -61,7 +68,6 @@
             justify-content: center;
             align-items: center;
             box-sizing: border-box;
-            /* Borders removed */
         }
         #waste {
             height: 300px;
@@ -70,7 +76,6 @@
             overflow-y: auto;
             overflow-x: hidden;
             box-sizing: border-box;
-            /* Borders removed */
         }
         .foundation-group {
             display: flex;
@@ -257,6 +262,10 @@
             border: none;
             cursor: pointer;
         }
+        .selected {
+            border: 2px solid yellow;
+            box-shadow: 0 0 10px yellow;
+        }
     </style>
 </head>
 <body>
@@ -382,6 +391,7 @@
         let stockReshuffles = 0;
         let gameStarted = false;
         let initialCards = [];
+        let selectedCard = null;
 
         function shuffle(array) {
             for (let i = array.length - 1; i > 0; i--) {
@@ -408,6 +418,7 @@
             gameInProgress = true;
             gameStarted = false;
             initialCards = [];
+            selectedCard = null;
             if (timerInterval) clearInterval(timerInterval);
             timerInterval = setInterval(updateTimer, 1000);
             document.getElementById('new-game-button').style.display = 'none';
@@ -663,8 +674,37 @@
                 container.addEventListener('touchstart', touchStart, { passive: false });
                 container.addEventListener('touchmove', touchMove, { passive: false });
                 container.addEventListener('touchend', touchEnd);
+                container.addEventListener('click', selectCard);
+                container.addEventListener('dblclick', doubleClickToFoundation);
             }
             return container;
+        }
+
+        function selectCard(e) {
+            if (selectedCard) {
+                selectedCard.classList.remove('selected');
+            }
+            selectedCard = e.currentTarget;
+            selectedCard.classList.add('selected');
+        }
+
+        function doubleClickToFoundation(e) {
+            const cardElement = e.currentTarget;
+            const card = {
+                suit: cardElement.dataset.suit,
+                rank: parseInt(cardElement.dataset.rank),
+                name: cardElement.dataset.name
+            };
+            const sourceId = cardElement.parentElement.id;
+
+            ['republican', 'democratic', 'other'].forEach(suit => {
+                const foundation = foundations[suit];
+                const lastCard = foundation[foundation.length - 1];
+                if (isValidFoundationMove(card, lastCard, suit)) {
+                    moveCard(card, sourceId, `foundation-${suit[0]}`);
+                    renderGame();
+                }
+            });
         }
 
         function dragStart(e) {
@@ -868,6 +908,39 @@
         document.querySelectorAll('[id^=tableau-], [id^=foundation-]').forEach(pile => {
             pile.addEventListener('dragover', dragOver);
             pile.addEventListener('drop', drop);
+            pile.addEventListener('click', function() {
+                if (selectedCard) {
+                    const targetId = pile.id;
+                    const card = {
+                        suit: selectedCard.dataset.suit,
+                        rank: parseInt(selectedCard.dataset.rank),
+                        name: selectedCard.dataset.name
+                    };
+                    const sourceId = selectedCard.parentElement.id;
+                    if (targetId.startsWith('tableau-')) {
+                        const pileIndex = parseInt(targetId.split('-')[1]);
+                        const targetPile = tableau[pileIndex];
+                        const lastCard = targetPile[targetPile.length - 1];
+                        if (targetPile.length === 0 || isValidTableauMove(card, lastCard)) {
+                            moveCard(card, sourceId, targetId);
+                            selectedCard.classList.remove('selected');
+                            selectedCard = null;
+                            renderGame();
+                        }
+                    } else if (targetId.startsWith('foundation-')) {
+                        const foundationSuit = targetId === 'foundation-r' ? 'republican' :
+                                              targetId === 'foundation-d' ? 'democratic' : 'other';
+                        const foundation = foundations[foundationSuit];
+                        const lastCard = foundation[foundation.length - 1];
+                        if (isValidFoundationMove(card, lastCard, foundationSuit)) {
+                            moveCard(card, sourceId, targetId);
+                            selectedCard.classList.remove('selected');
+                            selectedCard = null;
+                            renderGame();
+                        }
+                    }
+                }
+            });
         });
     </script>
 </body>
