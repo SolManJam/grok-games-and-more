@@ -36,7 +36,7 @@
         }
         .pile {
             width: 135px;
-            height: 450px;
+            height: 600px; /* Adjusted to match foundation height */
             margin-right: 10px;
             position: relative;
             overflow-y: auto;
@@ -272,6 +272,17 @@
             z-index: 1001;
             opacity: 0.7;
         }
+        .destination-highlight {
+            border: 2px dotted green;
+        }
+        #show-cards-button {
+            display: none;
+            padding: 10px;
+            margin: 10px;
+        }
+        .show-card-info .card-hover {
+            display: block;
+        }
     </style>
 </head>
 <body>
@@ -293,6 +304,7 @@
             <span id="timer">Time: 0s</span>
             <span id="stock-counter">Reshuffles: 0</span>
         </div>
+        <button id="show-cards-button">Show Cards</button>
         <div id="top-row">
             <div id="tableau-0" class="pile"><div class="label">Tableau 1</div></div>
             <div id="tableau-1" class="pile"><div class="label">Tableau 2</div></div>
@@ -398,9 +410,7 @@
         let gameStarted = false;
         let initialCards = [];
         let selectedCard = null;
-        let cardTapTimes = new Map();
         let dragGhost = null;
-        let touchStartX, touchStartY;
 
         function shuffle(array) {
             for (let i = array.length - 1; i > 0; i--) {
@@ -428,7 +438,6 @@
             gameStarted = false;
             initialCards = [];
             selectedCard = null;
-            cardTapTimes.clear();
             if (timerInterval) clearInterval(timerInterval);
             timerInterval = setInterval(updateTimer, 1000);
             document.getElementById('new-game-button').style.display = 'none';
@@ -535,12 +544,23 @@
             return minutes > 0 ? `${minutes} minutes, ${formattedSeconds} seconds` : `${remainingSeconds} seconds`;
         }
 
-        function canMoveToFoundation(card) {
-            return ['republican', 'democratic', 'other'].some(suit => {
+        function getValidDestinations(card) {
+            const destinations = [];
+            for (let i = 0; i < 3; i++) {
+                const pile = tableau[i];
+                const lastCard = pile[pile.length - 1];
+                if (pile.length === 0 || isValidTableauMove(card, lastCard)) {
+                    destinations.push(`tableau-${i}`);
+                }
+            }
+            ['republican', 'democratic', 'other'].forEach(suit => {
                 const foundation = foundations[suit];
                 const lastCard = foundation[foundation.length - 1];
-                return isValidFoundationMove(card, lastCard, suit);
+                if (isValidFoundationMove(card, lastCard, suit)) {
+                    destinations.push(`foundation-${suit[0]}`);
+                }
             });
+            return destinations;
         }
 
         function renderGame() {
@@ -564,9 +584,8 @@
             document.getElementById('waste').innerHTML = '<div class="label">Waste</div>';
             const wasteDisplay = waste.slice(-3);
             wasteDisplay.forEach((card, index) => {
-                const isTopCard = index === wasteDisplay.length - 1 && waste.length > 0;
-                const canDoubleTap = isTopCard && canMoveToFoundation(card);
-                const cardElement = createCardElement(card, isTopCard, false, false, false, isTopCard, canDoubleTap);
+                const isTopCard = index === wasteDisplay.length - 1;
+                const cardElement = createCardElement(card, isTopCard, false, false, false, false);
                 cardElement.style.top = `${27 * index}px`;
                 cardElement.style.left = '0';
                 cardElement.style.zIndex = index;
@@ -579,17 +598,19 @@
                 const initialOffset = 30;
                 const minOffset = 20;
                 tableau[i].forEach((card, index) => {
-                    const isTopCard = index === tableau[i].length - 1;
-                    const canDoubleTap = isTopCard && canMoveToFoundation(card);
                     const scale = 1 - (index * 0.005);
                     const offset = Math.max(minOffset, initialOffset - index);
+                    const isTopCard = index === tableau[i].length - 1;
                     const addHover = index < tableau[i].length - 1;
-                    const cardElement = createCardElement(card, isTopCard, false, true, addHover, isTopCard, canDoubleTap);
+                    const cardElement = createCardElement(card, isTopCard, false, true, addHover, false);
                     cardElement.style.top = `${cumulativeTop}px`;
                     cardElement.style.left = '0';
                     cardElement.style.zIndex = index;
                     cardElement.style.transform = `scale(${scale})`;
                     cardElement.style.transformOrigin = 'top left';
+                    if (selectedCard && card.suit === selectedCard.card.suit && card.rank === selectedCard.card.rank) {
+                        cardElement.classList.add('selected');
+                    }
                     document.getElementById(`tableau-${i}`).appendChild(cardElement);
                     cumulativeTop += offset;
                 });
@@ -646,11 +667,20 @@
                 }
             });
 
+            // Highlight valid destinations if a card is selected
+            document.querySelectorAll('.pile, .foundation').forEach(el => el.classList.remove('destination-highlight'));
+            if (selectedCard) {
+                const validDestinations = getValidDestinations(selectedCard.card);
+                validDestinations.forEach(id => {
+                    document.getElementById(id).classList.add('destination-highlight');
+                });
+            }
+
             renderCheatSheet();
             checkWin();
         }
 
-        function createCardElement(card, draggable, showTerm = false, isTableau = false, addHover = false, isTopCard = false, canDoubleTap = false) {
+        function createCardElement(card, draggable, showTerm = false, isTableau = false, addHover = false, isTopCard = false) {
             const container = document.createElement('div');
             container.className = 'card-container';
             const div = document.createElement('div');
@@ -672,9 +702,8 @@
             div.appendChild(img);
             container.appendChild(div);
             container.dataset.suit = card.suit;
-            container.dataset.rank = card.rank.toString();
+            container.dataset.rank = card.rank;
             container.dataset.name = card.name;
-            container.dataset.canDoubleTap = canDoubleTap.toString();
 
             if (isTableau && addHover) {
                 const hoverDiv = document.createElement('div');
@@ -682,13 +711,6 @@
                 hoverDiv.style.color = suitColors[card.suit];
                 hoverDiv.innerHTML = `${getLastName(card.name)} ${getElectionYear(card.term)}`;
                 container.appendChild(hoverDiv);
-
-                container.addEventListener('mouseover', () => {
-                    hoverDiv.style.display = 'block';
-                });
-                container.addEventListener('mouseout', () => {
-                    hoverDiv.style.display = 'none';
-                });
             }
 
             if (draggable) {
@@ -697,41 +719,18 @@
                 container.addEventListener('touchstart', touchStart, { passive: false });
                 container.addEventListener('touchmove', touchMove, { passive: false });
                 container.addEventListener('touchend', touchEnd);
-                container.addEventListener('click', selectCard);
-                if (canDoubleTap) {
-                    container.addEventListener('dblclick', doubleClickToFoundation);
-                }
             }
+
             return container;
         }
 
-        function selectCard(e) {
-            const cardElement = e.currentTarget;
+        function selectCard(container) {
             const card = {
-                suit: cardElement.dataset.suit,
-                rank: parseInt(cardElement.dataset.rank),
-                name: cardElement.dataset.name
+                suit: container.dataset.suit,
+                rank: parseInt(container.dataset.rank),
+                name: container.dataset.name
             };
-            selectedCard = card;
-            renderGame();
-        }
-
-        function doubleClickToFoundation(e) {
-            const cardElement = e.currentTarget;
-            const card = {
-                suit: cardElement.dataset.suit,
-                rank: parseInt(cardElement.dataset.rank),
-                name: cardElement.dataset.name
-            };
-            ['republican', 'democratic', 'other'].forEach(suit => {
-                const foundation = foundations[suit];
-                const lastCard = foundation[foundation.length - 1];
-                if (isValidFoundationMove(card, lastCard, suit)) {
-                    moveCard(card, cardElement.parentElement.id, `foundation-${suit[0]}`);
-                    selectedCard = null;
-                    renderGame();
-                }
-            });
+            selectedCard = { card, sourceId: container.parentElement.id };
         }
 
         function dragStart(e) {
@@ -747,81 +746,57 @@
         function touchStart(e) {
             e.preventDefault();
             const touches = e.touches;
-            if (touches.length === 1) {
-                touchStartX = touches[0].clientX;
-                touchStartY = touches[0].clientY;
-            } else if (touches.length === 2) {
-                const rect = e.currentTarget.getBoundingClientRect();
+            const target = e.currentTarget;
+            if (touches.length === 2) {
+                const rect = target.getBoundingClientRect();
                 const touch1 = touches[0];
                 const touch2 = touches[1];
-                const isTouch1OnCard = touch1.clientX >= rect.left && touch1.clientX <= rect.right &&
-                                       touch1.clientY >= rect.top && touch1.clientY <= rect.bottom;
-                const isTouch2OnCard = touch2.clientX >= rect.left && touch2.clientX <= rect.right &&
-                                       touch2.clientY >= rect.top && touch2.clientY <= rect.bottom;
-                if (isTouch1OnCard && isTouch2OnCard) {
-                    selectCard(e);
+                if (touch1.clientX >= rect.left && touch1.clientX <= rect.right &&
+                    touch1.clientY >= rect.top && touch1.clientY <= rect.bottom &&
+                    touch2.clientX >= rect.left && touch2.clientX <= rect.right &&
+                    touch2.clientY >= rect.top && touch2.clientY <= rect.bottom) {
+                    selectCard(target);
                     renderGame();
                 }
+            } else if (touches.length === 1) {
+                target.touchStartTime = Date.now();
+                target.touchStartX = touches[0].clientX;
+                target.touchStartY = touches[0].clientY;
+                target.isDragging = false;
             }
         }
 
         function touchMove(e) {
-            e.preventDefault();
-            const touch = e.touches[0];
-            if (dragGhost) {
-                dragGhost.style.left = `${touch.pageX - dragGhost.offsetWidth / 2}px`;
-                dragGhost.style.top = `${touch.pageY - dragGhost.offsetHeight / 2}px`;
+            const target = e.currentTarget;
+            if (e.touches.length === 1 && !target.isDragging) {
+                const touch = e.touches[0];
+                const dx = touch.clientX - target.touchStartX;
+                const dy = touch.clientY - target.touchStartY;
+                if (Math.sqrt(dx * dx + dy * dy) > 10) {
+                    target.isDragging = true;
+                    if (!dragGhost) {
+                        dragGhost = target.cloneNode(true);
+                        dragGhost.classList.add('drag-ghost');
+                        document.body.appendChild(dragGhost);
+                    }
+                    dragGhost.style.left = `${touch.pageX - dragGhost.offsetWidth / 2}px`;
+                    dragGhost.style.top = `${touch.pageY - dragGhost.offsetHeight / 2}px`;
+                    target.classList.add('dragging');
+                }
             }
         }
 
         function touchEnd(e) {
-            const touchX = e.changedTouches[0].clientX;
-            const touchY = e.changedTouches[0].clientY;
-            const dx = touchX - touchStartX;
-            const dy = touchY - touchStartY;
-            const distance = Math.sqrt(dx * dx + dy * dy);
-
-            if (distance < 10) { // Tap
-                const target = e.currentTarget;
-                const cardKey = `${target.dataset.suit}-${target.dataset.rank}`;
-                const now = Date.now();
-                const lastTap = cardTapTimes.get(cardKey) || 0;
-                const tapDelay = now - lastTap;
-
-                if (target.dataset.canDoubleTap === 'true' && tapDelay < 300 && tapDelay > 0) {
-                    const card = {
-                        suit: target.dataset.suit,
-                        rank: parseInt(target.dataset.rank),
-                        name: target.dataset.name
-                    };
-                    ['republican', 'democratic', 'other'].forEach(suit => {
-                        const foundation = foundations[suit];
-                        const lastCard = foundation[foundation.length - 1];
-                        if (isValidFoundationMove(card, lastCard, suit)) {
-                            moveCard(card, target.parentElement.id, `foundation-${suit[0]}`);
-                            renderGame();
-                        }
-                    });
-                } else {
-                    selectCard(e);
-                }
-                cardTapTimes.set(cardKey, now);
-            } else { // Drag
-                let dropTarget = document.elementFromPoint(touchX, touchY);
-                if (!dropTarget || (!dropTarget.classList.contains('pile') && !dropTarget.classList.contains('foundation'))) {
-                    document.querySelectorAll('.foundation').forEach(foundation => {
-                        const rect = foundation.getBoundingClientRect();
-                        if (isPointNearRect(touchX, touchY, rect, 100)) {
-                            dropTarget = foundation;
-                        }
-                    });
-                }
+            const target = e.currentTarget;
+            if (target.isDragging) {
+                const touch = e.changedTouches[0];
+                const dropTarget = document.elementFromPoint(touch.clientX, touch.clientY);
                 if (dropTarget && (dropTarget.classList.contains('pile') || dropTarget.classList.contains('foundation'))) {
                     const data = {
-                        suit: e.currentTarget.dataset.suit,
-                        rank: parseInt(e.currentTarget.dataset.rank),
-                        name: e.currentTarget.dataset.name,
-                        sourceId: e.currentTarget.parentElement.id
+                        suit: target.dataset.suit,
+                        rank: parseInt(target.dataset.rank),
+                        name: target.dataset.name,
+                        sourceId: target.parentElement.id
                     };
                     const targetId = dropTarget.id;
                     const card = { suit: data.suit, rank: data.rank, name: data.name };
@@ -842,18 +817,68 @@
                         }
                     }
                 }
+                if (dragGhost) {
+                    dragGhost.remove();
+                    dragGhost = null;
+                }
+                target.classList.remove('dragging');
+                renderGame();
+            } else {
+                const now = Date.now();
+                if (target.lastTapTime && now - target.lastTapTime < 300) {
+                    clearTimeout(target.tapTimeout);
+                    const card = {
+                        suit: target.dataset.suit,
+                        rank: parseInt(target.dataset.rank),
+                        name: target.target.dataset.name
+                    };
+                    ['republican', 'democratic', 'other'].forEach(suit => {
+                        const foundation = foundations[suit];
+                        const lastCard = foundation[foundation.length - 1];
+                        if (isValidFoundationMove(card, lastCard, suit)) {
+                            moveCard(card, target.parentElement.id, `foundation-${suit[0]}`);
+                            selectedCard = null;
+                            renderGame();
+                        }
+                    });
+                } else {
+                    target.tapTimeout = setTimeout(() => {
+                        if (selectedCard && selectedCard.card.suit === target.dataset.suit &&
+                            selectedCard.card.rank === parseInt(target.dataset.rank)) {
+                            selectedCard = null;
+                            renderGame();
+                        }
+                    }, 300);
+                }
+                target.lastTapTime = now;
             }
-            if (dragGhost) {
-                dragGhost.remove();
-                dragGhost = null;
-            }
-            e.currentTarget.classList.remove('dragging');
-            renderGame();
         }
 
-        function isPointNearRect(x, y, rect, tolerance = 100) {
-            return x >= rect.left - tolerance && x <= rect.right + tolerance &&
-                   y >= rect.top - tolerance && y <= rect.bottom + tolerance;
+        function handleDestinationTap(e) {
+            if (selectedCard) {
+                const destinationId = e.currentTarget.id;
+                const card = selectedCard.card;
+                if (destinationId.startsWith('tableau-')) {
+                    const pileIndex = parseInt(destinationId.split('-')[1]);
+                    const targetPile = tableau[pileIndex];
+                    const lastCard = targetPile[targetPile.length - 1];
+                    if (targetPile.length === 0 || isValidTableauMove(card, lastCard)) {
+                        moveCard(card, selectedCard.sourceId, destinationId);
+                        selectedCard = null;
+                        renderGame();
+                    }
+                } else if (destinationId.startsWith('foundation-')) {
+                    const foundationSuit = destinationId === 'foundation-r' ? 'republican' :
+                                          destinationId === 'foundation-d' ? 'democratic' : 'other';
+                    const foundation = foundations[foundationSuit];
+                    const lastCard = foundation[foundation.length - 1];
+                    if (isValidFoundationMove(card, lastCard, foundationSuit)) {
+                        moveCard(card, selectedCard.sourceId, destinationId);
+                        selectedCard = null;
+                        renderGame();
+                    }
+                }
+            }
         }
 
         function dragOver(e) {
@@ -991,6 +1016,17 @@
         document.querySelectorAll('[id^=tableau-], [id^=foundation-]').forEach(pile => {
             pile.addEventListener('dragover', dragOver);
             pile.addEventListener('drop', drop);
+            pile.addEventListener('touchend', handleDestinationTap);
+        });
+
+        // Show "Show Cards" button on touch devices
+        if ('ontouchstart' in window) {
+            document.getElementById('show-cards-button').style.display = 'block';
+        }
+
+        // Toggle card info visibility
+        document.getElementById('show-cards-button').addEventListener('click', function() {
+            document.getElementById('game-area').classList.toggle('show-card-info');
         });
     </script>
 </body>
