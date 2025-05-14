@@ -36,7 +36,7 @@
         }
         .pile {
             width: 135px;
-            height: 600px; /* Adjusted to match foundation height */
+            height: 600px;
             margin-right: 10px;
             position: relative;
             overflow-y: auto;
@@ -62,7 +62,7 @@
             margin-left: 25px;
         }
         #stock {
-            height: 206.25px;
+            height: 309.375px; /* 150% of 206.25px */
             position: relative;
             display: flex;
             justify-content: center;
@@ -70,7 +70,7 @@
             box-sizing: border-box;
         }
         #waste {
-            height: 300px;
+            height: 400px; /* Increased for larger cards */
             margin-top: 10px;
             position: relative;
             overflow-y: auto;
@@ -138,9 +138,15 @@
             margin: 0;
             padding: 0;
         }
-        .card.republican { color: red; }
-        .card.democratic { color: blue; }
-        .card.other { color: #d4a017; }
+        .card.republican .card-hover {
+            color: #FF6666; /* Lighter red */
+        }
+        .card.democratic .card-hover {
+            color: #6666FF; /* Lighter blue */
+        }
+        .card.other .card-hover {
+            color: #d4a017; /* Existing yellow */
+        }
         .label {
             position: absolute;
             top: -20px;
@@ -153,7 +159,7 @@
         }
         .stock-image {
             width: 100%;
-            height: auto;
+            height: 100%;
             cursor: pointer;
         }
         .reload-button {
@@ -276,12 +282,18 @@
             border: 2px dotted green;
         }
         #show-cards-button {
-            display: none;
+            font-size: 18px;
+            font-weight: bold;
+            border: 2px solid #FFD700;
             padding: 10px;
             margin: 10px;
+            display: none;
         }
         .show-card-info .card-hover {
             display: block;
+        }
+        .waste-card {
+            height: 279px; /* 150% of 186px */
         }
     </style>
 </head>
@@ -304,7 +316,7 @@
             <span id="timer">Time: 0s</span>
             <span id="stock-counter">Reshuffles: 0</span>
         </div>
-        <button id="show-cards-button">Show Cards</button>
+        <button id="show-cards-button">SHOW CARDS</button>
         <div id="top-row">
             <div id="tableau-0" class="pile"><div class="label">Tableau 1</div></div>
             <div id="tableau-1" class="pile"><div class="label">Tableau 2</div></div>
@@ -394,9 +406,9 @@
         };
 
         const suitColors = {
-            'republican': 'red',
-            'democratic': 'blue',
-            'other': 'yellow'
+            'republican': '#FF6666',
+            'democratic': '#6666FF',
+            'other': '#d4a017'
         };
 
         let stock = [];
@@ -586,7 +598,8 @@
             wasteDisplay.forEach((card, index) => {
                 const isTopCard = index === wasteDisplay.length - 1;
                 const cardElement = createCardElement(card, isTopCard, false, false, false, false);
-                cardElement.style.top = `${27 * index}px`;
+                cardElement.classList.add('waste-card');
+                cardElement.style.top = `${40 * index}px`; /* Adjusted for larger size */
                 cardElement.style.left = '0';
                 cardElement.style.zIndex = index;
                 document.getElementById('waste').appendChild(cardElement);
@@ -667,7 +680,6 @@
                 }
             });
 
-            // Highlight valid destinations if a card is selected
             document.querySelectorAll('.pile, .foundation').forEach(el => el.classList.remove('destination-highlight'));
             if (selectedCard) {
                 const validDestinations = getValidDestinations(selectedCard.card);
@@ -741,6 +753,11 @@
                 sourceId: e.target.parentElement.id
             }));
             e.target.classList.add('dragging');
+            dragGhost = e.target.cloneNode(true);
+            dragGhost.classList.add('drag-ghost');
+            document.body.appendChild(dragGhost);
+            dragGhost.style.left = `${e.pageX - dragGhost.offsetWidth / 2}px`;
+            dragGhost.style.top = `${e.pageY - dragGhost.offsetHeight / 2}px`;
         }
 
         function touchStart(e) {
@@ -830,7 +847,7 @@
                     const card = {
                         suit: target.dataset.suit,
                         rank: parseInt(target.dataset.rank),
-                        name: target.target.dataset.name
+                        name: target.dataset.name
                     };
                     ['republican', 'democratic', 'other'].forEach(suit => {
                         const foundation = foundations[suit];
@@ -907,6 +924,10 @@
                 if (isValidFoundationMove(card, lastCard, foundationSuit)) {
                     moveCard(card, sourceId, targetId);
                 }
+            }
+            if (dragGhost) {
+                dragGhost.remove();
+                dragGhost = null;
             }
             renderGame();
         }
@@ -1019,7 +1040,7 @@
             pile.addEventListener('touchend', handleDestinationTap);
         });
 
-        // Show "Show Cards" button on touch devices
+        // Show "SHOW CARDS" button on touch devices
         if ('ontouchstart' in window) {
             document.getElementById('show-cards-button').style.display = 'block';
         }
