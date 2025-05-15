@@ -291,7 +291,7 @@
             opacity: 0.7;
         }
         .destination-highlight {
-            border: 4px dotted green; /* Thicker border */
+            border: 4px dotted green;
         }
         #show-cards-button {
             font-size: 18px;
@@ -344,8 +344,8 @@
             <div class="foundation-group">
                 <div id="foundation-d" class="foundation">
                     <div class="label">Democratic</div>
-                    <field class="president-info" id="info-d"></field>
-                    <field class="cheat-sheet" id="cheat-d"></field>
+                    <div class="president-info" id="info-d"></div>
+                    <div class="cheat-sheet" id="cheat-d"></div>
                 </div>
             </div>
             <div class="foundation-group">
@@ -736,7 +736,7 @@
                 const hoverDiv = document.createElement('div');
                 hoverDiv.className = 'card-hover';
                 hoverDiv.style.color = suitColors[card.suit];
-                hoverDiv.innerHTML = `${getLastName(card.name)} ${getElectionYear(card.term)}`;
+                hoverDiv.inner summarizingHTML = `${getLastName(card.name)} ${getElectionYear(card.term)}`;
                 container.appendChild(hoverDiv);
             }
 
@@ -758,6 +758,8 @@
                 name: container.dataset.name
             };
             selectedCard = { card, sourceId: container.parentElement.id };
+            document.querySelectorAll('.card-container').forEach(el => el.classList.remove('selected'));
+            container.classList.add('selected');
         }
 
         function dragStart(e) {
@@ -775,8 +777,8 @@
                 dragGhost.style.transformOrigin = 'top left';
             }
             document.body.appendChild(dragGhost);
-            dragGhost.style.left = `${e.pageX - dragGhost.offsetWidth / 2}px`;
-            dragGhost.style.top = `${e.pageY - dragGhost.offsetHeight / 2}px`;
+            dragGhost.style.left = `${e.clientX - dragGhost.offsetWidth / 2}px`;
+            dragGhost.style.top = `${e.clientY - dragGhost.offsetHeight / 2}px`;
         }
 
         function touchStart(e) {
@@ -820,8 +822,8 @@
                         document.body.appendChild(dragGhost);
                     }
                     function updateGhost() {
-                        dragGhost.style.left = `${touch.pageX - dragGhost.offsetWidth / 2}px`;
-                        dragGhost.style.top = `${touch.pageY - dragGhost.offsetHeight / 2}px`;
+                        dragGhost.style.left = `${touch.clientX - dragGhost.offsetWidth / 2}px`;
+                        dragGhost.style.top = `${touch.clientY - dragGhost.offsetHeight / 2}px`;
                         if (target.isDragging) requestAnimationFrame(updateGhost);
                     }
                     updateGhost();
@@ -892,15 +894,11 @@
                         }
                     });
                 } else {
+                    target.lastTapTime = now;
                     target.tapTimeout = setTimeout(() => {
-                        if (selectedCard && selectedCard.card.suit === target.dataset.suit &&
-                            selectedCard.card.rank === parseInt(target.dataset.rank)) {
-                            selectedCard = null;
-                            renderGame();
-                        }
+                        target.lastTapTime = null;
                     }, 300);
                 }
-                target.lastTapTime = now;
             }
         }
 
@@ -937,8 +935,8 @@
         function dragOver(e) {
             e.preventDefault();
             if (dragGhost) {
-                dragGhost.style.left = `${e.pageX - dragGhost.offsetWidth / 2}px`;
-                dragGhost.style.top = `${e.pageY - dragGhost.offsetHeight / 2}px`;
+                dragGhost.style.left = `${e.clientX - dragGhost.offsetWidth / 2}px`;
+                dragGhost.style.top = `${e.clientY - dragGhost.offsetHeight / 2}px`;
             }
         }
 
@@ -1002,23 +1000,25 @@
         function moveCard(card, sourceId, targetId) {
             let sourcePile, index;
             if (sourceId === 'waste') {
-                if (waste[waste.length - 1].name !== card.name) return;
-                sourcePile = waste;
-                index = waste.length - 1;
+                index = waste.findIndex(c => c.name === card.name && c.rank === card.rank);
+                if (index !== -1) sourcePile = waste;
             } else if (sourceId.startsWith('tableau-')) {
                 const pileIndex = parseInt(sourceId.split('-')[1]);
                 sourcePile = tableau[pileIndex];
                 index = sourcePile.findIndex(c => c.name === card.name && c.rank === card.rank);
             }
-            const movedCard = sourcePile.splice(index, 1)[0];
-            movedCard.faceUp = true;
-            if (targetId.startsWith('tableau-')) {
-                const pileIndex = parseInt(targetId.split('-')[1]);
-                tableau[pileIndex].push(movedCard);
-            } else if (targetId.startsWith('foundation-')) {
-                const foundationSuit = targetId === 'foundation-r' ? 'republican' :
-                                      targetId === 'foundation-d' ? 'democratic' : 'other';
-                foundations[foundationSuit].push(movedCard);
+
+            if (sourcePile && index !== -1) {
+                const movedCard = sourcePile.splice(index, 1)[0];
+                movedCard.faceUp = true;
+                if (targetId.startsWith('tableau-')) {
+                    const pileIndex = parseInt(targetId.split('-')[1]);
+                    tableau[pileIndex].push(movedCard);
+                } else if (targetId.startsWith('foundation-')) {
+                    const foundationSuit = targetId === 'foundation-r' ? 'republican' :
+                                          targetId === 'foundation-d' ? 'democratic' : 'other';
+                    foundations[foundationSuit].push(movedCard);
+                }
             }
         }
 
