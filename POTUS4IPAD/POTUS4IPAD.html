@@ -36,7 +36,7 @@
         }
         .pile {
             width: 135px;
-            height: 80vh; /* Adjusted to 80% of viewport height */
+            height: 80vh;
             margin-right: 10px;
             position: relative;
             overflow-y: auto;
@@ -47,7 +47,7 @@
         }
         .foundation {
             width: 135px;
-            height: 80vh; /* Adjusted to 80% of viewport height */
+            height: 80vh;
             margin-right: 10px;
             position: relative;
             overflow-y: auto;
@@ -63,6 +63,7 @@
         }
         #stock {
             height: 309.375px; /* 150% of 206.25px */
+            width: 210px;
             position: relative;
             display: flex;
             justify-content: center;
@@ -70,12 +71,12 @@
             box-sizing: border-box;
         }
         #waste {
-            height: 400px; /* Increased for larger cards */
-            width: 100%; /* Takes full width of container */
+            height: 400px;
+            width: 210px;
             margin-top: 10px;
             position: relative;
             overflow-y: auto;
-            overflow-x: hidden;
+            overflow-x: visible;
             box-sizing: border-box;
         }
         .foundation-group {
@@ -121,6 +122,21 @@
             height: 186px;
             left: 0;
         }
+        .waste-card .card-container {
+            width: 100%; /* Full width of parent (210px) */
+            height: auto; /* Maintain aspect ratio */
+        }
+        .waste-card img {
+            width: 100%;
+            height: auto;
+            object-fit: contain;
+        }
+        .stock-image {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            cursor: pointer;
+        }
         .card {
             position: absolute;
             top: 0;
@@ -140,13 +156,13 @@
             padding: 0;
         }
         .card.republican .card-hover {
-            color: #FF6666; /* Lighter red */
+            color: #FF6666;
         }
         .card.democratic .card-hover {
-            color: #6666FF; /* Lighter blue */
+            color: #6666FF;
         }
         .card.other .card-hover {
-            color: #d4a017; /* Existing yellow */
+            color: #d4a017;
         }
         .label {
             position: absolute;
@@ -157,11 +173,6 @@
             overflow: hidden;
             white-space: nowrap;
             text-overflow: ellipsis;
-        }
-        .stock-image {
-            width: 100%;
-            height: 100%;
-            cursor: pointer;
         }
         .reload-button {
             padding: 10px 20px;
@@ -280,7 +291,7 @@
             opacity: 0.7;
         }
         .destination-highlight {
-            border: 2px dotted green;
+            border: 4px dotted green; /* Thicker border */
         }
         #show-cards-button {
             font-size: 18px;
@@ -292,10 +303,6 @@
         }
         .show-card-info .card-hover {
             display: block;
-        }
-        .waste-card {
-            transform: scale(1.5); /* 150% scale for waste cards */
-            transform-origin: top left;
         }
     </style>
 </head>
@@ -337,8 +344,8 @@
             <div class="foundation-group">
                 <div id="foundation-d" class="foundation">
                     <div class="label">Democratic</div>
-                    <div class="president-info" id="info-d"></div>
-                    <div class="cheat-sheet" id="cheat-d"></div>
+                    <field class="president-info" id="info-d"></field>
+                    <field class="cheat-sheet" id="cheat-d"></field>
                 </div>
             </div>
             <div class="foundation-group">
@@ -523,6 +530,9 @@
 
         function getLastName(name) {
             const parts = name.split(' ');
+            if (parts.length > 1 && parts[parts.length - 2].toLowerCase() === 'van') {
+                return parts.slice(-2).join(' ').toUpperCase();
+            }
             return parts[parts.length - 1].toUpperCase();
         }
 
@@ -601,10 +611,13 @@
                 const isTopCard = index === wasteDisplay.length - 1;
                 const cardElement = createCardElement(card, isTopCard, false, false, false, false);
                 cardElement.classList.add('waste-card');
-                cardElement.style.top = `${40 * index}px`; /* Adjusted for larger size */
-                cardElement.style.left = '0';
-                cardElement.style.zIndex = index;
-                document.getElementById('waste').appendChild(cardElement);
+                const wrapper = document.createElement('div');
+                wrapper.style.position = 'absolute';
+                wrapper.style.top = `${40 * index}px`;
+                wrapper.style.left = '0';
+                wrapper.style.width = '100%'; /* Full container width */
+                wrapper.appendChild(cardElement);
+                document.getElementById('waste').appendChild(wrapper);
             });
 
             for (let i = 0; i < 3; i++) {
@@ -757,6 +770,10 @@
             e.target.classList.add('dragging');
             dragGhost = e.target.cloneNode(true);
             dragGhost.classList.add('drag-ghost');
+            if (e.target.classList.contains('waste-card')) {
+                dragGhost.style.transform = 'scale(1.5)';
+                dragGhost.style.transformOrigin = 'top left';
+            }
             document.body.appendChild(dragGhost);
             dragGhost.style.left = `${e.pageX - dragGhost.offsetWidth / 2}px`;
             dragGhost.style.top = `${e.pageY - dragGhost.offsetHeight / 2}px`;
@@ -796,10 +813,18 @@
                     if (!dragGhost) {
                         dragGhost = target.cloneNode(true);
                         dragGhost.classList.add('drag-ghost');
+                        if (target.classList.contains('waste-card')) {
+                            dragGhost.style.transform = 'scale(1.5)';
+                            dragGhost.style.transformOrigin = 'top left';
+                        }
                         document.body.appendChild(dragGhost);
                     }
-                    dragGhost.style.left = `${touch.pageX - dragGhost.offsetWidth / 2}px`;
-                    dragGhost.style.top = `${touch.pageY - dragGhost.offsetHeight / 2}px`;
+                    function updateGhost() {
+                        dragGhost.style.left = `${touch.pageX - dragGhost.offsetWidth / 2}px`;
+                        dragGhost.style.top = `${touch.pageY - dragGhost.offsetHeight / 2}px`;
+                        if (target.isDragging) requestAnimationFrame(updateGhost);
+                    }
+                    updateGhost();
                     target.classList.add('dragging');
                 }
             }
@@ -819,12 +844,14 @@
                     };
                     const targetId = dropTarget.id;
                     const card = { suit: data.suit, rank: data.rank, name: data.name };
+                    let isValidMove = false;
                     if (targetId.startsWith('tableau-')) {
                         const pileIndex = parseInt(targetId.split('-')[1]);
                         const targetPile = tableau[pileIndex];
                         const lastCard = targetPile[targetPile.length - 1];
                         if (targetPile.length === 0 || isValidTableauMove(card, lastCard)) {
                             moveCard(card, data.sourceId, targetId);
+                            isValidMove = true;
                         }
                     } else if (targetId.startsWith('foundation-')) {
                         const foundationSuit = targetId === 'foundation-r' ? 'republican' :
@@ -833,7 +860,11 @@
                         const lastCard = foundation[foundation.length - 1];
                         if (isValidFoundationMove(card, lastCard, foundationSuit)) {
                             moveCard(card, data.sourceId, targetId);
+                            isValidMove = true;
                         }
+                    }
+                    if (isValidMove) {
+                        selectedCard = null;
                     }
                 }
                 if (dragGhost) {
@@ -877,14 +908,14 @@
             if (selectedCard) {
                 const destinationId = e.currentTarget.id;
                 const card = selectedCard.card;
+                let isValidMove = false;
                 if (destinationId.startsWith('tableau-')) {
                     const pileIndex = parseInt(destinationId.split('-')[1]);
                     const targetPile = tableau[pileIndex];
                     const lastCard = targetPile[targetPile.length - 1];
                     if (targetPile.length === 0 || isValidTableauMove(card, lastCard)) {
                         moveCard(card, selectedCard.sourceId, destinationId);
-                        selectedCard = null;
-                        renderGame();
+                        isValidMove = true;
                     }
                 } else if (destinationId.startsWith('foundation-')) {
                     const foundationSuit = destinationId === 'foundation-r' ? 'republican' :
@@ -893,15 +924,22 @@
                     const lastCard = foundation[foundation.length - 1];
                     if (isValidFoundationMove(card, lastCard, foundationSuit)) {
                         moveCard(card, selectedCard.sourceId, destinationId);
-                        selectedCard = null;
-                        renderGame();
+                        isValidMove = true;
                     }
+                }
+                if (isValidMove) {
+                    selectedCard = null;
+                    renderGame();
                 }
             }
         }
 
         function dragOver(e) {
             e.preventDefault();
+            if (dragGhost) {
+                dragGhost.style.left = `${e.pageX - dragGhost.offsetWidth / 2}px`;
+                dragGhost.style.top = `${e.pageY - dragGhost.offsetHeight / 2}px`;
+            }
         }
 
         function drop(e) {
@@ -910,13 +948,14 @@
             const sourceId = data.sourceId;
             const targetId = e.currentTarget.id;
             const card = { suit: data.suit, rank: data.rank, name: data.name };
-
+            let isValidMove = false;
             if (targetId.startsWith('tableau-')) {
                 const pileIndex = parseInt(targetId.split('-')[1]);
                 const targetPile = tableau[pileIndex];
                 const lastCard = targetPile[targetPile.length - 1];
                 if (targetPile.length === 0 || isValidTableauMove(card, lastCard)) {
                     moveCard(card, sourceId, targetId);
+                    isValidMove = true;
                 }
             } else if (targetId.startsWith('foundation-')) {
                 const foundationSuit = targetId === 'foundation-r' ? 'republican' :
@@ -925,11 +964,15 @@
                 const lastCard = foundation[foundation.length - 1];
                 if (isValidFoundationMove(card, lastCard, foundationSuit)) {
                     moveCard(card, sourceId, targetId);
+                    isValidMove = true;
                 }
             }
             if (dragGhost) {
                 dragGhost.remove();
                 dragGhost = null;
+            }
+            if (isValidMove) {
+                selectedCard = null;
             }
             renderGame();
         }
