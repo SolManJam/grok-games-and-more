@@ -2,7 +2,7 @@ let remainingPresidents = [];
 let placedPresidents = [];
 let correctSlots = [];
 let misses = {};
-let gridSlots = []; // New: Tracks 32 grid slots in #president-names
+let gridSlots = [];
 
 const testButton = document.getElementById('test-button');
 let lineupCardEl = document.getElementById('right-list');
@@ -31,7 +31,6 @@ function startAll32Mode() {
     remainingPresidents = shuffleArray([...presidents]);
     placedPresidents = new Array(32).fill(null);
     correctSlots = new Array(32).fill(null);
-    // Initialize gridSlots with 32 presidents in fixed positions
     gridSlots = remainingPresidents.slice(0, 32).concat(new Array(32 - remainingPresidents.length).fill(null));
     renderLeftList();
     renderLineupCard();
@@ -47,13 +46,12 @@ function renderLeftList() {
             nameDiv.textContent = renderName(pres.name);
             nameDiv.setAttribute('draggable', 'true');
             nameDiv.dataset.order = pres.order;
-            nameDiv.dataset.slotIndex = index; // Store slot index for dragging
+            nameDiv.dataset.slotIndex = index;
             nameDiv.addEventListener('dragstart', handleDragStart);
             nameDiv.addEventListener('touchstart', handleTouchStart, { passive: false });
-            nameDiv.addEventListener('touchmove', handleTouchMove, { passive: false });
-            nameDiv.addEventListener('touchend', handleTouchEnd, { passive: false });
+            nameDiv.classList.add('draggable');
         } else {
-            nameDiv.className = 'empty-slot'; // Style empty slots
+            nameDiv.className = 'empty-slot';
         }
         presidentNames.appendChild(nameDiv);
     });
@@ -72,8 +70,6 @@ function renderLineupCard() {
             slot.setAttribute('draggable', 'true');
             slot.addEventListener('dragstart', handleSlotDragStart);
             slot.addEventListener('touchstart', handleSlotTouchStart, { passive: false });
-            slot.addEventListener('touchmove', handleTouchMove, { passive: false });
-            slot.addEventListener('touchend', handleTouchEnd, { passive: false });
         }
         slot.innerHTML = `
             <span class="slot-number">${i + 1}.</span>
@@ -97,33 +93,59 @@ function handleSlotDragStart(e) {
 function handleTouchStart(e) {
     e.preventDefault();
     const touch = e.touches[0];
-    e.target.dataset.orderMoved = `grid-${e.target.dataset.order}-${e.target.dataset.slotIndex}`;
-    e.target.style.opacity = '0.7';
+    const element = e.target;
+    // Create a clone for visual dragging
+    const clone = element.cloneNode(true);
+    clone.classList.add('dragging-clone');
+    clone.style.position = 'fixed';
+    clone.style.left = `${touch.clientX - 50}px`;
+    clone.style.top = `${touch.clientY - 15}px`;
+    clone.style.zIndex = '1000';
+    clone.style.opacity = '0.7';
+    document.body.appendChild(clone);
+    // Hide original element but keep it in grid
+    element.style.opacity = '0';
+    element.dataset.orderMoved = `grid-${element.dataset.order}-${element.dataset.slotIndex}`;
+    element.dataset.cloneId = `clone-${Date.now()}`; // Unique ID for clone
+    clone.dataset.cloneId = element.dataset.cloneId;
 }
 
 function handleSlotTouchStart(e) {
     e.preventDefault();
     const touch = e.touches[0];
-    e.target.dataset.orderMoved = `slot-${e.target.dataset.index}`;
-    e.target.style.opacity = '0.7';
+    const element = e.target;
+    // Create a clone for visual dragging
+    const clone = element.cloneNode(true);
+    clone.classList.add('dragging-clone');
+    clone.style.position = 'fixed';
+    clone.style.left = `${touch.clientX - 50}px`;
+    clone.style.top = `${touch.clientY - 15}px`;
+    clone.style.zIndex = '1000';
+    clone.style.opacity = '0.7';
+    document.body.appendChild(clone);
+    // Hide original element but keep it in grid
+    element.style.opacity = '0';
+    element.dataset.orderMoved = `slot-${element.dataset.index}`;
+    element.dataset.cloneId = `clone-${Date.now()}`;
+    clone.dataset.cloneId = element.dataset.cloneId;
 }
 
 function handleTouchMove(e) {
     e.preventDefault();
     const touch = e.touches[0];
-    const element = e.target;
-    element.style.position = 'fixed';
-    element.style.left = `${touch.clientX - 50}px`;
-    element.style.top = `${touch.clientY - 15}px`;
-    element.style.zIndex = '1000';
+    const clone = document.querySelector(`.dragging-clone[data-clone-id="${e.target.dataset.cloneId}"]`);
+    if (clone) {
+        clone.style.left = `${touch.clientX - 50}px`;
+        clone.style.top = `${touch.clientY - 15}px`;
+    }
 }
 
 function handleTouchEnd(e) {
     const element = e.target;
-    element.style.position = '';
-    element.style.left = '';
-    element.style.top = '';
-    element.style.zIndex = '';
+    const clone = document.querySelector(`.dragging-clone[data-clone-id="${element.dataset.cloneId}"]`);
+    if (clone) {
+        document.body.removeChild(clone);
+    }
     element.style.opacity = '1';
     const movedData = element.dataset.orderMoved;
     if (!movedData) return;
@@ -137,6 +159,7 @@ function handleTouchEnd(e) {
         handleDropLogic(movedData, targetIndex);
     }
     delete element.dataset.orderMoved;
+    delete element.dataset.cloneId;
 }
 
 function handleDrop(e) {
@@ -161,7 +184,7 @@ function handleDropLogic(data, targetIndex) {
         if (!placedPresidents[targetIndex]) {
             placedPresidents[targetIndex] = pres;
             remainingPresidents = remainingPresidents.filter(p => p.order !== order);
-            gridSlots[slotIndex] = null; // Clear the slot in left container
+            gridSlots[slotIndex] = null;
             renderLeftList();
             renderLineupCard();
             updateTestButton();
@@ -214,7 +237,6 @@ function checkOrder() {
             placedPresidents = placedPresidents.map((pres, i) => {
                 if (correctSlots[i] !== true) {
                     if (pres) {
-                        // Find an empty slot in gridSlots or append
                         const emptyIndex = gridSlots.indexOf(null);
                         if (emptyIndex !== -1) {
                             gridSlots[emptyIndex] = pres;
