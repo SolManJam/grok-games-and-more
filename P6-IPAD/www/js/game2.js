@@ -15,7 +15,7 @@ function abbreviateName(name) {
 }
 
 function renderName(name) {
-    if (name && name.length > 20) { // Increased from 15 to 20 for longer names
+    if (name && name.length > 20) {
         return abbreviateName(name);
     }
     return name || '';
@@ -45,6 +45,8 @@ function renderLeftList() {
         nameDiv.dataset.order = pres.order;
         nameDiv.addEventListener('dragstart', handleDragStart);
         nameDiv.addEventListener('touchstart', handleTouchStart, { passive: false });
+        nameDiv.addEventListener('touchmove', handleTouchMove, { passive: false });
+        nameDiv.addEventListener('touchend', handleTouchEnd, { passive: false });
         presidentNames.appendChild(nameDiv);
     });
 }
@@ -62,6 +64,8 @@ function renderLineupCard() {
             slot.setAttribute('draggable', 'true');
             slot.addEventListener('dragstart', handleSlotDragStart);
             slot.addEventListener('touchstart', handleSlotTouchStart, { passive: false });
+            slot.addEventListener('touchmove', handleTouchMove, { passive: false });
+            slot.addEventListener('touchend', handleTouchEnd, { passive: false });
         }
         slot.innerHTML = `
             <span class="slot-number">${i + 1}.</span>
@@ -69,7 +73,7 @@ function renderLineupCard() {
         `;
         slot.addEventListener('dragover', e => e.preventDefault());
         slot.addEventListener('drop', handleDrop);
-        slot.addEventListener('touchend', handleTouchEnd);
+        slot.addEventListener('touchend', handleTouchEnd, { passive: false });
         lineupCardEl.appendChild(slot);
     }
 }
@@ -86,17 +90,37 @@ function handleTouchStart(e) {
     e.preventDefault();
     const touch = e.touches[0];
     e.target.dataset.orderMoved = `grid-${e.target.dataset.order}`;
+    e.target.style.opacity = '0.7'; // Visual feedback for dragging
 }
 
 function handleSlotTouchStart(e) {
     e.preventDefault();
     const touch = e.touches[0];
     e.target.dataset.orderMoved = `slot-${e.target.dataset.index}`;
+    e.target.style.opacity = '0.7'; // Visual feedback for dragging
+}
+
+function handleTouchMove(e) {
+    e.preventDefault();
+    const touch = e.touches[0];
+    const element = e.target;
+    element.style.position = 'fixed';
+    element.style.left = `${touch.clientX - 50}px`; // Approximate centering
+    element.style.top = `${touch.clientY - 15}px`; // Approximate centering
+    element.style.zIndex = '1000'; // Bring to front
 }
 
 function handleTouchEnd(e) {
-    const movedData = e.target.dataset.orderMoved;
-    let targetSlot = document.elementFromPoint(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+    const element = e.target;
+    element.style.position = '';
+    element.style.left = '';
+    element.style.top = '';
+    element.style.zIndex = '';
+    element.style.opacity = '1';
+    const movedData = element.dataset.orderMoved;
+    if (!movedData) return;
+    const touch = e.changedTouches[0];
+    let targetSlot = document.elementFromPoint(touch.clientX, touch.clientY);
     while (targetSlot && !targetSlot.classList.contains('slot')) {
         targetSlot = targetSlot.parentElement;
     }
@@ -104,7 +128,7 @@ function handleTouchEnd(e) {
         const targetIndex = parseInt(targetSlot.dataset.index);
         handleDropLogic(movedData, targetIndex);
     }
-    delete e.target.dataset.orderMoved;
+    delete element.dataset.orderMoved;
 }
 
 function handleDrop(e) {
