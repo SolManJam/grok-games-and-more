@@ -2,6 +2,7 @@ let remainingPresidents = [];
 let placedPresidents = [];
 let correctSlots = [];
 let misses = {};
+let gridSlots = []; // New: Tracks 32 grid slots in #president-names
 
 const testButton = document.getElementById('test-button');
 let lineupCardEl = document.getElementById('right-list');
@@ -30,6 +31,8 @@ function startAll32Mode() {
     remainingPresidents = shuffleArray([...presidents]);
     placedPresidents = new Array(32).fill(null);
     correctSlots = new Array(32).fill(null);
+    // Initialize gridSlots with 32 presidents in fixed positions
+    gridSlots = remainingPresidents.slice(0, 32).concat(new Array(32 - remainingPresidents.length).fill(null));
     renderLeftList();
     renderLineupCard();
     updateTestButton();
@@ -38,15 +41,20 @@ function startAll32Mode() {
 function renderLeftList() {
     const presidentNames = document.getElementById('president-names');
     presidentNames.innerHTML = '';
-    remainingPresidents.forEach(pres => {
+    gridSlots.forEach((pres, index) => {
         const nameDiv = document.createElement('div');
-        nameDiv.textContent = renderName(pres.name);
-        nameDiv.setAttribute('draggable', 'true');
-        nameDiv.dataset.order = pres.order;
-        nameDiv.addEventListener('dragstart', handleDragStart);
-        nameDiv.addEventListener('touchstart', handleTouchStart, { passive: false });
-        nameDiv.addEventListener('touchmove', handleTouchMove, { passive: false });
-        nameDiv.addEventListener('touchend', handleTouchEnd, { passive: false });
+        if (pres) {
+            nameDiv.textContent = renderName(pres.name);
+            nameDiv.setAttribute('draggable', 'true');
+            nameDiv.dataset.order = pres.order;
+            nameDiv.dataset.slotIndex = index; // Store slot index for dragging
+            nameDiv.addEventListener('dragstart', handleDragStart);
+            nameDiv.addEventListener('touchstart', handleTouchStart, { passive: false });
+            nameDiv.addEventListener('touchmove', handleTouchMove, { passive: false });
+            nameDiv.addEventListener('touchend', handleTouchEnd, { passive: false });
+        } else {
+            nameDiv.className = 'empty-slot'; // Style empty slots
+        }
         presidentNames.appendChild(nameDiv);
     });
 }
@@ -79,7 +87,7 @@ function renderLineupCard() {
 }
 
 function handleDragStart(e) {
-    e.dataTransfer.setData('text/plain', `grid-${e.target.dataset.order}`);
+    e.dataTransfer.setData('text/plain', `grid-${e.target.dataset.order}-${e.target.dataset.slotIndex}`);
 }
 
 function handleSlotDragStart(e) {
@@ -89,15 +97,15 @@ function handleSlotDragStart(e) {
 function handleTouchStart(e) {
     e.preventDefault();
     const touch = e.touches[0];
-    e.target.dataset.orderMoved = `grid-${e.target.dataset.order}`;
-    e.target.style.opacity = '0.7'; // Visual feedback for dragging
+    e.target.dataset.orderMoved = `grid-${e.target.dataset.order}-${e.target.dataset.slotIndex}`;
+    e.target.style.opacity = '0.7';
 }
 
 function handleSlotTouchStart(e) {
     e.preventDefault();
     const touch = e.touches[0];
     e.target.dataset.orderMoved = `slot-${e.target.dataset.index}`;
-    e.target.style.opacity = '0.7'; // Visual feedback for dragging
+    e.target.style.opacity = '0.7';
 }
 
 function handleTouchMove(e) {
@@ -105,9 +113,9 @@ function handleTouchMove(e) {
     const touch = e.touches[0];
     const element = e.target;
     element.style.position = 'fixed';
-    element.style.left = `${touch.clientX - 50}px`; // Approximate centering
-    element.style.top = `${touch.clientY - 15}px`; // Approximate centering
-    element.style.zIndex = '1000'; // Bring to front
+    element.style.left = `${touch.clientX - 50}px`;
+    element.style.top = `${touch.clientY - 15}px`;
+    element.style.zIndex = '1000';
 }
 
 function handleTouchEnd(e) {
@@ -146,11 +154,14 @@ function handleDrop(e) {
 
 function handleDropLogic(data, targetIndex) {
     if (data.startsWith('grid-')) {
-        const order = parseInt(data.split('-')[1]);
+        const [_, orderStr, slotIndexStr] = data.split('-');
+        const order = parseInt(orderStr);
+        const slotIndex = parseInt(slotIndexStr);
         const pres = presidents.find(p => p.order === order);
         if (!placedPresidents[targetIndex]) {
             placedPresidents[targetIndex] = pres;
             remainingPresidents = remainingPresidents.filter(p => p.order !== order);
+            gridSlots[slotIndex] = null; // Clear the slot in left container
             renderLeftList();
             renderLineupCard();
             updateTestButton();
@@ -202,7 +213,16 @@ function checkOrder() {
         setTimeout(() => {
             placedPresidents = placedPresidents.map((pres, i) => {
                 if (correctSlots[i] !== true) {
-                    if (pres) remainingPresidents.push(pres);
+                    if (pres) {
+                        // Find an empty slot in gridSlots or append
+                        const emptyIndex = gridSlots.indexOf(null);
+                        if (emptyIndex !== -1) {
+                            gridSlots[emptyIndex] = pres;
+                        } else {
+                            gridSlots.push(pres);
+                        }
+                        remainingPresidents.push(pres);
+                    }
                     correctSlots[i] = null;
                     return null;
                 }
