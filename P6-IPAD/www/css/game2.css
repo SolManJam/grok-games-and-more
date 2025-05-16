@@ -4,8 +4,8 @@ html, body {
     padding: 0;
     margin: 0;
     overflow: hidden;
-    touch-action: none; /* Disable default touch behaviors for smoother dragging */
-    overscroll-behavior: none; /* Prevent pull-to-refresh or scroll effects */
+    touch-action: none;
+    overscroll-behavior: none;
 }
 
 /* Version display in upper right corner */
@@ -57,6 +57,76 @@ html, body {
     height: 100%;
     padding: 0;
     margin: 0;
+    transition: opacity 0.5s ease; /* Fade transition for phone mode */
+}
+
+/* Fade out when hidden */
+#lists-wrapper.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* Final list for phone mode */
+#final-list {
+    display: none;
+    width: 100%;
+    height: 100%;
+    overflow-y: auto;
+    padding: 10px;
+    box-sizing: border-box;
+    text-align: center;
+    transition: opacity 0.5s ease;
+}
+
+#final-list.visible {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    opacity: 1;
+}
+
+#final-list-items {
+    width: 100%;
+    max-width: 300px;
+    margin-bottom: 20px;
+}
+
+.final-list-item {
+    display: flex;
+    align-items: center;
+    padding: 8px;
+    border: 1px solid #ccc;
+    background: #f9f9f9;
+    margin-bottom: 5px;
+    font-size: 0.9em;
+    cursor: move;
+    touch-action: none;
+}
+
+.final-list-item .slot-number {
+    width: 30px;
+    font-weight: bold;
+}
+
+.final-list-item .name {
+    flex: 1;
+    text-align: left;
+}
+
+.final-list-item.dragging {
+    opacity: 0.5;
+    background: #e0e0e0;
+}
+
+#final-test-button {
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    touch-action: manipulation;
 }
 
 /* Set containers to 50% width and full height */
@@ -110,7 +180,12 @@ html, body {
     background: #fff;
     cursor: move;
     user-select: none;
-    touch-action: none; /* Custom touch handling */
+    touch-action: none;
+}
+
+#president-names > div.draggable.selected {
+    background: #007bff; /* Blue highlight on touch */
+    color: white;
 }
 
 /* Style for empty slots */
@@ -136,9 +211,9 @@ html, body {
     font-size: 0.9em;
     background: #fff;
     opacity: 0.7;
-    box-shadow: 0 0 10px rgba(0,0,0,0.5); /* For visibility */
-    pointer-events: none; /* Prevent interference with touch events */
-    will-change: transform; /* Optimize for transform changes */
+    box-shadow: 0 0 10px rgba(0,0,0,0.5);
+    pointer-events: none;
+    will-change: transform;
 }
 
 /* Style for each slot in the right list */
@@ -162,16 +237,33 @@ html, body {
 
 #right-list .slot.filled {
     cursor: move;
-    touch-action: none; /* Custom touch handling for filled slots */
+    touch-action: none;
 }
 
-/* Correct and incorrect slot styles */
 #right-list .slot.correct {
-    background: #90ee90; /* Light green */
+    background: #90ee90;
 }
 
 #right-list .slot.incorrect {
-    background: #ff6347; /* Tomato red */
+    background: #ff6347;
+}
+
+#right-list .slot-number {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f9f9f9;
+    border: 1px solid #ccc;
+    font-size: 0.9em;
+    cursor: default;
+    touch-action: none;
+}
+
+#right-list .slot-number.highlighted {
+    background: #007bff; /* Blue highlight on drag-over */
+    color: white;
 }
 
 /* Test button centered in left container when visible */
@@ -183,6 +275,10 @@ html, body {
     padding: 10px 20px;
     font-size: 16px;
     cursor: pointer;
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
     touch-action: manipulation;
 }
 
@@ -200,22 +296,27 @@ html, body {
         flex-direction: column;
         align-items: center;
     }
-    #left-list, #right-list {
+    #left-list {
         width: 100%;
-        height: 50%; /* Split height in portrait */
-        min-height: 300px;
-    }
-    #president-names {
-        grid-template-columns: repeat(2, 1fr); /* 2 columns */
-        grid-template-rows: repeat(16, 35px); /* Smaller rows */
-        gap: 8px;
+        height: 20%; /* Smaller height for names */
+        min-height: 100px;
+        padding: 5px;
     }
     #right-list {
-        grid-template-columns: repeat(2, 1fr);
-        grid-template-rows: repeat(16, 35px);
-        gap: 8px;
+        width: 100%;
+        height: 80%; /* Larger height for numbers */
+        min-height: 300px;
+        padding: 5px;
+        grid-template-columns: repeat(4, 1fr);
+        grid-template-rows: repeat(8, 35px);
+        gap: 6px;
     }
-    #president-names > div.draggable, #right-list .slot {
+    #president-names {
+        grid-template-columns: repeat(2, 1fr); /* 2x2 grid for 4 names */
+        grid-template-rows: repeat(2, 35px);
+        gap: 6px;
+    }
+    #president-names > div.draggable, #right-list .slot-number {
         height: 30px;
         font-size: 0.8em;
         padding: 4px;
@@ -229,6 +330,18 @@ html, body {
         height: 30px;
         font-size: 0.8em;
         padding: 4px;
+    }
+    #final-list-items {
+        max-width: 250px;
+    }
+    .final-list-item {
+        font-size: 0.8em;
+        padding: 6px;
+        margin-bottom: 4px;
+    }
+    #final-test-button {
+        font-size: 14px;
+        padding: 8px 16px;
     }
 }
 
@@ -245,22 +358,27 @@ html, body {
     #lists-wrapper {
         flex-direction: row;
     }
-    #left-list, #right-list {
-        width: 50%;
+    #left-list {
+        width: 30%; /* Smaller width for names */
         height: 100%;
-        min-height: 300px;
-    }
-    #president-names {
-        grid-template-columns: repeat(3, 1fr); /* 3 columns for wider screen */
-        grid-template-rows: repeat(11, 30px); /* Adjust rows */
-        gap: 6px;
+        min-height: 200px;
+        padding: 5px;
     }
     #right-list {
-        grid-template-columns: repeat(3, 1fr);
-        grid-template-rows: repeat(11, 30px);
-        gap: 6px;
+        width: 70%; /* Larger width for numbers */
+        height: 100%;
+        min-height: 200px;
+        padding: 5px;
+        grid-template-columns: repeat(8, 1fr); /* Wider grid */
+        grid-template-rows: repeat(4, 30px);
+        gap: 5px;
     }
-    #president-names > div.draggable, #right-list .slot {
+    #president-names {
+        grid-template-columns: repeat(2, 1fr); /* 2x2 grid for 4 names */
+        grid-template-rows: repeat(2, 30px);
+        gap: 5px;
+    }
+    #president-names > div.draggable, #right-list .slot-number {
         height: 25px;
         font-size: 0.75em;
         padding: 3px;
@@ -274,6 +392,18 @@ html, body {
         height: 25px;
         font-size: 0.75em;
         padding: 3px;
+    }
+    #final-list-items {
+        max-width: 200px;
+    }
+    .final-list-item {
+        font-size: 0.75em;
+        padding: 5px;
+        margin-bottom: 3px;
+    }
+    #final-test-button {
+        font-size: 12px;
+        padding: 6px 12px;
     }
 }
 
