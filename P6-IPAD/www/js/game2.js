@@ -148,7 +148,6 @@ function handleTouchStart(e) {
     e.stopPropagation();
     const touch = e.touches[0];
     const element = e.target;
-    element.classList.add('selected'); // Blue highlight
     const clone = element.cloneNode(true);
     clone.classList.add('dragging-clone');
     const cloneWidth = element.offsetWidth || 100;
@@ -162,6 +161,8 @@ function handleTouchStart(e) {
     clone.style.zIndex = '1000';
     clone.style.opacity = '0.7';
     clone.style.boxShadow = '0 0 10px rgba(0,0,0,0.5)';
+    clone.style.background = '#007bff';
+    clone.style.color = 'white';
     clone.style.willChange = 'transform';
     clone.style.pointerEvents = 'none';
     document.body.appendChild(clone);
@@ -239,8 +240,7 @@ function handleTouchMoveGlobal(e) {
 
 function handleTouchEnd(e) {
     if (currentClone) {
-        document.body.removeChild(currentClone);
-        currentClone = null;
+        currentClone.style.display = 'none'; // Temporarily hide clone
     }
     if (currentElement) {
         currentElement.style.opacity = '1';
@@ -260,6 +260,10 @@ function handleTouchEnd(e) {
             delete currentElement.dataset.cloneId;
         }
         currentElement = null;
+    }
+    if (currentClone) {
+        document.body.removeChild(currentClone);
+        currentClone = null;
     }
     document.removeEventListener('touchmove', handleTouchMoveGlobal);
     document.querySelectorAll('#right-list .slot-number').forEach(slot => {
@@ -336,7 +340,6 @@ function showFinalList() {
     listsWrapper.classList.add('hidden');
     finalList.classList.add('visible');
     finalListItems.innerHTML = '';
-    placedPositions = [];
     placedPresidents.forEach((pres, index) => {
         if (pres) {
             const item = document.createElement('div');
@@ -353,7 +356,6 @@ function showFinalList() {
             item.addEventListener('touchstart', handleFinalTouchStart, { passive: false });
             item.addEventListener('touchend', handleFinalTouchEnd, { passive: false });
             finalListItems.appendChild(item);
-            placedPositions[index] = pres;
         }
     });
     finalTestButton.style.display = 'block';
