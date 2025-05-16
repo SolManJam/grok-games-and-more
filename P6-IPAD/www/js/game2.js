@@ -25,6 +25,16 @@ function renderName(name) {
 function initGame() {
     misses = {};
     startAll32Mode();
+    // Add a debug element to show touch coordinates
+    const debugTouch = document.createElement('div');
+    debugTouch.id = 'debug-touch';
+    debugTouch.style.position = 'fixed';
+    debugTouch.style.top = '10px';
+    debugTouch.style.left = '10px';
+    debugTouch.style.background = 'white';
+    debugTouch.style.padding = '5px';
+    debugTouch.style.zIndex = '10000';
+    document.body.appendChild(debugTouch);
 }
 
 function startAll32Mode() {
@@ -90,7 +100,6 @@ function handleSlotDragStart(e) {
     e.dataTransfer.setData('text/plain', `slot-${e.target.dataset.index}`);
 }
 
-
 function handleTouchStart(e) {
     e.preventDefault();
     const touch = e.touches[0];
@@ -104,10 +113,11 @@ function handleTouchStart(e) {
     clone.style.transform = `translate(${touch.clientX - 50}px, ${touch.clientY - 15}px)`;
     clone.style.zIndex = '1000';
     clone.style.opacity = '0.7';
-    clone.style.boxShadow = '0 0 10px rgba(0,0,0,0.5)'; // Temporary for visibility
-    clone.style.willChange = 'transform'; // Optimize for transform changes
+    clone.style.boxShadow = '0 0 10px rgba(0,0,0,0.5)'; // For visibility
+    clone.style.willChange = 'transform'; // Optimize rendering
+    clone.style.pointerEvents = 'none'; // Prevent interference
     document.body.appendChild(clone);
-    // Hide original element but keep it in grid
+    // Hide original but keep its place
     element.style.opacity = '0';
     element.dataset.orderMoved = `grid-${element.dataset.order}-${element.dataset.slotIndex}`;
     element.dataset.cloneId = `clone-${Date.now()}`;
@@ -127,10 +137,11 @@ function handleSlotTouchStart(e) {
     clone.style.transform = `translate(${touch.clientX - 50}px, ${touch.clientY - 15}px)`;
     clone.style.zIndex = '1000';
     clone.style.opacity = '0.7';
-    clone.style.boxShadow = '0 0 10px rgba(0,0,0,0.5)'; // Temporary for visibility
-    clone.style.willChange = 'transform'; // Optimize for transform changes
+    clone.style.boxShadow = '0 0 10px rgba(0,0,0,0.5)'; // For visibility
+    clone.style.willChange = 'transform'; // Optimize rendering
+    clone.style.pointerEvents = 'none'; // Prevent interference
     document.body.appendChild(clone);
-    // Hide original element but keep it in grid
+    // Hide original but keep its place
     element.style.opacity = '0';
     element.dataset.orderMoved = `slot-${element.dataset.index}`;
     element.dataset.cloneId = `clone-${Date.now()}`;
@@ -145,7 +156,11 @@ function handleTouchMove(e) {
         const x = touch.clientX - 50;
         const y = touch.clientY - 15;
         clone.style.transform = `translate(${x}px, ${y}px)`;
-        console.log('touchmove:', x, y); // Log coordinates for debugging
+        // Update debug element with touch coordinates
+        const debugTouch = document.getElementById('debug-touch');
+        if (debugTouch) {
+            debugTouch.textContent = `X: ${touch.clientX}, Y: ${touch.clientY}`;
+        }
     }
 }
 
@@ -169,6 +184,11 @@ function handleTouchEnd(e) {
     }
     delete element.dataset.orderMoved;
     delete element.dataset.cloneId;
+    // Clear debug element
+    const debugTouch = document.getElementById('debug-touch');
+    if (debugTouch) {
+        debugTouch.textContent = '';
+    }
 }
 
 function handleDrop(e) {
