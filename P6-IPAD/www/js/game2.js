@@ -90,6 +90,7 @@ function handleSlotDragStart(e) {
     e.dataTransfer.setData('text/plain', `slot-${e.target.dataset.index}`);
 }
 
+
 function handleTouchStart(e) {
     e.preventDefault();
     const touch = e.touches[0];
@@ -98,15 +99,18 @@ function handleTouchStart(e) {
     const clone = element.cloneNode(true);
     clone.classList.add('dragging-clone');
     clone.style.position = 'fixed';
-    clone.style.left = `${touch.clientX - 50}px`;
-    clone.style.top = `${touch.clientY - 15}px`;
+    clone.style.left = '0px';
+    clone.style.top = '0px';
+    clone.style.transform = `translate(${touch.clientX - 50}px, ${touch.clientY - 15}px)`;
     clone.style.zIndex = '1000';
     clone.style.opacity = '0.7';
+    clone.style.boxShadow = '0 0 10px rgba(0,0,0,0.5)'; // Temporary for visibility
+    clone.style.willChange = 'transform'; // Optimize for transform changes
     document.body.appendChild(clone);
     // Hide original element but keep it in grid
     element.style.opacity = '0';
     element.dataset.orderMoved = `grid-${element.dataset.order}-${element.dataset.slotIndex}`;
-    element.dataset.cloneId = `clone-${Date.now()}`; // Unique ID for clone
+    element.dataset.cloneId = `clone-${Date.now()}`;
     clone.dataset.cloneId = element.dataset.cloneId;
 }
 
@@ -118,10 +122,13 @@ function handleSlotTouchStart(e) {
     const clone = element.cloneNode(true);
     clone.classList.add('dragging-clone');
     clone.style.position = 'fixed';
-    clone.style.left = `${touch.clientX - 50}px`;
-    clone.style.top = `${touch.clientY - 15}px`;
+    clone.style.left = '0px';
+    clone.style.top = '0px';
+    clone.style.transform = `translate(${touch.clientX - 50}px, ${touch.clientY - 15}px)`;
     clone.style.zIndex = '1000';
     clone.style.opacity = '0.7';
+    clone.style.boxShadow = '0 0 10px rgba(0,0,0,0.5)'; // Temporary for visibility
+    clone.style.willChange = 'transform'; // Optimize for transform changes
     document.body.appendChild(clone);
     // Hide original element but keep it in grid
     element.style.opacity = '0';
@@ -135,8 +142,10 @@ function handleTouchMove(e) {
     const touch = e.touches[0];
     const clone = document.querySelector(`.dragging-clone[data-clone-id="${e.target.dataset.cloneId}"]`);
     if (clone) {
-        clone.style.left = `${touch.clientX - 50}px`;
-        clone.style.top = `${touch.clientY - 15}px`;
+        const x = touch.clientX - 50;
+        const y = touch.clientY - 15;
+        clone.style.transform = `translate(${x}px, ${y}px)`;
+        console.log('touchmove:', x, y); // Log coordinates for debugging
     }
 }
 
