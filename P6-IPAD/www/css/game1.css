@@ -1,0 +1,59 @@
+.top-array {
+    position: relative;
+    height: 75px;
+    width: 100%;
+    overflow: hidden;
+    margin-bottom: 20px;
+}
+
+.top-array img {
+    position: absolute;
+    width: 50px;
+    height: 75px;
+    object-fit: cover;
+    transition: transform 0.3s;
+}
+
+.top-placeholder {
+    position: absolute;
+    width: 50px;
+    height: 75px;
+    background: #eee;
+}
+
+.game-container {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-start;
+    width: 100%;
+    max-width: 1400px;
+    margin: 0 auto;
+    border: 1px solid #ccc;
+    padding: 10px;
+    box-sizing: border-box;
+}
+
+.grid {
+    flex: 1;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    max-width: 300px;
+    margin: 0 auto;
+}
+
+.grid img {
+    width: 100%;
+    height: auto;
+    max-width: 100px;
+    cursor: move;
+    touch-action: none;
+}
+
+.lineup-card {
+    width: 400px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}

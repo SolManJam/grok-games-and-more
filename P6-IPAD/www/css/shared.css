@@ -1,0 +1,159 @@
+body {
+    font-family: Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 5px;
+    margin: 0;
+}
+
+.slot {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    padding: 5px;
+    border: 1px solid #ccc;
+    min-height: 40px;
+    height: 40px;
+    background: #f9f9f9;
+    cursor: pointer;
+    touch-action: none;
+    box-sizing: border-box;
+}
+
+.slot.empty {
+    background: #eee;
+    color: #999;
+}
+
+.slot.empty::before {
+    content: 'Drag here';
+    font-style: italic;
+}
+
+.slot.filled {
+    cursor: move;
+}
+
+.slot.correct {
+    background: #d4edda;
+}
+
+.slot.incorrect {
+    background: #f8d7da;
+}
+
+.slot-number {
+    width: 30px;
+    font-weight: bold;
+    margin-right: 10px;
+}
+
+.name {
+    flex: 1;
+    white-space: normal;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
+.term-dates {
+    width: 150px;
+}
+
+#test-button {
+    margin-left: 20px;
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+#test-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+.cursive-text {
+    font-family: 'Dancing Script', cursive;
+    font-size: 1.1em;
+}
+
+.accuracy {
+    font-size: 24px;
+}
+
+.congrats-popup {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    z-index: 1000;
+    max-height: 80vh;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 300px;
+}
+
+.congrats-buttons {
+    margin-top: 20px;
+    display: flex;
+    gap: 10px;
+}
+
+.congrats-buttons button {
+    padding: 10px 20px;
+    cursor: pointer;
+}
+
+.popup {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    z-index: 1000;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
+.popup-content {
+    text-align: center;
+}
+
+.popup-content button {
+    margin: 10px;
+    padding: 10px 20px;
+    cursor: pointer;
+}
+
+.confetti {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    z-index: 1;
+    animation: confetti-explode 2s ease-out forwards;
+}
+
+@keyframes confetti-explode {
+    0% { transform: translate(0, 0) scale(0) rotate(0deg); opacity: 1; }
+    20% { transform: translate(var(--dx), var(--dy)) scale(1.2) rotate(0deg); }
+    100% { transform: translate(var(--dx), calc(var(--dy) + 100%)) rotate(360deg); opacity: 0; }
+}
+
+@media (max-width: 600px) {
+    .game-container {
+        flex-direction: column;
+        align-items: center;
+    }
+    .grid { margin-right: 0; margin-bottom: 20px; }
+    .lineup-card { width: 100%; max-width: 400px; }
+    #left-list, #right-list { width: 100%; }
+}
