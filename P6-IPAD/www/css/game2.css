@@ -1,15 +1,20 @@
-/* Remove default padding and margin from body */
-body {
+/* Ensure full viewport height */
+html, body {
+    height: 100vh;
     padding: 0;
     margin: 0;
+    overflow: hidden; /* Prevent scrolling */
 }
 
-/* Make game container full-width and remove padding */
+/* Make game container full-width and full-height */
 #game-container {
     max-width: none;
     width: 100%;
+    height: 100%;
     padding: 0;
     margin: 0;
+    display: flex;
+    flex-direction: column;
 }
 
 /* Flexbox layout for left and right containers */
@@ -17,14 +22,15 @@ body {
     display: flex;
     justify-content: space-between;
     width: 100%;
+    height: 100%; /* Fill parent height */
     padding: 0;
     margin: 0;
 }
 
-/* Set containers to 50% width with internal padding */
+/* Set containers to 50% width and full height */
 #left-list {
     width: 50%;
-    min-height: 600px;
+    height: 100%; /* Full height of parent */
     overflow-y: auto;
     border: 1px solid #ccc;
     padding: 10px;
@@ -34,7 +40,7 @@ body {
 
 #right-list {
     width: 50%;
-    min-height: 600px;
+    height: 100%; /* Full height of parent */
     border: 1px solid #ccc;
     padding: 10px;
     display: grid;
@@ -70,6 +76,9 @@ body {
     overflow: hidden;
     text-overflow: ellipsis;
     background: #fff;
+    cursor: move;
+    user-select: none;
+    touch-action: manipulation; /* Allow touch interactions */
 }
 
 /* Style for each slot */
@@ -81,13 +90,18 @@ body {
     padding: 5px;
     border: 1px solid #ccc;
     background: #f9f9f9;
-    cursor: pointer;
     box-sizing: border-box;
     font-size: 0.9em;
     white-space: normal;
     line-height: 1.2;
     overflow: hidden;
     text-overflow: ellipsis;
+    user-select: none;
+    touch-action: manipulation; /* Allow touch interactions */
+}
+
+#right-list .slot.filled {
+    cursor: move;
 }
 
 /* Correct and incorrect slot styles */
@@ -118,10 +132,11 @@ body {
     }
     #left-list, #right-list {
         width: 100%;
-        min-width: 0;
+        height: auto; /* Allow height to adjust on small screens */
+        min-height: 300px; /* Minimum height for small screens */
     }
     #president-names {
-        grid-template-columns: repeat(2, 1fr); /* Two columns on small screens */
-        grid-template-rows: repeat(16, 40px); /* Adjust rows for 32 elements */
+        grid-template-columns: repeat(2, 1fr);
+        grid-template-rows: repeat(16, 40px);
     }
 }
