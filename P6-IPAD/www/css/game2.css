@@ -4,7 +4,8 @@ html, body {
     padding: 0;
     margin: 0;
     overflow: hidden;
-    touch-action: none;
+    touch-action: none; /* Disable default touch behaviors for smoother dragging */
+    overscroll-behavior: none; /* Prevent pull-to-refresh or scroll effects */
 }
 
 /* Version display in upper right corner */
@@ -20,6 +21,21 @@ html, body {
     border-radius: 5px;
     z-index: 10000;
     user-select: none;
+}
+
+/* Debug touch coordinates display */
+#debug-touch {
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    background: white;
+    padding: 5px;
+    z-index: 10000;
+    font-size: 14px;
+    font-family: Arial, sans-serif;
+    color: #333;
+    border: 1px solid #ccc;
+    border-radius: 3px;
 }
 
 /* Make game container full-width and full-height */
@@ -94,7 +110,7 @@ html, body {
     background: #fff;
     cursor: move;
     user-select: none;
-    touch-action: none;
+    touch-action: none; /* Custom touch handling */
 }
 
 /* Style for empty slots */
@@ -120,9 +136,9 @@ html, body {
     font-size: 0.9em;
     background: #fff;
     opacity: 0.7;
-    box-shadow: 0 0 10px rgba(0,0,0,0.5);
-    pointer-events: none;
-    will-change: transform;
+    box-shadow: 0 0 10px rgba(0,0,0,0.5); /* For visibility */
+    pointer-events: none; /* Prevent interference with touch events */
+    will-change: transform; /* Optimize for transform changes */
 }
 
 /* Style for each slot in the right list */
@@ -146,16 +162,16 @@ html, body {
 
 #right-list .slot.filled {
     cursor: move;
-    touch-action: none;
+    touch-action: none; /* Custom touch handling for filled slots */
 }
 
 /* Correct and incorrect slot styles */
 #right-list .slot.correct {
-    background: #90ee90;
+    background: #90ee90; /* Light green */
 }
 
 #right-list .slot.incorrect {
-    background: #ff6347;
+    background: #ff6347; /* Tomato red */
 }
 
 /* Test button centered in left container when visible */
@@ -176,18 +192,22 @@ html, body {
         font-size: 12px;
         padding: 4px 8px;
     }
+    #debug-touch {
+        font-size: 12px;
+        padding: 4px 8px;
+    }
     #lists-wrapper {
         flex-direction: column;
         align-items: center;
     }
     #left-list, #right-list {
         width: 100%;
-        height: 50%;
+        height: 50%; /* Split height in portrait */
         min-height: 300px;
     }
     #president-names {
-        grid-template-columns: repeat(2, 1fr);
-        grid-template-rows: repeat(16, 35px);
+        grid-template-columns: repeat(2, 1fr); /* 2 columns */
+        grid-template-rows: repeat(16, 35px); /* Smaller rows */
         gap: 8px;
     }
     #right-list {
@@ -218,6 +238,10 @@ html, body {
         font-size: 12px;
         padding: 4px 8px;
     }
+    #debug-touch {
+        font-size: 12px;
+        padding: 4px 8px;
+    }
     #lists-wrapper {
         flex-direction: row;
     }
@@ -227,8 +251,8 @@ html, body {
         min-height: 300px;
     }
     #president-names {
-        grid-template-columns: repeat(3, 1fr);
-        grid-template-rows: repeat(11, 30px);
+        grid-template-columns: repeat(3, 1fr); /* 3 columns for wider screen */
+        grid-template-rows: repeat(11, 30px); /* Adjust rows */
         gap: 6px;
     }
     #right-list {
