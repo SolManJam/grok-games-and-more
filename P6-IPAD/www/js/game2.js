@@ -240,7 +240,8 @@ function handleTouchMoveGlobal(e) {
 
 function handleTouchEnd(e) {
     if (currentClone) {
-        currentClone.style.display = 'none'; // Temporarily hide clone
+        document.body.removeChild(currentClone); // Remove clone to avoid obstruction
+        currentClone = null;
     }
     if (currentElement) {
         currentElement.style.opacity = '1';
@@ -260,10 +261,6 @@ function handleTouchEnd(e) {
             delete currentElement.dataset.cloneId;
         }
         currentElement = null;
-    }
-    if (currentClone) {
-        document.body.removeChild(currentClone);
-        currentClone = null;
     }
     document.removeEventListener('touchmove', handleTouchMoveGlobal);
     document.querySelectorAll('#right-list .slot-number').forEach(slot => {
