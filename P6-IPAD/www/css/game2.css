@@ -283,6 +283,27 @@ html, body {
     touch-action: manipulation;
 }
 
+/* Phone-specific layout for left container */
+@media (max-width: 600px) {
+    #president-names {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        grid-template-rows: repeat(2, 1fr);
+        height: 100%;
+        gap: 10px;
+    }
+    #president-names > div.draggable {
+        width: 100%;
+        height: 100%;
+        padding: 5px;
+        font-size: 0.8em;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+    }
+}
+
 /* Responsive design for phones in portrait orientation */
 @media (max-width: 600px) and (orientation: portrait) {
     #version-display {
