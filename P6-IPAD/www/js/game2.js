@@ -3,6 +3,8 @@ let placedPresidents = [];
 let correctSlots = [];
 let misses = {};
 let gridSlots = [];
+let currentClone = null;
+let currentElement = null;
 
 const testButton = document.getElementById('test-button');
 let lineupCardEl = document.getElementById('right-list');
@@ -34,6 +36,7 @@ function initGame() {
     debugTouch.style.background = 'white';
     debugTouch.style.padding = '5px';
     debugTouch.style.zIndex = '10000';
+    debugTouch.style.fontSize = '14px';
     document.body.appendChild(debugTouch);
 }
 
@@ -59,6 +62,7 @@ function renderLeftList() {
             nameDiv.dataset.slotIndex = index;
             nameDiv.addEventListener('dragstart', handleDragStart);
             nameDiv.addEventListener('touchstart', handleTouchStart, { passive: false });
+            nameDiv.addEventListener('touchend', handleTouchEnd, { passive: false });
             nameDiv.classList.add('draggable');
         } else {
             nameDiv.className = 'empty-slot';
@@ -80,6 +84,7 @@ function renderLineupCard() {
             slot.setAttribute('draggable', 'true');
             slot.addEventListener('dragstart', handleSlotDragStart);
             slot.addEventListener('touchstart', handleSlotTouchStart, { passive: false });
+            slot.addEventListener('touchend', handleTouchEnd, { passive: false });
         }
         slot.innerHTML = `
             <span class="slot-number">${i + 1}.</span>
@@ -102,89 +107,113 @@ function handleSlotDragStart(e) {
 
 function handleTouchStart(e) {
     e.preventDefault();
+    e.stopPropagation();
     const touch = e.touches[0];
     const element = e.target;
     // Create a clone for visual dragging
     const clone = element.cloneNode(true);
     clone.classList.add('dragging-clone');
+    const cloneWidth = element.offsetWidth || 100; // Fallback width
+    const cloneHeight = element.offsetHeight || 30; // Fallback height
+    const initialX = touch.clientX - (cloneWidth / 2);
+    const initialY = touch.clientY - (cloneHeight / 2);
     clone.style.position = 'fixed';
     clone.style.left = '0px';
     clone.style.top = '0px';
-    clone.style.transform = `translate(${touch.clientX - 50}px, ${touch.clientY - 15}px)`;
+    clone.style.transform = `translate(${initialX}px, ${initialY}px)`;
     clone.style.zIndex = '1000';
     clone.style.opacity = '0.7';
-    clone.style.boxShadow = '0 0 10px rgba(0,0,0,0.5)'; // For visibility
-    clone.style.willChange = 'transform'; // Optimize rendering
-    clone.style.pointerEvents = 'none'; // Prevent interference
+    clone.style.boxShadow = '0 0 10px rgba(0,0,0,0.5)';
+    clone.style.willChange = 'transform';
+    clone.style.pointerEvents = 'none';
     document.body.appendChild(clone);
     // Hide original but keep its place
     element.style.opacity = '0';
     element.dataset.orderMoved = `grid-${element.dataset.order}-${element.dataset.slotIndex}`;
     element.dataset.cloneId = `clone-${Date.now()}`;
     clone.dataset.cloneId = element.dataset.cloneId;
+    // Set globals
+    currentClone = clone;
+    currentElement = element;
+    // Start global touchmove listener
+    document.addEventListener('touchmove', handleTouchMoveGlobal, { passive: false });
 }
 
 function handleSlotTouchStart(e) {
     e.preventDefault();
+    e.stopPropagation();
     const touch = e.touches[0];
     const element = e.target;
     // Create a clone for visual dragging
     const clone = element.cloneNode(true);
     clone.classList.add('dragging-clone');
+    const cloneWidth = element.offsetWidth || 100;
+    const cloneHeight = element.offsetHeight || 30;
+    const initialX = touch.clientX - (cloneWidth / 2);
+    const initialY = touch.clientY - (cloneHeight / 2);
     clone.style.position = 'fixed';
     clone.style.left = '0px';
     clone.style.top = '0px';
-    clone.style.transform = `translate(${touch.clientX - 50}px, ${touch.clientY - 15}px)`;
+    clone.style.transform = `translate(${initialX}px, ${initialY}px)`;
     clone.style.zIndex = '1000';
     clone.style.opacity = '0.7';
-    clone.style.boxShadow = '0 0 10px rgba(0,0,0,0.5)'; // For visibility
-    clone.style.willChange = 'transform'; // Optimize rendering
-    clone.style.pointerEvents = 'none'; // Prevent interference
+    clone.style.boxShadow = '0 0 10px rgba(0,0,0,0.5)';
+    clone.style.willChange = 'transform';
+    clone.style.pointerEvents = 'none';
     document.body.appendChild(clone);
     // Hide original but keep its place
     element.style.opacity = '0';
     element.dataset.orderMoved = `slot-${element.dataset.index}`;
     element.dataset.cloneId = `clone-${Date.now()}`;
     clone.dataset.cloneId = element.dataset.cloneId;
+    // Set globals
+    currentClone = clone;
+    currentElement = element;
+    // Start global touchmove listener
+    document.addEventListener('touchmove', handleTouchMoveGlobal, { passive: false });
 }
 
-function handleTouchMove(e) {
+function handleTouchMoveGlobal(e) {
     e.preventDefault();
-    const touch = e.touches[0];
-    const clone = document.querySelector(`.dragging-clone[data-clone-id="${e.target.dataset.cloneId}"]`);
-    if (clone) {
-        const x = touch.clientX - 50;
-        const y = touch.clientY - 15;
-        clone.style.transform = `translate(${x}px, ${y}px)`;
-        // Update debug element with touch coordinates
-        const debugTouch = document.getElementById('debug-touch');
-        if (debugTouch) {
-            debugTouch.textContent = `X: ${touch.clientX}, Y: ${touch.clientY}`;
-        }
+    e.stopPropagation();
+    if (currentClone) {
+        const touch = e.touches[0];
+        const x = touch.clientX - (currentClone.offsetWidth / 2);
+        const y = touch.clientY - (currentClone.offsetHeight / 2);
+        requestAnimationFrame(() => {
+            currentClone.style.transform = `translate(${x}px, ${y}px)`;
+            const debugTouch = document.getElementById('debug-touch');
+            if (debugTouch) {
+                debugTouch.textContent = `X: ${touch.clientX}, Y: ${touch.clientY}`;
+            }
+        });
     }
 }
 
 function handleTouchEnd(e) {
-    const element = e.target;
-    const clone = document.querySelector(`.dragging-clone[data-clone-id="${element.dataset.cloneId}"]`);
-    if (clone) {
-        document.body.removeChild(clone);
+    if (currentClone) {
+        document.body.removeChild(currentClone);
+        currentClone = null;
     }
-    element.style.opacity = '1';
-    const movedData = element.dataset.orderMoved;
-    if (!movedData) return;
-    const touch = e.changedTouches[0];
-    let targetSlot = document.elementFromPoint(touch.clientX, touch.clientY);
-    while (targetSlot && !targetSlot.classList.contains('slot')) {
-        targetSlot = targetSlot.parentElement;
+    if (currentElement) {
+        currentElement.style.opacity = '1';
+        const movedData = currentElement.dataset.orderMoved;
+        if (movedData) {
+            const touch = e.changedTouches[0];
+            let targetSlot = document.elementFromPoint(touch.clientX, touch.clientY);
+            while (targetSlot && !targetSlot.classList.contains('slot')) {
+                targetSlot = targetSlot.parentElement;
+            }
+            if (targetSlot) {
+                const targetIndex = parseInt(targetSlot.dataset.index);
+                handleDropLogic(movedData, targetIndex);
+            }
+            delete currentElement.dataset.orderMoved;
+            delete currentElement.dataset.cloneId;
+        }
+        currentElement = null;
     }
-    if (targetSlot) {
-        const targetIndex = parseInt(targetSlot.dataset.index);
-        handleDropLogic(movedData, targetIndex);
-    }
-    delete element.dataset.orderMoved;
-    delete element.dataset.cloneId;
-    // Clear debug element
+    document.removeEventListener('touchmove', handleTouchMoveGlobal);
     const debugTouch = document.getElementById('debug-touch');
     if (debugTouch) {
         debugTouch.textContent = '';
