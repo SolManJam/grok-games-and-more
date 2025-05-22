@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Game Rules</title>
+  <link rel="stylesheet" href="../css/splash.css">
+</head>
+<body>
+  <div id="splash-screen">
+    <div id="splash-content">
+      <div class="top">
+        <h1>Welcome to Presidential Solitaire</h1>
+        <h1>Rules</h1>
+      </div>
+      <div class="middle">
+        <div class="left">
+          <button id="prev-btn" onclick="loadRule(currentRule - 1)" disabled>Previous</button>
+        </div>
+        <div class="center" id="rule-content"></div>
+        <div class="right">
+          <button id="next-btn" onclick="loadRule(currentRule + 1)">Next</button>
+        </div>
+      </div>
+      <div class="bottom">
+        <button onclick="dismissSplash()">Start Game</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+   let currentRule = 1; // Track the current rule
+const maxRule = 5;   // Adjust based on the number of rules files
+
+function loadRule(ruleNumber) {
+  if (ruleNumber < 1 || ruleNumber > maxRule) return;
+
+  fetch(`/assets/rules/rule-${ruleNumber}.txt`)
+    .then(response => {
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      return response.text();
+    })
+    .then(data => {
+      document.getElementById('rule-content').textContent = data;
+      currentRule = ruleNumber;
+      document.getElementById('prev-btn').disabled = currentRule === 1;
+      document.getElementById('next-btn').disabled = currentRule === maxRule;
+    })
+    .catch(error => {
+      console.error('Error fetching rule:', error);
+      document.getElementById('rule-content').textContent = 'Error loading rule. Please try again later.';
+    });
+}
+
+// Load the first rule when the page loads
+loadRule(1);
+
+function dismissSplash() {
+    const splashScreen = document.getElementById('splash-screen');
+    if (splashScreen) {
+        splashScreen.style.display = 'none'; // Hides the splash screen
+    }
+}
+  </script>
+</body>
+</html>

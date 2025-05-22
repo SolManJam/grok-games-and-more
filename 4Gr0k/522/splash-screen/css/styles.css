@@ -1,0 +1,237 @@
+
+        body {
+            font-family: Arial, sans-serif;
+            background-image: url('bg.jpg');
+            background-repeat: repeat-y;
+            background-size: cover;
+            background-position: center -300px;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+        iframe {
+            width: 60vw; /* Use 90% of viewport width for responsiveness */
+            max-width: 800px; /* Increase max-width to make iframe larger */
+            height: 60vh; /* Use 80% of viewport height to fit content */
+            max-height: 600px; /* Set a reasonable max-height */
+            border: none; /* Remove iframe border */
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2); /* Optional: match splash shadow */
+        }
+        #game-area {
+            max-width: 1200px;
+            display: none; /* Hidden until splash screen is closed */
+        }
+        #status-bar {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 16px;
+            color: #FFD700;
+        }
+        #top-row {
+            display: flex;
+            align-items: flex-start;
+            flex-wrap: nowrap;
+            margin-top: 25px; /* Raised by 75px from 100px */
+        }
+        .pile, .foundation {
+            width: 135px;
+            height: 450px;
+            border: 1px solid #ccc;
+            margin-right: 10px;
+            position: relative;
+            overflow-y: auto;
+            overflow-x: hidden;
+            box-sizing: border-box;
+        }
+        .foundation {
+            height: 600px; /* Increased to prevent scrolling issues */
+        }
+        .stock-waste-container {
+            width: 140px;
+            display: flex;
+            flex-direction: column;
+            margin-right: 25px;
+            margin-left: 25px;
+        }
+        #stock {
+            height: 206.25px;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+        }
+        #waste {
+            height: 300px;
+            margin-top: 10px;
+            position: relative;
+            overflow-y: auto;
+            overflow-x: hidden;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+        }
+        .foundation-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-right: 10px;
+        }
+        .cheat-sheet {
+            position: absolute;
+            left: 0;
+            width: 100%;
+            font-size: 12px; /* Adjusted for better fit */
+            font-weight: bold;
+            color: #FFD700;
+            text-align: center;
+            z-index: 10;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 5px;
+            box-sizing: border-box;
+        }
+        .president-info {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 70px;
+            z-index: 10;
+            background: black; /* Opaque black background */
+            padding: 5px;
+            box-sizing: border-box;
+        }
+        .president-entry {
+            margin-bottom: 10px;
+        }
+        .president-entry p {
+            margin: 0;
+            line-height: 1;
+        }
+        .card-container {
+            position: absolute;
+            width: 100%;
+            height: 186px; /* Fixed height for easier positioning */
+            left: 0;
+        }
+        .card {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: transparent;
+        }
+        .card img {
+            pointer-events: none;
+            display: block;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            border: none;
+            margin: 0;
+            padding: 0;
+        }
+        .card.republican { color: red; }
+        .card.democratic { color: blue; }
+        .card.other { color: #d4a017; }
+        .label {
+            position: absolute;
+            top: -20px;
+            width: 100%;
+            text-align: center;
+            font-size: 14px;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+        }
+        .stock-image {
+            width: 100%;
+            height: auto;
+            cursor: pointer;
+        }
+        .reload-button {
+            padding: 10px 20px;
+            font-size: 14px;
+            background: #FFD700;
+            border: none;
+            cursor: pointer;
+            text-align: center;
+            margin: auto;
+        }
+        
+        #start-button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background: #FFD700;
+            border: none;
+            cursor: pointer;
+        }
+        @keyframes fadeOut {
+            0% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+        @keyframes pulsate {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        .fade-out-r { animation: fadeOut 5s forwards; }
+        .fade-out-d { animation: fadeOut 5s 5s forwards; }
+        .fade-out-o { animation: fadeOut 5s 10s forwards; }
+        .pulsate { animation: pulsate 1s 3; }
+        .card-hover {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 30px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            text-align: center;
+            line-height: 30px;
+            font-size: 14px;
+            display: none;
+            z-index: 100;
+            pointer-events: none;
+        }
+        #high-score-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        #high-score-content {
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            max-width: 400px;
+        }
+        #high-score-content h2 {
+            margin-bottom: 20px;
+        }
+        #high-score-content ul {
+            list-style: none;
+            padding: 0;
+            margin-bottom: 20px;
+        }
+        #high-score-content li {
+            margin-bottom: 5px;
+        }
+        #close-high-scores {
+            padding: 10px 20px;
+            font-size: 16px;
+            background: #FFD700;
+            border: none;
+            cursor: pointer;
+        }
+    

@@ -1,0 +1,95 @@
+/* Reset default margins and ensure box-sizing */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Outer splash screen container */
+#splash-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: transparent; /* No overlay */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+/* Inner content container with rounded corners */
+#splash-content {
+  background-color: #fff;
+  padding: 20px;
+  border-radius: 10px; /* Rounded corners */
+  width: 90%; /* Flexible width */
+  max-width: 800px; /* Max for larger screens */
+  min-width: 300px; /* Min for phones */
+  height: auto; /* Grows with content */
+  max-height: 100vh; /* Full screen height if needed */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow: hidden; /* No scrollbars */
+}
+
+/* Top section (title and heading) */
+.top {
+  width: 100%;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.top h1 {
+  font-size: clamp(16px, 3vw, 24px); /* Dynamic font size */
+  margin-bottom: 10px;
+}
+
+/* Middle section (Previous, Rules, Next) */
+.middle {
+  display: flex;
+  width: 100%;
+  align-items: center; /* Aligns items horizontally */
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.left, .right {
+  flex: 0 0 auto; /* 10% width for buttons */
+  text-align: center;
+}
+
+.center {
+  flex: 1;
+  text-align: center;
+  padding: 0 10px;
+  white-space: normal;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+/* Bottom section (Start Game button) */
+.bottom {
+  width: 100%;
+  text-align: center;
+  padding-top: 20px;
+}
+
+/* Buttons */
+button {
+  padding: 10px 20px;
+  font-size: 16px;
+  cursor: pointer;
+  background-color: #007bff; /* Blue buttons */
+  color: white;
+  border: none;
+  border-radius: 5px;
+}
+
+button:disabled {
+  display: none; /* Hides the button completely */
+  /* background-color: #cccccc; */
+  cursor: not-allowed;
+}

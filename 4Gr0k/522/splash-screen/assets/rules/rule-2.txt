@@ -1,0 +1,1 @@
+Use the tableau to arrange cards in alternating suits.

@@ -1,0 +1,1 @@
+Draw cards from the stock to the waste pile in sets of three.
