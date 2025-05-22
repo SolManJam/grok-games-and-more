@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Div Styling Practice - Fixed Bottom Div</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+            overflow: hidden; /* Prevents body from scrolling */
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Top Div */
+        .top-div {
+            width: 100%;
+            height: 100px;
+            background-color: #ff6b6b; /* Red */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 24px;
+            flex-shrink: 0; /* Prevents top div from shrinking */
+        }
+
+        /* Columns Section */
+        .columns {
+            display: flex;
+            flex: 1; /* Takes available space */
+            overflow-y: auto; /* Allows scrolling if content overflows */
+            max-height: calc(100vh - 200px); /* Limits height to viewport minus top and bottom divs */
+        }
+
+        .left-column {
+            width: 40px; /* Fixed width of 20 pixels */
+            background-color: #4ecdc4; /* Teal */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 12px; /* Smaller font for narrow column */
+            writing-mode: vertical-rl; /* Rotates text for readability */
+            text-orientation: mixed;
+        }
+
+        .middle-column {
+            flex: 1;
+            background-color: #45b7d1; /* Blue */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 20px;
+        }
+
+        .right-column {
+            width: 40px; /* Fixed width of 20 pixels */
+            background-color: #96ceb4; /* Green */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 12px; /* Smaller font for narrow column */
+            writing-mode: vertical-rl; /* Rotates text for readability */
+            text-orientation: mixed;
+        }
+
+        /* Bottom Div */
+        .bottom-div {
+            width: 100%;
+            height: 100px;
+            background-color: #ffcc5c; /* Yellow */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 24px;
+            flex-shrink: 0; /* Prevents bottom div from shrinking */
+        }
+    </style>
+</head>
+<body>
+    <div class="top-div">Top Div (Full Width)</div>
+    <div class="columns">
+        <div class="left-column">Left Column</div>
+        <div class="middle-column">Middle Column</div>
+        <div class="right-column">Right Column</div>
+    </div>
+    <div class="bottom-div">Bottom Div (Full Width)</div>
+</body>
+</html>
