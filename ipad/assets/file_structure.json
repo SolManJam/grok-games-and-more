@@ -1,0 +1,104 @@
+{
+  "type": "folder",
+  "name": "root",
+  "children": [
+    {
+      "type": "file",
+      "name": "index.html"
+    },
+    {
+      "type": "folder",
+      "name": "html",
+      "children": [
+        {
+          "type": "file",
+          "name": "splash-screen.html"
+        }
+      ]
+    },
+    {
+      "type": "folder",
+      "name": "css",
+      "children": [
+        {
+          "type": "file",
+          "name": "bg.jpg"
+        },
+        {
+          "type": "file",
+          "name": "splash.css"
+        },
+        {
+          "type": "file",
+          "name": "styles.css"
+        }
+      ]
+    },
+    {
+      "type": "folder",
+      "name": "js",
+      "children": [
+        {
+          "type": "file",
+          "name": "splash.js"
+        }
+      ]
+    },
+    {
+      "type": "folder",
+      "name": "assets",
+      "children": [
+        {
+          "type": "folder",
+          "name": "rules",
+          "children": [
+            {
+              "type": "file",
+              "name": "rule-1.txt"
+            },
+            {
+              "type": "file",
+              "name": "rule-2.txt"
+            },
+            {
+              "type": "file",
+              "name": "rule-3.txt"
+            },
+            {
+              "type": "file",
+              "name": "rule-4.txt"
+            },
+            {
+              "type": "file",
+              "name": "rule-5.txt"
+            },
+            {
+              "type": "file",
+              "name": "rule-1.html"
+            },
+            {
+              "type": "file",
+              "name": "rule-2.html"
+            },
+            {
+              "type": "file",
+              "name": "rule-3.html"
+            },
+            {
+              "type": "file",
+              "name": "rule-4.html"
+            },
+            {
+              "type": "file",
+              "name": "rule-5.html"
+            }
+          ]
+        },
+        {
+          "type": "file",
+          "name": "file-structure.json"
+        }
+      ]
+    }
+  ]
+}

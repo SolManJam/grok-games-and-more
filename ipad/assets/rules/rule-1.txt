@@ -1,0 +1,1 @@
+Build the foundation piles in reverse chronological order for each suit.
