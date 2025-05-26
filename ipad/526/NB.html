@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>US Presidents Game</title>
+    <link href="https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="NB-styles.css">
+</head>
+<body>
+    <script defer src="NB-scripts.js"></script>
+    <div id="gameArea">
+        <div id="leftSide">
+            <img id="presidentImage" src="" alt="President Card">
+        </div>
+        <div id="rightSide">
+            <div class="option" data-number=""></div>
+            <div class="option" data-number=""></div>
+            <div class="option" data-number=""></div>
+        </div>
+        <div id="modeSelector">
+            <select id="mode">
+                <option value="number">Number</option>
+                <option value="years">Years</option>
+            </select>
+        </div>
+    </div>
+    <div id="message"></div>
+    <div id="reportCard">
+        <h2>REPORT CARD: <span id="roundIndicator"></span></h2>
+        <div id="reportColumns" style="display: flex; justify-content: space-around;">
+            <div id="column1" class="report-column"></div>
+            <div id="column2" class="report-column"></div>
+            <div id="column3" class="report-column"></div>
+            <div id="column4" class="report-column"></div>
+        </div>
+        <button id="continue">Continue to Next Round</button>
+    </div>
+    <div id="fullScreenView">
+        <div style="text-align: center; margin-bottom: 20px;">
+            <a href="#" id="returnLink">Return to REPORT CARD</a>
+        </div>
+        <div id="gridContainer"></div>
+    </div>
+    <div id="finalMessage">
+        <h2>Thanks for playing!</h2>
+        <p id="finalScore"></p>
+        <p id="grade"></p>
+        <a href="#" id="playAgain">Play again</a>
+    </div>
+</body>
+</html>

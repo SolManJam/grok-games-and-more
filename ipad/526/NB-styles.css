@@ -1,0 +1,246 @@
+body {
+    font-family: Arial, sans-serif;
+    text-align: center;
+    background-color: #f4f4f4;
+    margin: 0;
+    padding: 0;
+}
+
+html body {
+    background-image: url('background.jpg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+#gameArea {
+    display: flex;
+    align-items: stretch;
+    margin: 20px;
+    position: relative;
+}
+
+#leftSide {
+    flex: 0 0 auto;
+    max-width: 300px;
+    width: 40%;
+    margin-right: 20px;
+}
+
+#presidentImage {
+    width: 100%;
+    height: auto;
+    border: 2px solid #333;
+    border-radius: 10px;
+    transition: opacity 0.3s ease;
+}
+
+#rightSide {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 0 20px;
+}
+
+.option {
+    width: 100%;
+    height: calc((100% - 20px) / 3);
+    background-color: #4CAF50;
+    color: white;
+    border-radius: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 20px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.option:hover:not(.disabled) {
+    background-color: #45a049;
+}
+
+.option:active:not(.disabled) {
+    background-color: #45a049;
+}
+
+.option.disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+
+.option.correct {
+    background-color: #ffd700;
+}
+
+#modeSelector {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+}
+
+#message {
+    margin: 20px;
+    font-size: 18px;
+    color: #333;
+}
+
+#reportCard {
+    display: none;
+    margin: 20px;
+}
+
+#reportCard h2 {
+    font-size: 36px;
+    text-align: left;
+}
+
+.report-column {
+    width: 22%;
+    text-align: left;
+}
+
+.report-column.centered {
+    margin: 0 auto;
+}
+
+.missed {
+    color: red;
+}
+
+.percentage {
+    font-family: 'Patrick Hand', cursive;
+    font-size: 18px;
+}
+
+.showMore {
+    color: blue;
+    text-decoration: underline;
+    cursor: pointer;
+    display: block;
+    margin-top: 5px;
+}
+
+button {
+    padding: 10px 20px;
+    font-size: 16px;
+    margin: 5px;
+    cursor: pointer;
+    background-color: #3498db;
+    color: white;
+    border: none;
+    border-radius: 5px;
+}
+
+button:hover {
+    background-color: #2980b9;
+}
+
+button:active {
+    background-color: #2980b9;
+}
+
+#fullScreenView {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #f4f4f4;
+    z-index: 1000;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+#gridContainer {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+#gridContainer div {
+    padding: 10px;
+    text-align: left;
+}
+
+#finalMessage {
+    display: none;
+    text-align: center;
+    padding: 20px;
+}
+
+#grade {
+    font-family: 'Patrick Hand', cursive;
+    font-size: 48px;
+}
+
+/* Media Queries for Tablets (max-width: 768px) */
+@media (max-width: 768px) {
+    #gameArea {
+        flex-direction: column;
+        align-items: center;
+    }
+    #leftSide {
+        width: 80%;
+        max-width: none;
+        margin-right: 0;
+        margin-bottom: 20px;
+    }
+    #rightSide {
+        width: 80%;
+        padding: 0;
+    }
+    .option {
+        height: 60px;
+        font-size: 18px;
+    }
+    #reportColumns {
+        flex-direction: column;
+        align-items: center;
+    }
+    .report-column {
+        width: 80%;
+        margin-bottom: 20px;
+    }
+    #gridContainer {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* Media Queries for Mobiles (max-width: 480px) */
+@media (max-width: 480px) {
+    #leftSide {
+        width: 100%;
+    }
+    #rightSide {
+        width: 100%;
+    }
+    .option {
+        font-size: 16px;
+        height: 50px;
+    }
+    #modeSelector select {
+        font-size: 14px;
+        padding: 5px;
+    }
+    #gridContainer {
+        grid-template-columns: 1fr;
+    }
+    #reportCard h2 {
+        font-size: 24px;
+    }
+    #message {
+        font-size: 16px;
+    }
+    button {
+        font-size: 14px;
+        padding: 8px 16px;
+    }
+}
