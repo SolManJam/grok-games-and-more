@@ -1,0 +1,3371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Presidential Solitaire Tutorial</title>
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script&display=swap" rel="stylesheet">
+    <style>
+        /* ============================================================================
+           CSS CUSTOM PROPERTIES - Responsive Card Sizing
+           ============================================================================ */
+        :root {
+            /* Card dimensions - responsive based on viewport */
+            --card-width: min(85px, 21vw);
+            --card-height: calc(var(--card-width) * 1.38);
+            --card-border-radius: calc(var(--card-width) * 0.06);
+            --card-border-width: 3px;
+            
+            /* Spacing */
+            --pile-gap: min(8px, 2vw);
+            --section-gap: min(12px, 3vw);
+            --card-stack-offset: min(25px, 6vw);  /* Vertical offset for stacked cards */
+            
+            /* Colors */
+            --color-table-green: #1a5c1a;
+            --color-table-felt: #228B22;
+            --color-republican: #cc0000;
+            --color-democratic: #0066cc;
+            --color-wildcard: #ffd700;
+            --color-pile-bg: rgba(0, 80, 0, 0.4);
+            --color-pile-border: rgba(255, 255, 255, 0.4);
+            
+            /* Label sizing */
+            --label-font-size: min(11px, 2.8vw);
+        }
+        
+        /* Larger cards on bigger screens */
+        @media (min-width: 500px) {
+            :root {
+                --card-width: min(100px, 18vw);
+                --card-stack-offset: 28px;
+            }
+        }
+        
+        @media (min-width: 700px) {
+            :root {
+                --card-width: min(120px, 15vw);
+                --card-stack-offset: 32px;
+            }
+        }
+
+        /* ============================================================================
+           TOUCH/MOBILE SPECIFIC STYLES
+           ============================================================================ */
+        
+        /* Prevent text selection and callouts on touch devices */
+        .card, .pile, #game-area {
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+        
+        /* Card being touch-dragged */
+        .card.touch-dragging {
+            position: fixed !important;
+            z-index: 9999 !important;
+            opacity: 0.9;
+            transform: scale(1.05);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.5);
+            pointer-events: none;
+            transition: none !important;  /* Remove transition during drag for responsiveness */
+        }
+        
+        /* Visual feedback for valid drop zone during touch drag */
+        .pile.touch-drop-target {
+            background-color: rgba(40, 167, 69, 0.5) !important;
+            border: 3px solid #28a745 !important;
+            box-shadow: 0 0 15px rgba(40, 167, 69, 0.7);
+        }
+        
+        /* Ghost placeholder where card was picked up */
+        .card-placeholder {
+            position: absolute;
+            width: var(--card-width);
+            height: var(--card-height);
+            background-color: rgba(255, 255, 255, 0.2);
+            border: 2px dashed rgba(255, 255, 255, 0.5);
+            border-radius: var(--card-border-radius);
+        }
+        
+        /* Ensure touch-action manipulation on interactive elements */
+        .card[draggable="true"] {
+            cursor: grab;
+            touch-action: none;  /* Prevent browser handling of touch events */
+        }
+        
+        /* iOS safe area handling for notched devices */
+        @supports (padding: max(0px)) {
+            body {
+                padding-left: max(8px, env(safe-area-inset-left));
+                padding-right: max(8px, env(safe-area-inset-right));
+                padding-top: max(8px, env(safe-area-inset-top));
+                padding-bottom: max(8px, env(safe-area-inset-bottom));
+            }
+        }
+        
+        /* Portrait orientation warning overlay */
+        #rotate-device-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(26, 92, 26, 0.95);
+            z-index: 99999;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            color: white;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        #rotate-device-overlay .rotate-icon {
+            font-size: 60px;
+            margin-bottom: 20px;
+            animation: rotate-hint 2s ease-in-out infinite;
+        }
+        
+        #rotate-device-overlay h2 {
+            margin: 0 0 10px 0;
+            font-size: 24px;
+        }
+        
+        #rotate-device-overlay p {
+            margin: 0;
+            font-size: 16px;
+            opacity: 0.9;
+        }
+        
+        @keyframes rotate-hint {
+            0%, 100% { transform: rotate(0deg); }
+            25% { transform: rotate(-20deg); }
+            75% { transform: rotate(20deg); }
+        }
+        
+        /* Show portrait warning only on narrow/tall screens (phones in portrait) */
+        @media (max-width: 600px) and (orientation: portrait) {
+            #rotate-device-overlay {
+                display: flex;
+            }
+        }
+        
+        /* Scroll toggle button - fixed position in corner */
+        #scroll-toggle-btn {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            z-index: 10000;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: 2px solid white;
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-size: 12px;
+            cursor: pointer;
+            touch-action: manipulation;
+            opacity: 0.8;
+            transition: opacity 0.2s;
+        }
+        
+        #scroll-toggle-btn:hover, #scroll-toggle-btn:active {
+            opacity: 1;
+            background-color: rgba(0, 0, 0, 0.9);
+        }
+        
+        /* When scroll is enabled, change button appearance */
+        body.scroll-enabled #scroll-toggle-btn {
+            background-color: rgba(40, 167, 69, 0.8);
+            border-color: #28a745;
+        }
+        
+        /* When scroll is enabled, allow scrolling */
+        body.scroll-enabled {
+            overflow: auto !important;
+        }
+
+        /* ============================================================================
+           BASE STYLES
+           ============================================================================ */
+        * {
+            box-sizing: border-box;
+        }
+        
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(145deg, var(--color-table-green) 0%, var(--color-table-felt) 50%, #1e6b1e 100%);
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            min-height: 100dvh; /* Dynamic viewport height for mobile browsers */
+            overflow: hidden;
+            padding: 8px;
+        }
+
+        /* ============================================================================
+           SPLASH SCREEN
+           ============================================================================ */
+        #splash-screen {
+            text-align: center;
+            background-color: white;
+            padding: 20px 30px;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            margin-top: 20vh;
+        }
+        #splash-screen h1 {
+            font-family: 'Dancing Script', cursive;
+            font-size: clamp(32px, 8vw, 48px);
+            margin: 0;
+            color: #1a5c1a;
+        }
+        #splash-screen p {
+            color: #555;
+            margin: 10px 0;
+        }
+        #start-button {
+            padding: 12px 28px;
+            font-size: 18px;
+            cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            margin-top: 15px;
+            font-weight: bold;
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+            transition: all 0.2s ease;
+        }
+        #start-button:hover {
+            background-color: #45a049;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(76, 175, 80, 0.5);
+        }
+        #start-button:active {
+            transform: translateY(0);
+        }
+
+        /* ============================================================================
+           GAME AREA LAYOUT - Landscape Mobile First
+           
+           Designed for LANDSCAPE orientation (wider than tall)
+           
+           ┌────────────────────────────────────────────────────────────────────┐
+           │  [          Text Box (fixed height)           ] [Next]             │
+           ├──────────┬────────┬────────┬────────┬──────────────────────────────┤
+           │ Draw Pile│ Sort 1 │ Sort 2 │ Sort 3 │ Wildcard │ Repub. │ Democ.  │
+           │  ┌───┐   │   │    │   │    │   │    │  ┌───┐   │ ┌───┐  │ ┌───┐   │
+           │  │   │   │   │    │   │    │   │    │  │   │   │ │   │  │ │   │   │
+           │  └───┘   │   │    │   │    │   │    │  └───┘   │ └───┘  │ └───┘   │
+           │ The Deck │   │    │   │    │   │    │          │        │         │
+           │  ┌───┐   │        │        │        │          │        │         │
+           │  │   │   │        │        │        │          │        │         │
+           │  └───┘   │        │        │        │          │        │         │
+           └──────────┴────────┴────────┴────────┴──────────┴────────┴─────────┘
+           ============================================================================ */
+        
+        #game-area {
+            display: none;
+            width: 100%;
+            max-width: 900px;  /* Wider for landscape */
+            height: calc(100vh - 16px);
+            height: calc(100dvh - 16px);
+            position: relative;
+            padding: 5px;
+            box-sizing: border-box;
+        }
+        
+        .game-container {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            gap: 0;
+        }
+
+        /* MAIN CONTENT: All card areas in a horizontal row */
+        /* Aligned with text box edges above */
+        .main-content {
+            display: flex;
+            flex: 1;
+            min-height: 0;
+            padding-top: 22px;  /* Space for labels above cards */
+            /* Limit height so sort zones don't extend too far */
+            max-height: calc(100% - 22px);
+            /* No extra padding - align with text box edges */
+        }
+
+        /* LEFT: Play Area (Deck Column + Sort Zones) */
+        .play-area {
+            display: flex;
+            flex: 1;  /* Take available space to distribute evenly */
+            min-width: 0;
+            align-items: flex-start;  /* Align to top, don't stretch */
+            justify-content: center;  /* Center the deck and sort zones */
+            gap: 0;  /* We'll use margins for specific spacing */
+        }
+        
+        /* DECK COLUMN: Draw Pile on top, The Deck below */
+        /* Wider to accommodate 3 offset cards in Draw Pile */
+        .deck-column {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            width: calc(var(--card-width) + 25px);  /* Extra width for card offset */
+            flex-shrink: 0;
+            padding-bottom: 20px;  /* Space for The Deck label below */
+        }
+        
+        /* SORT ZONES: 3 columns side by side, fixed width like other piles */
+        /* Centered with even gaps on both sides */
+        .sort-zones-row {
+            display: flex;
+            gap: 8px;
+            flex: 0 0 auto;  /* Don't grow - use natural width */
+            align-items: flex-start;  /* Align to top */
+            margin: 0 auto;  /* Center within play area, creates even gaps */
+        }
+
+        /* RIGHT: Foundations in a vertical column, cards rotated 90° */
+        .foundations-column {
+            display: flex;
+            flex-direction: column;  /* Stacked vertically */
+            gap: 5px;
+            flex-shrink: 0;
+            align-items: flex-start;
+            padding-right: 20px;  /* Space for rotated labels on right */
+        }
+        
+        /* Calculate foundation column height for sort zone matching */
+        /* 3 foundation cards + 2 gaps = total height sort zones should match */
+
+        /* ============================================================================
+           CARD PILE STYLES
+           ============================================================================ */
+        .pile {
+            width: var(--card-width);
+            height: var(--card-height);
+            background-color: var(--color-pile-bg);
+            border: 2px dashed var(--color-pile-border);
+            border-radius: var(--card-border-radius);
+            position: relative;
+            overflow: visible;
+            transition: all 0.3s ease;
+            flex-shrink: 0;
+        }
+        
+        .pile.clickable-highlight {
+            background-color: rgba(40, 167, 69, 0.4);
+            border: 3px solid #28a745;
+            box-shadow: 0 0 20px rgba(40, 167, 69, 0.8);
+            cursor: pointer;
+            animation: pulse-click 1.5s ease-in-out infinite;
+        }
+        
+        .pile.pulsing {
+            animation: highlight-pulse 1s ease-in-out 3;
+        }
+        
+        /* Continuous pulsing for Draw Pile highlight */
+        .pile.pulsing-continuous {
+            animation: highlight-pulse 1s ease-in-out infinite;
+        }
+
+        /* Deck piles (Draw Pile and The Deck) - fixed size */
+        .deck-pile {
+            flex-shrink: 0;
+        }
+
+        /* Sort Zone piles - fixed width like other card piles */
+        /* Height matches the 3 stacked foundation zones (3 cards + 2 gaps) */
+        .sort-zone-pile {
+            width: var(--card-width);  /* Fixed width - same as other piles */
+            /* Height = 3 foundation card heights (which is card-width since rotated) + 2 gaps */
+            height: calc(var(--card-width) * 3 + 10px);
+            min-height: var(--card-height);
+            max-height: calc(var(--card-width) * 3 + 10px);
+            flex-shrink: 0;
+            overflow: visible;  /* Allow cards to stack beyond the zone visually */
+        }
+
+        /* Foundation piles - rotated 90° (landscape orientation) */
+        /* Width and height swapped for landscape cards */
+        .foundation-pile {
+            background-color: rgba(0, 60, 0, 0.5);
+            border-color: rgba(255, 255, 255, 0.3);
+            width: var(--card-height);  /* Swapped: use card height as width */
+            height: var(--card-width);  /* Swapped: use card width as height */
+        }
+        
+        /* Cards inside foundations are rotated 90° and centered */
+        .foundation-pile .card {
+            transform: rotate(90deg);
+            transform-origin: center center;
+            /* Adjust position to center the rotated card */
+            /* Card is card-width x card-height, rotated to card-height x card-width */
+            /* Need to offset by half the difference */
+            left: calc((var(--card-height) - var(--card-width)) / 2) !important;
+            top: calc((var(--card-width) - var(--card-height)) / 2) !important;
+        }
+
+        .label {
+            position: absolute;
+            top: -18px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-size: var(--label-font-size);
+            color: white;
+            text-shadow: 1px 1px 2px black;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+        
+        /* Foundation labels - rotated 90° on the right side */
+        .foundation-pile .label {
+            top: 0;
+            bottom: 0;
+            left: auto;
+            right: -18px;
+            width: auto;
+            height: 100%;
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+            transform: none;
+            font-size: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        /* The Deck label goes BELOW */
+        #stock .label {
+            top: auto;
+            bottom: -18px;
+        }
+        
+        #stock, #waste {
+            cursor: pointer;
+        }
+
+        /* ============================================================================
+           CARD STYLES
+           ============================================================================ */
+        .card-container {
+            position: absolute;
+            width: var(--card-width);
+            height: var(--card-height);
+            transition: all 0.2s ease;
+        }
+        
+        .card {
+            width: var(--card-width);
+            height: var(--card-height);
+            background-color: white;
+            border: var(--card-border-width) solid #ccc;
+            border-radius: var(--card-border-radius);
+            overflow: hidden;
+            position: relative;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
+        }
+        
+        .card img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            pointer-events: none;
+        }
+        
+        .card.republican { border-color: var(--color-republican); }
+        .card.democratic { border-color: var(--color-democratic); }
+        .card.other { border-color: var(--color-wildcard); }
+
+        /* ============================================================================
+           TUTORIAL UI ELEMENTS - FIXED HEIGHT AT TOP
+           Message area with fixed height so content doesn't shift
+           ============================================================================ */
+        #tutorial-popup-container {
+            display: flex;  /* Always display, but content may be empty */
+            flex-direction: row;
+            align-items: stretch;
+            gap: 0;
+            width: 100%;
+            height: 77px;  /* FIXED HEIGHT - 40% taller */
+            min-height: 77px;
+            max-height: 77px;
+            flex-shrink: 0;
+            margin-bottom: 0;  /* Labels provide spacing below */
+        }
+
+        #tutorial-popup {
+            background-color: white;
+            padding: 8px 12px;
+            border: 2px solid #333;
+            border-radius: 10px 0 0 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            flex: 1;
+            text-align: center;
+            font-size: min(13px, 2.5vw);
+            line-height: 1.3;
+            overflow: hidden;
+            /* Use table-cell for vertical centering without breaking text flow */
+            display: table-cell;
+            vertical-align: middle;
+        }
+        
+        #tutorial-popup.success {
+            background-color: #d4edda;
+            border-color: #333;
+            color: #155724;
+            font-weight: bold;
+        }
+        
+        #tutorial-popup.error {
+            background-color: #f8d7da;
+            border-color: #333;
+            color: #721c24;
+            font-weight: bold;
+        }
+
+        /* Next button - side by side with popup */
+        #next-button {
+            background-color: #4CAF50;
+            color: white;
+            border: 2px solid #333;
+            border-left: none;
+            border-radius: 0 10px 10px 0;
+            padding: 6px 8px;
+            font-size: min(11px, 2.2vw);
+            font-weight: bold;
+            cursor: pointer;
+            touch-action: manipulation;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            width: 85px;
+            min-width: 85px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+            transition: background-color 0.2s;
+            white-space: normal;  /* Allow text to wrap */
+            line-height: 1.2;
+        }
+        
+        #next-button:hover:not(:disabled) {
+            background-color: #45a049;
+        }
+        
+        /* Disabled state - greyed out */
+        #next-button:disabled {
+            background-color: #888;
+            color: #ddd;
+            cursor: default;
+        }
+        
+        /* Begin Game button - replaces Next at end */
+        #begin-game-button {
+            display: none;
+            background-color: #4CAF50;
+            color: white;
+            border: 2px solid #333;
+            border-left: none;
+            border-radius: 0 10px 10px 0;
+            padding: min(12px, 3vw) min(12px, 3vw);
+            font-size: min(12px, 3vw);
+            font-weight: bold;
+            cursor: pointer;
+            touch-action: manipulation;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            width: 75px;
+            min-width: 75px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+            white-space: normal;  /* Allow text to wrap */
+            line-height: 1.2;
+        }
+        
+        #begin-game-button:hover {
+            background-color: #45a049;
+        }
+        
+        /* OK button for errors - inline with text box like Next button */
+        #popup-ok-button {
+            display: none;
+            background-color: #dc3545;
+            color: white;
+            border: 2px solid #333;
+            border-left: none;
+            border-radius: 0 10px 10px 0;
+            padding: 6px 12px;
+            font-size: min(11px, 2.2vw);
+            font-weight: bold;
+            cursor: pointer;
+            touch-action: manipulation;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            width: 85px;
+            min-width: 85px;
+        }
+        
+        #popup-ok-button:hover {
+            background-color: #c82333;
+        }
+
+        /* Overlay dimming effect for non-focus areas */
+        .overlay-dim {
+            position: absolute;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1500;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        /* ============================================================================
+           PLAY ICON - Shows in disabled button during auto-animations (NOT blinking)
+           ============================================================================ */
+        .play-icon {
+            display: inline-block;
+            margin-right: 4px;
+            font-size: 0.9em;
+        }
+
+        /* ============================================================================
+           ANIMATIONS
+           ============================================================================ */
+        @keyframes highlight-pulse {
+            0%, 100% {
+                background-color: rgba(0, 100, 0, 0.3);
+                border-color: rgba(255, 255, 255, 0.5);
+                box-shadow: none;
+                transform: scale(1);
+            }
+            50% {
+                background-color: rgba(255, 243, 205, 0.6);
+                border-color: #ffc107;
+                box-shadow: 0 0 20px rgba(255, 193, 7, 0.6);
+                transform: scale(1.02);
+            }
+        }
+
+        @keyframes pulse-click {
+            0%, 100% {
+                transform: scale(1);
+                box-shadow: 0 0 30px rgba(40, 167, 69, 0.8);
+            }
+            50% {
+                transform: scale(1.05);
+                box-shadow: 0 0 50px rgba(40, 167, 69, 1);
+            }
+        }
+
+        /* Pointing finger emoji animation */
+        .pointing-finger {
+            position: absolute;
+            font-size: 48px;
+            z-index: 3000;
+            animation: finger-bounce 0.5s ease-in-out infinite;
+        }
+        @keyframes finger-bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        /* Card pulsating animation for drawing attention */
+        .card.pulsating {
+            animation: card-pulse 1s ease-in-out infinite;
+        }
+        @keyframes card-pulse {
+            0%, 100% {
+                box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
+                transform: scale(1);
+            }
+            50% {
+                box-shadow: 0 0 20px rgba(255, 215, 0, 0.8), 0 0 30px rgba(255, 215, 0, 0.6);
+                transform: scale(1.05);
+            }
+        }
+
+        /* President list item highlighting */
+        .president-list .highlight-next {
+            background-color: rgba(255, 215, 0, 0.4);
+            animation: list-pulse 1s ease-in-out infinite;
+            font-weight: bold;
+        }
+        @keyframes list-pulse {
+            0%, 100% {
+                background-color: rgba(255, 215, 0, 0.3);
+            }
+            50% {
+                background-color: rgba(255, 215, 0, 0.6);
+            }
+        }
+
+        /* Completed item with checkmark */
+        .president-list .completed {
+            color: #28a745;
+        }
+        .president-list .completed .checkmark {
+            color: #28a745;
+            font-weight: bold;
+            margin-right: 3px;
+        }
+
+        /* Greyscale placeholder cards in Foundation zones */
+        .card.greyscale {
+            filter: grayscale(100%) opacity(0.6);
+        }
+
+        /* DEBUG: Step counter display */
+        #step-display {
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            background: rgba(0,0,0,0.7);
+            color: #0f0;
+            font-family: monospace;
+            font-size: 12px;
+            padding: 5px 10px;
+            border-radius: 4px;
+            z-index: 5000;
+        }
+
+        /* DEBUG: Text box numbering */
+        .text-box-label {
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            background: #333;
+            color: #fff;
+            font-size: 10px;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <!-- ========================================================================
+         ROTATE DEVICE OVERLAY - Shows on phones in portrait
+         ======================================================================== -->
+    <div id="rotate-device-overlay">
+        <div class="rotate-icon">📱↻</div>
+        <h2>Please Rotate Your Device</h2>
+        <p>This game is designed for landscape orientation</p>
+    </div>
+    
+    <!-- ========================================================================
+         SCROLL TOGGLE BUTTON - For mobile browser testing
+         ======================================================================== -->
+    <button id="scroll-toggle-btn" onclick="toggleScroll()">🔓 Scroll</button>
+
+    <!-- ========================================================================
+         SPLASH SCREEN
+         ======================================================================== -->
+    <div id="splash-screen">
+        <h1>Presidential Solitaire</h1>
+        <p>Learn how to play!</p>
+        <button id="start-button">Start Tutorial</button>
+    </div>
+
+    <!-- ========================================================================
+         GAME AREA - Mobile-First Layout (New Design)
+         Row 1: Text Box + Next button (fixed height at top)
+         Main: Deck Column | Sort Zones | Foundations Column
+         ======================================================================== -->
+    <div id="game-area">
+        <!-- DEBUG: Step counter -->
+        <div id="step-display">Step: -1 | Text: 0</div>
+        
+        <!-- MESSAGE AREA - Fixed height at top -->
+        <div id="tutorial-popup-container">
+            <div id="tutorial-popup"></div>
+            <button id="next-button">Next</button>
+            <button id="begin-game-button">Begin Game</button>
+            <button id="popup-ok-button">OK</button>
+        </div>
+        
+        <div class="game-container">
+            <!-- MAIN CONTENT: Play area (left) + Foundations (right) -->
+            <div class="main-content">
+                <!-- LEFT: Play Area (Deck Column + Sort Zones) -->
+                <div class="play-area">
+                    <!-- DECK COLUMN: Draw Pile on top, The Deck below -->
+                    <div class="deck-column">
+                        <div id="waste" class="pile deck-pile">
+                            <div class="label">Draw Pile</div>
+                        </div>
+                        <div id="stock" class="pile deck-pile">
+                            <div class="label">The Deck</div>
+                        </div>
+                    </div>
+                    
+                    <!-- SORT ZONES: 3 columns -->
+                    <div class="sort-zones-row">
+                        <div id="sort-zone-0" class="pile sort-zone-pile">
+                            <div class="label">Sort 1</div>
+                        </div>
+                        <div id="sort-zone-1" class="pile sort-zone-pile">
+                            <div class="label">Sort 2</div>
+                        </div>
+                        <div id="sort-zone-2" class="pile sort-zone-pile">
+                            <div class="label">Sort 3</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- RIGHT: Foundations (stacked vertically) -->
+                <div class="foundations-column">
+                    <div id="foundation-other" class="pile foundation-pile">
+                        <div class="label">Wildcard</div>
+                    </div>
+                    <div id="foundation-republican" class="pile foundation-pile">
+                        <div class="label">Republican</div>
+                    </div>
+                    <div id="foundation-democratic" class="pile foundation-pile">
+                        <div class="label">Democratic</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================================================
+        // TUTORIAL STATE MACHINE
+        // ============================================================================
+        // 
+        // This tutorial uses a step-based state machine. Each step has:
+        // - A clear starting screen state
+        // - An action (animation, user interaction, or explanation)
+        // - A trigger for the next step (automatic or user-driven)
+        //
+        // STEP TYPES:
+        // - AUTO: Runs automatically, no user input needed
+        // - USER_WAIT: Pauses for user action (click, drag-drop)
+        // - EXPLAIN: Shows text with Next button
+        //
+        // STEP OVERVIEW:
+        // Step 0: AUTO - First card (R-27) animates from Draw Pile to Sort Zone 1
+        // Step 1: AUTO - Second card (D-28) animates to Sort Zone 1
+        // Step 2: AUTO - Third card (R-29) animates to Sort Zone 1
+        // Step 3: USER_WAIT - User clicks The Deck to draw cards
+        // Step 4: AUTO - Card animates from Draw Pile to Sort Zone 2
+        // Step 5: EXPLAIN - Explain alternating colors
+        // Step 6: USER_WAIT - User drags cards from Draw Pile
+        // ... (more steps as tutorial progresses)
+        // ============================================================================
+
+        // ============================================================================
+        // GLOBAL STATE VARIABLES
+        // ============================================================================
+        
+        // ============================================================================
+        // DEBUG MODE - Set to false to hide debug displays
+        // ============================================================================
+        const DEBUG_MODE = true;
+        
+        let tutorialStep = -1;           // Current tutorial step (-1 = not started)
+        let dragDropCounter = 0;         // Counts successful drag-and-drop moves
+        let stockClicked = false;        // Prevents double-clicks on The Deck
+        
+        // Responsive card stacking offset - computed from CSS variable
+        let CARD_STACK_OFFSET = 25;      // Default, updated on game start
+        
+        // DOM References (cached for performance)
+        const gameArea = document.getElementById('game-area');
+        const wasteDiv = document.getElementById('waste');
+        const stockDiv = document.getElementById('stock');
+        const tutorialPopupContainer = document.getElementById('tutorial-popup-container');
+        const tutorialPopup = document.getElementById('tutorial-popup');
+        const nextButton = document.getElementById('next-button');
+        const okButton = document.getElementById('popup-ok-button');
+        const beginButton = document.getElementById('begin-game-button');
+        const stepDisplay = document.getElementById('step-display');
+        
+        // Card suit abbreviation mapping
+        const abbrevToSuit = {
+            'R': 'republican',
+            'D': 'democratic',
+            'O': 'other'
+        };
+        
+        /**
+         * Updates the CARD_STACK_OFFSET from CSS variable
+         * Call this when the game area becomes visible
+         */
+        function updateCardStackOffset() {
+            const style = getComputedStyle(document.documentElement);
+            const offset = style.getPropertyValue('--card-stack-offset').trim();
+            CARD_STACK_OFFSET = parseInt(offset) || 25;
+        }
+
+        /**
+         * Helper: Colorize color words and president names in text
+         * Makes "Red"/"red" appear in red, "Blue"/"blue" in blue, "Yellow"/"yellow" in gold
+         * Also colors president names by their party
+         */
+        function colorizeText(text) {
+            return text
+                // Color words
+                .replace(/\b(Red|RED)\b/g, '<span style="color: #cc0000; font-weight: bold;">$1</span>')
+                .replace(/\b(red)\b/g, '<span style="color: #cc0000;">$1</span>')
+                .replace(/\b(Blue|BLUE)\b/g, '<span style="color: #0066cc; font-weight: bold;">$1</span>')
+                .replace(/\b(blue)\b/g, '<span style="color: #0066cc;">$1</span>')
+                .replace(/\b(Yellow|YELLOW|yellow)\b/g, '<span style="color: #DAA520; font-weight: bold;">$1</span>')
+                .replace(/\b(WILDCARD|Wildcard|wildcard|WILDCARDS|Wildcards|wildcards)\b/g, '<span style="color: #DAA520; font-weight: bold;">$1</span>')
+                // Party names
+                .replace(/\b(REPUBLICANS|Republicans|Republican)\b/g, '<span style="color: #cc0000; font-weight: bold;">$1</span>')
+                .replace(/\b(DEMOCRATS|Democrats|Democratic)\b/g, '<span style="color: #0066cc; font-weight: bold;">$1</span>')
+                // Wildcard/Other presidents (yellow/gold)
+                .replace(/\b(Washington|Fillmore|Taylor|Tyler|Harrison|John Adams|John Q\. Adams)\b/g, '<span style="color: #DAA520; font-weight: bold;">$1</span>')
+                // Republican presidents (red)
+                .replace(/\b(Coolidge|Hoover|Harding|Roosevelt|Taft|McKinley|Lincoln|Grant|Hayes|Garfield|Arthur|Benjamin Harrison)\b/g, '<span style="color: #cc0000; font-weight: bold;">$1</span>')
+                // Democratic presidents (blue)
+                .replace(/\b(Wilson|Jefferson|Madison|Monroe|Jackson|Van Buren|Polk|Pierce|Buchanan|Johnson|Cleveland)\b/g, '<span style="color: #0066cc; font-weight: bold;">$1</span>');
+        }
+
+        // ============================================================================
+        // UTILITY FUNCTIONS - Card Creation
+        // ============================================================================
+
+        /**
+         * Gets suit from card filename
+         * @param {string} filename - e.g., 'R-27.jpg' or 'D-28.jpg'
+         * @returns {string} - 'republican', 'democratic', or 'other'
+         */
+        function getSuitFromFilename(filename) {
+            const abbrev = filename.charAt(0);
+            return abbrevToSuit[abbrev] || 'other';
+        }
+
+        /**
+         * Creates an animated card for movement across screen
+         * Card images are in local CARDS folder with format: R-27.jpg, D-28.jpg, O-1.jpg
+         * 
+         * @param {string} filename - Card image filename (e.g., 'R-27.jpg')
+         * @param {string} suit - 'republican', 'democratic', or 'other'
+         * @param {boolean} fast - If true, uses faster animation (for step 0)
+         * @returns {HTMLElement} - Animated card container
+         */
+        function createAnimatedCard(filename, suit, fast = false, rotateToFoundation = false) {
+            const container = document.createElement('div');
+            container.className = 'card-container';
+            container.style.position = 'absolute';
+            // Use CSS variables for responsive sizing - dimensions set by CSS class
+            container.style.zIndex = 1000;
+            
+            // Include transform in transition for rotation animation
+            container.style.transition = fast ? 'all 1s ease-out' : 'all 2.5s ease-out';
+            
+            const cardDiv = document.createElement('div');
+            cardDiv.className = `card ${suit}`;
+            
+            const img = document.createElement('img');
+            img.src = `CARDS/${filename}`;
+            img.style.width = '100%';
+            img.style.height = '100%';
+            
+            cardDiv.appendChild(img);
+            container.appendChild(cardDiv);
+            
+            // Mark if this card should rotate to foundation
+            container.dataset.rotateToFoundation = rotateToFoundation;
+            
+            return container;
+        }
+        
+        /**
+         * Animates a card to a foundation zone with 90° rotation
+         * @param {HTMLElement} card - The animated card element
+         * @param {number} targetLeft - Target left position
+         * @param {number} targetTop - Target top position
+         */
+        function animateToFoundation(card, targetLeft, targetTop) {
+            card.style.left = `${targetLeft}px`;
+            card.style.top = `${targetTop}px`;
+            card.style.transform = 'rotate(90deg)';
+        }
+
+        /**
+         * Creates a static card for permanent placement in piles
+         * @param {string} filename - Card image filename
+         * @param {string} suit - Card party affiliation
+         * @param {boolean} rotated - If true, card is rotated 90° for foundation
+         * @returns {HTMLElement} - Static card div
+         */
+        function createStaticCard(filename, suit, rotated = false) {
+            const cardDiv = document.createElement('div');
+            cardDiv.className = `card ${suit}`;
+            cardDiv.dataset.suit = suit;
+            
+            if (rotated) {
+                cardDiv.style.transform = 'rotate(90deg)';
+            }
+            
+            const img = document.createElement('img');
+            img.src = `CARDS/${filename}`;
+            img.style.width = '100%';
+            img.style.height = '100%';
+            
+            cardDiv.appendChild(img);
+            return cardDiv;
+        }
+        
+        /**
+         * Helper function to get the current card stack offset from CSS variable
+         * This ensures animations use the same spacing as the CSS layout
+         */
+        function getCardStackOffset() {
+            const style = getComputedStyle(document.documentElement);
+            const offset = style.getPropertyValue('--card-stack-offset').trim();
+            // Parse the value (handles both px and other units)
+            return parseInt(offset) || 25;
+        }
+
+        /**
+         * Places a card in a pile at specified position
+         * @param {HTMLElement} pile - Target pile element
+         * @param {string} filename - Card image filename
+         * @param {number} topOffset - Vertical offset in pixels
+         * @param {number} zIndex - Stack order
+         */
+        function placeCardInPile(pile, filename, topOffset, zIndex) {
+            const suit = getSuitFromFilename(filename);
+            const cardDiv = createStaticCard(filename, suit);
+            cardDiv.style.position = 'absolute';
+            cardDiv.style.left = '0px';
+            cardDiv.style.top = `${topOffset}px`;
+            cardDiv.style.zIndex = zIndex;
+            pile.appendChild(cardDiv);
+        }
+
+        /**
+         * Clears all cards from a pile (keeps label)
+         * @param {HTMLElement} pile - Pile to clear
+         */
+        function clearPile(pile) {
+            const children = Array.from(pile.children);
+            children.forEach(child => {
+                if (!child.classList.contains('label')) {
+                    child.remove();
+                }
+            });
+        }
+
+        // ============================================================================
+        // UTILITY FUNCTIONS - UI Display (Overlay Popup System)
+        // ============================================================================
+
+        /**
+         * Popup position presets for different tutorial contexts
+         * NEW LAYOUT: Foundations at top, Deck column on left, Sort zones fill rest
+         * These position the popup over non-relevant areas or in useful spots
+         */
+        const PopupPosition = {
+            CENTER: 'center',                    // Center of game area
+            OVER_FOUNDATIONS: 'over-foundations', // Near top (foundations row)
+            OVER_SORT_ZONES: 'over-sort-zones',  // Lower area over sort zones
+            OVER_DECK: 'over-deck',              // Left side over deck column
+            BETWEEN_ROWS: 'between-rows',        // Middle of screen, good default
+            TOP_CENTER: 'top-center'             // Just below foundations
+        };
+
+        /**
+         * Positions the popup container based on context
+         * With new layout, popup is fixed at top - this function is now mostly a no-op
+         * but kept for backwards compatibility with existing code
+         * @param {string} position - One of PopupPosition values (ignored in new layout)
+         */
+        function positionPopup(position) {
+            // With the new fixed-top layout, the popup doesn't need repositioning
+            // It's always at the top of the game area
+            // This function is kept for backwards compatibility
+        }
+
+        // Track current message ID for display
+        let currentMessageId = "0";
+        
+        /**
+         * DEBUG: Updates the step display in upper left corner
+         */
+        function updateStepDisplay() {
+            if (DEBUG_MODE) {
+                stepDisplay.textContent = `Step: ${tutorialStep} | Text: ${currentMessageId}`;
+                stepDisplay.style.display = 'block';
+            } else {
+                stepDisplay.style.display = 'none';
+            }
+        }
+
+        /**
+         * Button state constants for clarity
+         */
+        const ButtonState = {
+            PLAYING: 'playing',      // Animation is running
+            WAITING: 'waiting',      // Waiting for user action (click deck, drag card)
+            READY: 'ready'           // Ready for user to click Next
+        };
+
+        /**
+         * Shows tutorial popup with message at specified position
+         * Popup appears as an overlay on non-relevant game areas
+         * 
+         * @param {string} messageId - Fixed ID for this message (e.g., "1", "9", "9-error", "9-retry")
+         * @param {string} message - Text to display
+         * @param {string} className - Optional: 'success' or 'error' for styling
+         * @param {string} position - One of PopupPosition values (default: BETWEEN_ROWS)
+         * @param {string} buttonState - ButtonState value: 'playing', 'waiting', or 'ready'
+         */
+        function showPopup(messageId, message, className = '', position = PopupPosition.BETWEEN_ROWS, buttonState = ButtonState.READY) {
+            // Track current message ID for debug display
+            currentMessageId = messageId;
+            
+            // Add text box label for debugging (only if DEBUG_MODE is on)
+            const labelHtml = DEBUG_MODE ? `<span class="text-box-label">Text #${messageId}</span>` : '';
+            
+            tutorialPopup.innerHTML = labelHtml + colorizeText(message);
+            tutorialPopup.className = className;
+            positionPopup(position);
+            
+            // Handle button state - restore visibility
+            okButton.style.display = 'none';
+            beginButton.style.display = 'none';
+            nextButton.style.display = 'flex';
+            nextButton.style.visibility = 'visible';
+            
+            setButtonState(buttonState);
+            
+            // Update step display
+            updateStepDisplay();
+        }
+        
+        /**
+         * Sets the button state (playing, waiting, or ready)
+         * @param {string} state - One of ButtonState values
+         */
+        function setButtonState(state) {
+            switch(state) {
+                case ButtonState.PLAYING:
+                    nextButton.disabled = true;
+                    nextButton.innerHTML = '<span class="play-icon">▶</span> Playing';
+                    break;
+                case ButtonState.WAITING:
+                    nextButton.disabled = true;
+                    nextButton.innerHTML = 'Waiting on player to move';
+                    break;
+                case ButtonState.READY:
+                default:
+                    nextButton.disabled = false;
+                    nextButton.innerHTML = 'Next';
+                    break;
+            }
+        }
+        
+        /**
+         * Enables the Next button (call when animation finishes or when ready for user input)
+         */
+        function enableNextButton() {
+            setButtonState(ButtonState.READY);
+        }
+        
+        /**
+         * Legacy function - now just calls enableNextButton
+         */
+        function hidePlayIcon() {
+            enableNextButton();
+        }
+
+        /**
+         * Hides all tutorial UI elements and removes pulsing effects
+         */
+        function hideAllUI() {
+            // Keep container visible (fixed height) but clear text and disable button
+            tutorialPopup.innerHTML = '';
+            tutorialPopup.className = '';
+            nextButton.disabled = true;
+            nextButton.innerHTML = '';
+            nextButton.style.visibility = 'hidden';  // Hide button but keep space
+            okButton.style.display = 'none';
+            beginButton.style.display = 'none';
+            
+            // Remove any pointing finger
+            removePointingFinger();
+            
+            // Remove any pulsing effects from all elements
+            stockDiv.classList.remove('clickable-highlight');
+            wasteDiv.classList.remove('pulsing-continuous');
+            
+            // Remove pulsing from foundation zones
+            document.querySelectorAll('.foundation-pile.pulsing').forEach(el => el.classList.remove('pulsing'));
+            
+            // Remove pulsing from cards
+            document.querySelectorAll('.card.pulsating').forEach(card => card.classList.remove('pulsating'));
+        }
+        
+        /**
+         * Removes any pointing finger emoji from the screen
+         */
+        function removePointingFinger() {
+            if (window.currentPointingFinger) {
+                window.currentPointingFinger.remove();
+                window.currentPointingFinger = null;
+            }
+            // Also try to remove by ID as backup (multiple possible IDs)
+            const finger17 = document.getElementById('pointing-finger-17');
+            if (finger17) finger17.remove();
+            const finger26 = document.getElementById('pointing-finger-26');
+            if (finger26) finger26.remove();
+        }
+
+        /**
+         * Shows success message with Next button (waits for user to click)
+         * @param {string} messageId - Fixed ID for this message
+         * @param {string} message - Success text
+         * @returns {Promise} - Resolves when Next is clicked
+         */
+        function showSuccessMessage(messageId, message) {
+            return new Promise(resolve => {
+                showPopup(messageId, message, 'success', PopupPosition.OVER_FOUNDATIONS);
+                enableNextButton();
+                
+                const handleClick = () => {
+                    nextButton.removeEventListener('click', handleClick);
+                    // Don't hide container - just clear content to prevent layout shift
+                    tutorialPopup.innerHTML = '';
+                    tutorialPopup.className = '';
+                    nextButton.style.visibility = 'hidden';
+                    resolve();
+                };
+                nextButton.addEventListener('click', handleClick);
+            });
+        }
+
+        /**
+         * Shows error message with OK button
+         * @param {string} messageId - Fixed ID for this message
+         * @param {string} message - Error text
+         * @returns {Promise} - Resolves when OK clicked
+         */
+        function showErrorMessage(messageId, message) {
+            showPopup(messageId, message, 'error', PopupPosition.OVER_FOUNDATIONS);
+            
+            // Hide Next button, show OK button inline (same position)
+            nextButton.style.display = 'none';
+            okButton.style.display = 'flex';
+            
+            return new Promise(resolve => {
+                const handleClick = () => {
+                    okButton.removeEventListener('click', handleClick);
+                    okButton.style.display = 'none';
+                    // Don't hide container - just clear content to prevent layout shift
+                    tutorialPopup.innerHTML = '';
+                    tutorialPopup.className = '';
+                    resolve();
+                };
+                okButton.addEventListener('click', handleClick);
+            });
+        }
+
+        /**
+         * Adds pointing finger emoji at element
+         * @param {HTMLElement} element - Element to point at
+         * @param {string} position - 'above', 'below', 'left', 'right'
+         * @param {number} duration - How long to show (ms)
+         */
+        function showPointingFinger(element, position = 'above', duration = 3000) {
+            const emoji = document.createElement('div');
+            emoji.className = 'pointing-finger';
+            emoji.textContent = '👆';
+            
+            const rect = element.getBoundingClientRect();
+            const gameRect = gameArea.getBoundingClientRect();
+            
+            switch(position) {
+                case 'above':
+                    emoji.style.left = `${rect.left - gameRect.left + rect.width/2 - 24}px`;
+                    emoji.style.top = `${rect.top - gameRect.top - 60}px`;
+                    break;
+                case 'below':
+                    emoji.style.left = `${rect.left - gameRect.left + rect.width/2 - 24}px`;
+                    emoji.style.top = `${rect.top - gameRect.top + rect.height + 10}px`;
+                    break;
+            }
+            
+            gameArea.appendChild(emoji);
+            
+            setTimeout(() => emoji.remove(), duration);
+        }
+
+        // ============================================================================
+        // UTILITY FUNCTIONS - Card Movement Validation
+        // ============================================================================
+
+        /**
+         * Gets card type (R, D, O) from card element
+         * @param {HTMLElement} card - Card element
+         * @returns {string} - 'R', 'D', or 'O'
+         */
+        function getCardType(card) {
+            const filename = card.querySelector('img').src.split('/').pop();
+            return filename.charAt(0);
+        }
+
+        /**
+         * Checks if moving card can go on target card
+         * Rule: Alternating colors (R-D or D-R), Wildcards (O) go anywhere
+         * 
+         * @param {HTMLElement} movingCard - Card being moved
+         * @param {HTMLElement} targetCard - Card on top of destination pile
+         * @returns {boolean} - True if move is legal
+         */
+        function isLegalMove(movingCard, targetCard) {
+            const movingType = getCardType(movingCard);
+            const targetType = getCardType(targetCard);
+            
+            // Wildcards (O) can go on anything, anything can go on wildcards
+            if (movingType === 'O' || targetType === 'O') {
+                return true;
+            }
+            
+            // Otherwise must be different colors
+            return movingType !== targetType;
+        }
+
+        /**
+         * Makes a card draggable (desktop drag-and-drop + touch support)
+         * @param {HTMLElement} card - Card to make draggable
+         */
+        function makeCardDraggable(card) {
+            // Desktop: HTML5 drag-and-drop
+            card.draggable = true;
+            card.addEventListener('dragstart', (e) => {
+                e.dataTransfer.setData('text/plain', card.id);
+            });
+            
+            // Mobile: Touch events
+            card.addEventListener('touchstart', handleTouchStart, { passive: false });
+            card.addEventListener('touchmove', handleTouchMove, { passive: false });
+            card.addEventListener('touchend', handleTouchEnd);
+            card.addEventListener('touchcancel', handleTouchEnd);
+        }
+
+        // ============================================================================
+        // TOUCH EVENT HANDLERS - Mobile/Tablet Support
+        // ============================================================================
+        
+        // State for touch dragging
+        let touchDragState = {
+            isDragging: false,
+            card: null,
+            cardId: null,
+            startX: 0,
+            startY: 0,
+            offsetX: 0,
+            offsetY: 0,
+            originalParent: null,
+            originalPosition: null,
+            originalLeft: null,
+            originalTop: null,
+            originalZIndex: null,
+            placeholder: null,
+            currentDropTarget: null
+        };
+        
+        /**
+         * Handle touch start - begin drag if card is draggable
+         */
+        function handleTouchStart(e) {
+            const card = e.currentTarget;
+            if (!card.draggable) return;
+            
+            e.preventDefault();  // Prevent scrolling
+            
+            const touch = e.touches[0];
+            const rect = card.getBoundingClientRect();
+            
+            // Store initial state
+            touchDragState.isDragging = true;
+            touchDragState.card = card;
+            touchDragState.cardId = card.id;
+            touchDragState.startX = touch.clientX;
+            touchDragState.startY = touch.clientY;
+            touchDragState.offsetX = touch.clientX - rect.left;
+            touchDragState.offsetY = touch.clientY - rect.top;
+            touchDragState.originalParent = card.parentElement;
+            touchDragState.originalPosition = card.style.position;
+            touchDragState.originalLeft = card.style.left;
+            touchDragState.originalTop = card.style.top;
+            touchDragState.originalZIndex = card.style.zIndex;
+            
+            // Create placeholder
+            touchDragState.placeholder = document.createElement('div');
+            touchDragState.placeholder.className = 'card-placeholder';
+            touchDragState.placeholder.style.left = card.style.left;
+            touchDragState.placeholder.style.top = card.style.top;
+            touchDragState.placeholder.style.zIndex = card.style.zIndex;
+            
+            // Move card to fixed position for dragging
+            card.classList.add('touch-dragging');
+            card.style.left = (touch.clientX - touchDragState.offsetX) + 'px';
+            card.style.top = (touch.clientY - touchDragState.offsetY) + 'px';
+            
+            // Insert placeholder
+            touchDragState.originalParent.insertBefore(touchDragState.placeholder, card);
+            
+            // Move card to body for unrestricted movement
+            document.body.appendChild(card);
+            
+            console.log('Touch drag started:', card.id);
+        }
+        
+        /**
+         * Handle touch move - move card and detect drop zones
+         */
+        function handleTouchMove(e) {
+            if (!touchDragState.isDragging) return;
+            
+            e.preventDefault();  // Prevent scrolling
+            
+            const touch = e.touches[0];
+            const card = touchDragState.card;
+            
+            // Update card position
+            card.style.left = (touch.clientX - touchDragState.offsetX) + 'px';
+            card.style.top = (touch.clientY - touchDragState.offsetY) + 'px';
+            
+            // Detect drop zone under touch point
+            card.style.pointerEvents = 'none';  // Temporarily disable to detect elements below
+            const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+            card.style.pointerEvents = '';
+            
+            // Find the drop zone (pile) containing this element
+            const dropZone = findDropZone(elementBelow);
+            
+            // Update visual feedback
+            if (touchDragState.currentDropTarget !== dropZone) {
+                // Remove highlight from previous target
+                if (touchDragState.currentDropTarget) {
+                    touchDragState.currentDropTarget.classList.remove('touch-drop-target');
+                }
+                // Add highlight to new target
+                if (dropZone) {
+                    dropZone.classList.add('touch-drop-target');
+                }
+                touchDragState.currentDropTarget = dropZone;
+            }
+        }
+        
+        /**
+         * Handle touch end - drop card or return to original position
+         */
+        function handleTouchEnd(e) {
+            if (!touchDragState.isDragging) return;
+            
+            const card = touchDragState.card;
+            const dropZone = touchDragState.currentDropTarget;
+            
+            console.log('Touch drag ended, drop zone:', dropZone ? dropZone.id : 'none');
+            
+            // Clean up visual feedback
+            if (dropZone) {
+                dropZone.classList.remove('touch-drop-target');
+            }
+            
+            // Remove dragging style
+            card.classList.remove('touch-dragging');
+            
+            // Remove placeholder
+            if (touchDragState.placeholder && touchDragState.placeholder.parentElement) {
+                touchDragState.placeholder.remove();
+            }
+            
+            // Try to drop on the target zone
+            if (dropZone && isValidDropZone(dropZone)) {
+                // Simulate the drop event
+                simulateDrop(card, dropZone);
+            } else {
+                // Return card to original position
+                returnCardToOrigin(card);
+            }
+            
+            // Reset state
+            touchDragState.isDragging = false;
+            touchDragState.card = null;
+            touchDragState.currentDropTarget = null;
+        }
+        
+        /**
+         * Find the drop zone (pile) containing an element
+         */
+        function findDropZone(element) {
+            if (!element) return null;
+            
+            // Check if it's a pile directly
+            if (element.classList.contains('pile')) {
+                return element;
+            }
+            
+            // Check parent elements
+            let current = element.parentElement;
+            while (current && current !== document.body) {
+                if (current.classList.contains('pile')) {
+                    return current;
+                }
+                current = current.parentElement;
+            }
+            
+            return null;
+        }
+        
+        /**
+         * Check if a drop zone is valid for dropping cards
+         */
+        function isValidDropZone(zone) {
+            // Sort zones and foundation zones are valid
+            return zone.classList.contains('sort-zone-pile') || 
+                   zone.classList.contains('foundation-pile');
+        }
+        
+        /**
+         * Return card to its original position
+         */
+        function returnCardToOrigin(card) {
+            // Restore original styles
+            card.style.position = touchDragState.originalPosition;
+            card.style.left = touchDragState.originalLeft;
+            card.style.top = touchDragState.originalTop;
+            card.style.zIndex = touchDragState.originalZIndex;
+            
+            // Return to original parent
+            touchDragState.originalParent.appendChild(card);
+        }
+        
+        /**
+         * Simulate a drop event for touch interactions
+         * This creates a synthetic event that mirrors the drag-and-drop API
+         */
+        function simulateDrop(card, dropZone) {
+            console.log('Simulating drop of', card.id, 'onto', dropZone.id);
+            
+            // Create a mock dataTransfer object
+            const mockDataTransfer = {
+                _data: {},
+                setData: function(type, value) { this._data[type] = value; },
+                getData: function(type) { return this._data[type]; }
+            };
+            mockDataTransfer.setData('text/plain', card.id);
+            
+            // Create a synthetic drop event
+            const dropEvent = new Event('drop', { bubbles: true, cancelable: true });
+            dropEvent.dataTransfer = mockDataTransfer;
+            dropEvent.preventDefault = function() {};
+            
+            // Before dispatching, restore card to a reasonable state
+            // (the drop handler will reposition it properly)
+            card.style.position = touchDragState.originalPosition;
+            card.style.left = touchDragState.originalLeft;
+            card.style.top = touchDragState.originalTop;
+            card.style.zIndex = touchDragState.originalZIndex;
+            touchDragState.originalParent.appendChild(card);
+            
+            // Dispatch the drop event to the target zone
+            dropZone.dispatchEvent(dropEvent);
+        }
+
+        // ============================================================================
+        // SETUP FUNCTIONS
+        // ============================================================================
+
+        /**
+         * SETUP: Initialize Draw Pile with first 3 tutorial cards
+         * SCREEN STATE: Game area just became visible
+         * CARDS LOADED: R-27, D-28, R-29 (stacked in Draw Pile)
+         * TRIGGERS: autoDemo_Step0 called after this
+         */
+        function setup_InitialDrawPile() {
+            // Set up The Deck with card back (deck should be visible from start)
+            stockDiv.innerHTML = '<div class="label">The Deck</div>';
+            const cardBack = document.createElement('img');
+            cardBack.src = 'CARDS/cardback.jpg';
+            cardBack.className = 'card';
+            cardBack.style.width = '100%';
+            cardBack.style.height = '100%';
+            stockDiv.appendChild(cardBack);
+            
+            // Set up Draw Pile with 3 cards
+            wasteDiv.innerHTML = '<div class="label">Draw Pile</div>';
+            
+            // Cards stacked in Draw Pile: R-27 on bottom, R-29 on top
+            // We animate them OUT in order: R-27 first, then D-28, then R-29
+            const cards = ['R-29', 'D-28', 'R-27'];
+            
+            cards.forEach((filename, index) => {
+                const [abbrev, rankStr] = filename.split('-');
+                const suit = abbrevToSuit[abbrev];
+                const rank = parseInt(rankStr);
+                
+                const container = document.createElement('div');
+                container.className = 'card-container tutorial-card';
+                container.style.position = 'absolute';
+                container.style.left = `${index * 10}px`;
+                container.style.top = '0';
+                container.style.zIndex = index;
+                container.dataset.suit = suit;
+                container.dataset.rank = rank;
+                
+                const cardDiv = document.createElement('div');
+                cardDiv.className = `card ${suit}`;
+                
+                const img = document.createElement('img');
+                img.src = `CARDS/${filename}.jpg`;
+                img.style.width = '100%';
+                img.style.height = '100%';
+                img.style.pointerEvents = 'none';
+                
+                cardDiv.appendChild(img);
+                container.appendChild(cardDiv);
+                wasteDiv.appendChild(container);
+            });
+        }
+
+        /**
+         * SETUP: Add card back image to The Deck
+         */
+        function setup_AddDeckCardBack() {
+            stockDiv.innerHTML = '<div class="label">The Deck</div>';
+            const cardBack = document.createElement('img');
+            cardBack.src = 'CARDS/cardback.jpg';
+            cardBack.className = 'card';
+            stockDiv.appendChild(cardBack);
+        }
+
+        // ============================================================================
+        // AUTOMATED DEMO STEPS
+        // These run automatically without user interaction
+        // ============================================================================
+
+        /**
+         * STEP 0: AUTO - Animate first card (R-27) to Sort Zone 1
+         * 
+         * SCREEN STATE BEFORE: Draw Pile has 3 cards (R-29 on top, D-28, R-27 on bottom)
+         * WHAT HAPPENS: R-27 flies from Draw Pile to Sort Zone 1
+         * SCREEN STATE AFTER: Sort Zone 1 has R-27, Draw Pile has 2 cards
+         * TRIGGERS NEXT: Shows Next button after animation
+         */
+        function autoDemo_Step0_FirstCardToSortZone() {
+            // First show message 1.1 about Draw Pile with Draw Pile pulsating
+            wasteDiv.classList.add('pulsing-continuous');
+            
+            showPopup("1.1", "Cards are dealt to the Draw Pile.", '', PopupPosition.OVER_FOUNDATIONS);
+            
+            tutorialStep = -0.5;  // Intermediate step for 1.1 -> 1.2 transition
+            updateStepDisplay();
+            enableNextButton();
+        }
+        
+        /**
+         * STEP 0 continued: Show message about Sort Zones and animate first card
+         */
+        function autoDemo_Step0_ShowSortZonesMessage() {
+            hideAllUI();
+            
+            // Stop Draw Pile pulsating
+            wasteDiv.classList.remove('pulsing-continuous');
+            
+            const sortZone0 = document.getElementById('sort-zone-0');
+            
+            // Find and remove R-27 from Draw Pile
+            const cardToRemove = wasteDiv.querySelector('.tutorial-card[data-rank="27"]');
+            if (cardToRemove) cardToRemove.remove();
+            
+            // Create animated card - FAST for step 0 (short distance, 3 cards in a row)
+            const animatedCard = createAnimatedCard('R-27.jpg', 'republican', true);
+            animatedCard.style.left = `${wasteDiv.offsetLeft + 20}px`;
+            animatedCard.style.top = `${wasteDiv.offsetTop}px`;
+            gameArea.appendChild(animatedCard);
+            
+            // Highlight all sort zones to introduce them
+            highlightAllSortZones();
+            
+            // Show explanation about Sort Zones WITH play icon (animation running)
+            showPopup("1.2", "Let's move them to the Sort Zone areas for sorting.", '', PopupPosition.OVER_FOUNDATIONS, ButtonState.PLAYING);
+            
+            // Animate to Sort Zone 1 - FAST timeout (1100ms for 1s animation)
+            setTimeout(() => {
+                animatedCard.style.left = `${sortZone0.offsetLeft}px`;
+                animatedCard.style.top = `${sortZone0.offsetTop}px`;
+                
+                setTimeout(() => {
+                    // Place static card
+                    const staticCard = createStaticCard('R-27.jpg', 'republican');
+                    staticCard.style.position = 'absolute';
+                    staticCard.style.left = '0px';
+                    staticCard.style.top = '0px';
+                    staticCard.style.zIndex = 1;
+                    sortZone0.appendChild(staticCard);
+                    animatedCard.remove();
+                    
+                    // Animation done - hide play icon and show Next button
+                    hidePlayIcon();
+                    tutorialStep = 0;
+                    updateStepDisplay();
+                    enableNextButton();
+                }, 1100);
+            }, 100);
+        }
+
+        /**
+         * STEP 1: AUTO - Animate second card (D-28) to Sort Zone 1
+         * 
+         * SCREEN STATE BEFORE: Sort Zone 1 has R-27, Draw Pile has D-28 and R-29
+         * WHAT HAPPENS: D-28 flies from Draw Pile to stack on R-27
+         * SCREEN STATE AFTER: Sort Zone 1 has R-27, D-28 stacked
+         * TRIGGERS NEXT: Shows Next button after animation
+         */
+        function autoDemo_Step1_SecondCardToSortZone() {
+            const sortZone0 = document.getElementById('sort-zone-0');
+            
+            // Find and remove D-28 from Draw Pile
+            const cardToRemove = wasteDiv.querySelector('.tutorial-card[data-rank="28"]');
+            if (cardToRemove) cardToRemove.remove();
+            
+            // Create animated card - FAST for step 0 series
+            const animatedCard = createAnimatedCard('D-28.jpg', 'democratic', true);
+            animatedCard.style.left = `${wasteDiv.offsetLeft + 10}px`;
+            animatedCard.style.top = `${wasteDiv.offsetTop}px`;
+            gameArea.appendChild(animatedCard);
+            
+            // Show explanation about alternating colors WITH play icon
+            showPopup("2", "Red and Blue cards must alternate.<br>REPUBLICANS are RED, DEMOCRATS are BLUE.", '', PopupPosition.OVER_FOUNDATIONS, ButtonState.PLAYING);
+            
+            // Animate to Sort Zone 1 - FAST timeout
+            setTimeout(() => {
+                animatedCard.style.left = `${sortZone0.offsetLeft}px`;
+                animatedCard.style.top = `${sortZone0.offsetTop + CARD_STACK_OFFSET}px`;
+                
+                setTimeout(() => {
+                    const cardCount = sortZone0.querySelectorAll('.card').length;
+                    const staticCard = createStaticCard('D-28.jpg', 'democratic');
+                    staticCard.style.position = 'absolute';
+                    staticCard.style.left = '0px';
+                    staticCard.style.top = `${cardCount * CARD_STACK_OFFSET}px`;
+                    staticCard.style.zIndex = cardCount + 1;
+                    sortZone0.appendChild(staticCard);
+                    animatedCard.remove();
+                    
+                    // Animation done - hide play icon and show Next button
+                    hidePlayIcon();
+                    tutorialStep = 1;
+                    updateStepDisplay();
+                    enableNextButton();
+                }, 1100);
+            }, 100);
+        }
+
+        /**
+         * STEP 2: AUTO - Animate third card (R-29) to Sort Zone 1
+         * 
+         * SCREEN STATE BEFORE: Sort Zone 1 has R-27, D-28; Draw Pile has R-29
+         * WHAT HAPPENS: R-29 flies to complete the R-D-R pattern
+         * SCREEN STATE AFTER: Sort Zone 1 shows R-D-R pattern, Draw Pile empty
+         * TRIGGERS NEXT: Immediately starts Step 3 (click deck prompt)
+         */
+        function autoDemo_Step2_ThirdCardToSortZone() {
+            const sortZone0 = document.getElementById('sort-zone-0');
+            
+            // Find and remove R-29 from Draw Pile
+            const cardToRemove = wasteDiv.querySelector('.tutorial-card[data-rank="29"]');
+            if (cardToRemove) cardToRemove.remove();
+            
+            // Create animated card - FAST for step 0 series
+            const animatedCard = createAnimatedCard('R-29.jpg', 'republican', true);
+            animatedCard.style.left = `${wasteDiv.offsetLeft}px`;
+            animatedCard.style.top = `${wasteDiv.offsetTop}px`;
+            gameArea.appendChild(animatedCard);
+            
+            // Show pattern explanation WITH play icon
+            showPopup("3", "See the alternating pattern:<br><br><strong>Red → Blue → Red</strong><br><br>This alternating pattern is the rule in the Sort Zones.", '', PopupPosition.OVER_FOUNDATIONS, ButtonState.PLAYING);
+            
+            // Animate to Sort Zone 1 - FAST timeout
+            setTimeout(() => {
+                animatedCard.style.left = `${sortZone0.offsetLeft}px`;
+                animatedCard.style.top = `${sortZone0.offsetTop + CARD_STACK_OFFSET * 2}px`;
+                
+                setTimeout(() => {
+                    const cardCount = sortZone0.querySelectorAll('.card').length;
+                    const staticCard = createStaticCard('R-29.jpg', 'republican');
+                    staticCard.style.position = 'absolute';
+                    staticCard.style.left = '0px';
+                    staticCard.style.top = `${cardCount * CARD_STACK_OFFSET}px`;
+                    staticCard.style.zIndex = cardCount + 1;
+                    sortZone0.appendChild(staticCard);
+                    animatedCard.remove();
+                    
+                    // Animation done - hide play icon and show Next button
+                    hidePlayIcon();
+                    tutorialStep = 2;
+                    updateStepDisplay();
+                    enableNextButton();
+                }, 1100);
+            }, 100);
+        }
+
+        /**
+         * Highlights all sort zone areas briefly
+         */
+        function highlightAllSortZones() {
+            const sortZones = document.querySelectorAll('.sort-zone-pile');
+            sortZones.forEach(t => t.classList.add('pulsing'));
+            
+            setTimeout(() => {
+                sortZones.forEach(t => t.classList.remove('pulsing'));
+            }, 2600);
+        }
+
+        /**
+         * STEP 4: AUTO - Animate card from new Draw Pile to Sort Zone 2
+         * 
+         * SCREEN STATE BEFORE: User clicked The Deck, new cards in Draw Pile
+         * WHAT HAPPENS: Top card animates to Sort Zone 2
+         * TRIGGERS NEXT: Shows Next button after animation
+         */
+        function autoDemo_Step4_NewCardToSortZone2() {
+            // Ensure The Deck pulsing is stopped (should already be stopped, but just in case)
+            stockDiv.classList.remove('clickable-highlight');
+            
+            const sortZone1 = document.getElementById('sort-zone-1');
+            const topCard = wasteDiv.querySelector('.card:last-child');
+            
+            if (!topCard) return;
+            
+            const cardFilename = topCard.querySelector('img').src.split('/').pop();
+            const suit = topCard.dataset.suit;
+            
+            const startLeft = wasteDiv.offsetLeft + parseFloat(topCard.style.left || 0);
+            const startTop = wasteDiv.offsetTop;
+            topCard.remove();
+            
+            const animatedCard = createAnimatedCard(cardFilename, suit);
+            animatedCard.style.left = `${startLeft}px`;
+            animatedCard.style.top = `${startTop}px`;
+            gameArea.appendChild(animatedCard);
+            
+            showPopup("6", "From the Draw Pile, you can drag-and-drop cards<br>to any of the 3 Sort Zones for further sorting.", '', PopupPosition.OVER_FOUNDATIONS);
+            
+            setTimeout(() => {
+                animatedCard.style.left = `${sortZone1.offsetLeft}px`;
+                animatedCard.style.top = `${sortZone1.offsetTop}px`;
+                
+                setTimeout(() => {
+                    const cardCount = sortZone1.querySelectorAll('.card').length;
+                    const staticCard = createStaticCard(cardFilename, suit);
+                    staticCard.style.position = 'absolute';
+                    staticCard.style.left = '0px';
+                    staticCard.style.top = `${cardCount * CARD_STACK_OFFSET}px`;
+                    staticCard.style.zIndex = cardCount + 1;
+                    staticCard.id = `card-${cardFilename.replace('.jpg', '')}`;
+                    sortZone1.appendChild(staticCard);
+                    animatedCard.remove();
+                    
+                    tutorialStep = 4;
+                    updateStepDisplay();
+                    enableNextButton();
+                }, 2600);
+            }, 100);
+        }
+
+        // ============================================================================
+        // USER INTERACTION WAIT POINTS
+        // These pause and wait for user action
+        // ============================================================================
+
+        /**
+         * STEP 3: USER_WAIT - Prompt user to click The Deck
+         * 
+         * SCREEN STATE BEFORE: Sort Zone 1 has 3 cards (R-D-R), Draw Pile is empty
+         * WHAT HAPPENS: Highlights The Deck, shows instruction, waits for click
+         * TRIGGERS NEXT: User click on The Deck → autoDemo_Step4
+         */
+        function userWait_Step3_ClickDeckPrompt() {
+            hideAllUI();
+            
+            // Add card back to The Deck
+            setup_AddDeckCardBack();
+            
+            // Highlight The Deck
+            stockDiv.classList.add('clickable-highlight');
+            
+            // Show instruction - WAITING state since user needs to click/tap
+            showPopup("4", "Now tap on 'The Deck'<br>to draw 3 new cards to the Draw Pile.", '', PopupPosition.OVER_FOUNDATIONS, ButtonState.WAITING);
+            
+            // Wait for user click
+            const handleStockClick = async () => {
+                if (stockClicked) return;
+                stockClicked = true;
+                
+                // Stop The Deck pulsating immediately
+                stockDiv.classList.remove('clickable-highlight');
+                stockDiv.removeEventListener('click', handleStockClick);
+                
+                // Load new cards into Draw Pile
+                loadNewCardsToDrawPile();
+                
+                // Clear popup content (but don't hide container to prevent layout shift)
+                tutorialPopup.innerHTML = '';
+                tutorialPopup.className = '';
+                nextButton.style.visibility = 'hidden';
+                
+                // Brief pause then show success
+                await new Promise(resolve => setTimeout(resolve, 100));
+                await showSuccessMessage("5", 'Great! You drew 3 new cards from The Deck to the Draw Pile.');
+                
+                // Continue to next step
+                tutorialStep = 3;
+                updateStepDisplay();
+                setTimeout(() => {
+                    autoDemo_Step4_NewCardToSortZone2();
+                }, 500);
+            };
+            
+            stockDiv.addEventListener('click', handleStockClick);
+            // Also listen for touch on mobile devices
+            stockDiv.addEventListener('touchend', (e) => {
+                e.preventDefault();  // Prevent double-firing with click
+                handleStockClick();
+            }, { once: true });
+        }
+
+        /**
+         * Loads new set of cards into Draw Pile after user clicks The Deck
+         */
+        function loadNewCardsToDrawPile() {
+            wasteDiv.innerHTML = '<div class="label">Draw Pile</div>';
+            
+            const cards = ['D-3.jpg', 'R-26.jpg', 'D-7.jpg'];
+            cards.forEach((cardFile, index) => {
+                const suit = cardFile.startsWith('D') ? 'democratic' : 
+                            cardFile.startsWith('R') ? 'republican' : 'other';
+                
+                const cardDiv = document.createElement('div');
+                cardDiv.className = `card ${suit}`;
+                cardDiv.dataset.suit = suit;
+                
+                const img = document.createElement('img');
+                img.src = `CARDS/${cardFile}`;
+                img.style.width = '100%';
+                img.style.height = '100%';
+                
+                cardDiv.appendChild(img);
+                cardDiv.style.position = 'absolute';
+                cardDiv.style.left = `${index * 10}px`;
+                cardDiv.style.zIndex = index;
+                
+                wasteDiv.appendChild(cardDiv);
+            });
+        }
+
+        /**
+         * STEP 5: USER_WAIT - User drags remaining cards from Draw Pile
+         * 
+         * SCREEN STATE BEFORE: Sort Zone 2 has 1 card, Draw Pile has 2 cards
+         * WHAT HAPPENS: User drags cards to any valid sort zone
+         * TRIGGERS NEXT: After 2 successful drops → Step 6
+         */
+        async function userWait_Step5_DragDropExercise() {
+            hideAllUI();
+            
+            // WAITING state - user needs to drag cards
+            showPopup("7", "Now drag the remaining 2 cards from the Draw Pile<br>to any Sort Zone area.", '', PopupPosition.OVER_FOUNDATIONS, ButtonState.WAITING);
+            
+            dragDropCounter = 0;
+            
+            // Make Draw Pile cards draggable
+            const wasteCards = wasteDiv.querySelectorAll('.card');
+            wasteCards.forEach(card => {
+                const filename = card.querySelector('img').src.split('/').pop();
+                card.id = `card-${filename.replace('.jpg', '')}`;
+                makeCardDraggable(card);
+            });
+            
+            // Set up drop handlers on all sort zones
+            document.querySelectorAll('.sort-zone-pile').forEach(sortZone => {
+                sortZone.addEventListener('dragover', (e) => e.preventDefault());
+                
+                sortZone.addEventListener('drop', async (e) => {
+                    e.preventDefault();
+                    const cardId = e.dataTransfer.getData('text/plain');
+                    const card = document.getElementById(cardId);
+                    
+                    if (card && card.parentElement.id === 'waste') {
+                        const topCard = sortZone.querySelector('.card:last-child');
+                        
+                        // Check if move is legal
+                        if (topCard && !isLegalMove(card, topCard)) {
+                            const movingType = getCardType(card);
+                            const colorName = movingType === 'R' ? 'Red' : 'Blue';
+                            const targetColorName = getCardType(topCard) === 'R' ? 'red' : 'blue';
+                            
+                            // Check how many cards remain (including this one that failed)
+                            const remainingCards = wasteDiv.querySelectorAll('.card').length;
+                            
+                            // Error message ID based on remaining cards
+                            const errorId = remainingCards > 1 ? "8a" : "8b";
+                            await showErrorMessage(errorId,
+                                `Oops! ${colorName} cards can only go on ${colorName === 'Red' ? 'blue' : 'red'} cards or empty Sort Zone areas. You tried to place a ${colorName.toLowerCase()} card on a ${targetColorName} card.`
+                            );
+                            
+                            // Re-show instruction with "Try again" - WAITING state
+                            if (remainingCards > 1) {
+                                showPopup("7-retry", `Try again: drag the remaining ${remainingCards} cards from the Draw Pile to any Sort Zone area.`, '', PopupPosition.OVER_FOUNDATIONS, ButtonState.WAITING);
+                            } else {
+                                showPopup("9-retry", "Try again: drag the last card from the Draw Pile to a Sort Zone area.", '', PopupPosition.OVER_FOUNDATIONS, ButtonState.WAITING);
+                            }
+                            return;
+                        }
+                        
+                        // Legal move - place card
+                        const cardCount = sortZone.querySelectorAll('.card').length;
+                        card.style.position = 'absolute';
+                        card.style.left = '0px';
+                        card.style.top = `${cardCount * CARD_STACK_OFFSET}px`;
+                        card.style.zIndex = cardCount + 1;
+                        sortZone.appendChild(card);
+                        
+                        dragDropCounter++;
+                        
+                        // Check how many cards remain in Draw Pile
+                        const remainingCards = wasteDiv.querySelectorAll('.card').length;
+                        
+                        if (remainingCards > 0) {
+                            // More cards to go - clear content but don't hide container
+                            tutorialPopup.innerHTML = '';
+                            tutorialPopup.className = '';
+                            nextButton.style.visibility = 'hidden';
+                            await showSuccessMessage("8", `Nice! ${remainingCards} more card${remainingCards > 1 ? 's' : ''} to go.`);
+                            // WAITING state - still need to drag more cards
+                            showPopup("9", `Drag the ${remainingCards === 1 ? 'last card' : `remaining ${remainingCards} cards`} from the Draw Pile to a Sort Zone area.`, '', PopupPosition.OVER_FOUNDATIONS, ButtonState.WAITING);
+                        } else {
+                            // All cards placed - completed! Clear content but don't hide container
+                            tutorialPopup.innerHTML = '';
+                            tutorialPopup.className = '';
+                            nextButton.style.visibility = 'hidden';
+                            await showSuccessMessage("10", 'Excellent! You\'ve learned the basics<br>of the Red & Blue cards.');
+                            
+                            tutorialStep = 5;
+                            // Show popup with Next button (must show container too!)
+                            showPopup("11", "Click Next to learn about Wildcards.", '', PopupPosition.OVER_FOUNDATIONS);
+                            enableNextButton();
+                            updateStepDisplay();
+                        }
+                    }
+                });
+            });
+        }
+
+        // ============================================================================
+        // WILDCARD DEMONSTRATION SEQUENCE (Steps 6-12)
+        // This is a comprehensive demo showing how wildcards work
+        // Uses Fillmore (O-13), Coolidge (R-30), and Washington (O-1)
+        // ============================================================================
+
+        /**
+         * STEP 6: Setup wildcard demonstration
+         * Resets sort zones and loads specific cards for wildcard demo
+         * 
+         * SCREEN STATE BEFORE: User completed drag-drop exercise
+         * WHAT HAPPENS: Clears sort zones, sets up specific card arrangement, loads Draw Pile
+         * TRIGGERS NEXT: Auto-continues to animate Fillmore
+         */
+        function step6_SetupWildcardDemo() {
+            hideAllUI();
+            
+            // Reset sort zones with specific cards for this demo
+            resetSortZonesForWildcardTutorial();
+            
+            // Load wildcard demo cards into Draw Pile: Washington, Coolidge, Fillmore
+            wasteDiv.innerHTML = '<div class="label">Draw Pile</div>';
+            const cards = ['O-1.jpg', 'R-30.jpg', 'O-13.jpg'];
+            cards.forEach((filename, index) => {
+                const abbrev = filename.charAt(0);
+                const suit = abbrevToSuit[abbrev];
+                const rankStr = filename.split('-')[1];
+                const rank = parseInt(rankStr.replace('.jpg', ''));
+                
+                const container = document.createElement('div');
+                container.className = 'card-container tutorial-card';
+                container.style.position = 'absolute';
+                container.style.left = `${index * 10}px`;
+                container.style.top = '0';
+                container.style.zIndex = index;
+                container.dataset.suit = suit;
+                container.dataset.rank = rank;
+                
+                const cardDiv = document.createElement('div');
+                cardDiv.className = `card ${suit}`;
+                
+                const img = document.createElement('img');
+                img.src = `CARDS/${filename}`;
+                img.style.width = '100%';
+                img.style.height = '100%';
+                img.style.pointerEvents = 'none';
+                
+                cardDiv.appendChild(img);
+                container.appendChild(cardDiv);
+                wasteDiv.appendChild(container);
+            });
+            
+            // Show explanation 12.1 first, then 12.2, then auto-continue
+            showPopup("12.1", "Many POTUS in the first hundred years of America were neither members of the Democratic nor Republican parties.<br>In this game, they are Wildcards.", '', PopupPosition.OVER_FOUNDATIONS);
+            
+            tutorialStep = 5.5;  // Intermediate step for 12.1 -> 12.2 transition
+            updateStepDisplay();
+            enableNextButton();
+        }
+        
+        /**
+         * STEP 6 continued: Show second wildcard intro message
+         */
+        function step6_ShowWildcardMessage2() {
+            hideAllUI();
+            showPopup("12.2", "WILDCARDS (yellow border) can be placed on ANY card.", '', PopupPosition.OVER_FOUNDATIONS, ButtonState.PLAYING);
+            
+            // Store expected step to verify we should continue
+            const expectedStep = 5.5;
+            
+            setTimeout(() => {
+                // Only continue if we're still on the expected step
+                // This prevents race conditions from rapid clicking
+                if (tutorialStep === expectedStep) {
+                    step6b_AnimateFillmoreToSortZone();
+                } else {
+                    console.log('Step 6 auto-continue skipped - step already advanced to', tutorialStep);
+                }
+            }, 2600);
+        }
+
+        /**
+         * Resets sort zones with specific cards for wildcard demonstration
+         */
+        function resetSortZonesForWildcardTutorial() {
+            const sortZone0 = document.getElementById('sort-zone-0');
+            const sortZone1 = document.getElementById('sort-zone-1');
+            const sortZone2 = document.getElementById('sort-zone-2');
+            
+            clearPile(sortZone0);
+            clearPile(sortZone1);
+            clearPile(sortZone2);
+            
+            // Sort Zone 1: R-D-R pattern
+            placeCardInPile(sortZone0, 'R-27.jpg', 0, 1);
+            placeCardInPile(sortZone0, 'D-28.jpg', 30, 2);
+            placeCardInPile(sortZone0, 'R-29.jpg', 60, 3);
+            
+            // Sort Zone 2: D-R pattern
+            placeCardInPile(sortZone1, 'D-7.jpg', 0, 1);
+            placeCardInPile(sortZone1, 'R-26.jpg', 30, 2);
+            
+            // Sort Zone 3: Single D card
+            placeCardInPile(sortZone2, 'D-3.jpg', 0, 1);
+        }
+
+        /**
+         * STEP 6b: Animate Fillmore (O-13) to Sort Zone 3
+         * Shows that wildcards can go on any card
+         */
+        function step6b_AnimateFillmoreToSortZone() {
+            const cardToMove = wasteDiv.querySelector('.tutorial-card:last-child');
+            if (!cardToMove) return;
+            
+            const filename = cardToMove.querySelector('img').src.split('/').pop();
+            const suit = cardToMove.dataset.suit;
+            cardToMove.remove();
+            
+            const animatedCard = createAnimatedCard(filename, suit);
+            animatedCard.style.left = `${wasteDiv.offsetLeft}px`;
+            animatedCard.style.top = `${wasteDiv.offsetTop}px`;
+            gameArea.appendChild(animatedCard);
+            
+            const sortZone2 = document.getElementById('sort-zone-2');
+            
+            setTimeout(() => {
+                animatedCard.style.left = `${sortZone2.offsetLeft}px`;
+                animatedCard.style.top = `${sortZone2.offsetTop}px`;
+                
+                setTimeout(() => {
+                    const cardCount = sortZone2.querySelectorAll('.card').length;
+                    const staticCard = createStaticCard(filename, suit);
+                    staticCard.style.position = 'absolute';
+                    staticCard.style.left = '0px';
+                    staticCard.style.top = `${cardCount * CARD_STACK_OFFSET}px`;
+                    staticCard.style.zIndex = cardCount + 1;
+                    sortZone2.appendChild(staticCard);
+                    animatedCard.remove();
+                    
+                    tutorialStep = 6;
+                    updateStepDisplay();
+                    // Show popup with Next button (container must be visible!)
+                    showPopup("13", "Fillmore (a WILDCARD) is now on Sort Zone 3.", '', PopupPosition.OVER_FOUNDATIONS);
+                    enableNextButton();
+                }, 2600);
+            }, 100);
+        }
+
+        /**
+         * STEP 7: Animate Coolidge (R-30) onto Fillmore
+         * Shows that ANY card can go on a wildcard
+         */
+        function step7_AnimateCoolidgeOntoFillmore() {
+            hideAllUI();
+            
+            showPopup("14", "And ANY card can go on top of a WILDCARD too.", '', PopupPosition.OVER_FOUNDATIONS, ButtonState.PLAYING);
+            
+            setTimeout(() => {
+                // Find Coolidge (R-30) - should be the last tutorial-card after Fillmore was removed
+                const cardToMove = wasteDiv.querySelector('.tutorial-card:last-child');
+                
+                // Debug logging
+                console.log('Step 7: Looking for Coolidge card');
+                console.log('Cards in waste:', wasteDiv.querySelectorAll('.tutorial-card').length);
+                if (cardToMove) {
+                    console.log('Found card:', cardToMove.querySelector('img')?.src);
+                } else {
+                    console.log('No card found!');
+                }
+                
+                if (!cardToMove) {
+                    console.error('Step 7 ERROR: No card to move found in waste pile');
+                    // Try to recover - show error and allow proceeding
+                    hidePlayIcon();
+                    showPopup("14-error", "Error: Card not found. Click Next to continue.", 'error', PopupPosition.BETWEEN_ROWS);
+                    tutorialStep = 7;
+                    updateStepDisplay();
+                    enableNextButton();
+                    return;
+                }
+                
+                const filename = cardToMove.querySelector('img').src.split('/').pop();
+                const suit = cardToMove.dataset.suit;
+                cardToMove.remove();
+                
+                const animatedCard = createAnimatedCard(filename, suit);
+                animatedCard.style.left = `${wasteDiv.offsetLeft}px`;
+                animatedCard.style.top = `${wasteDiv.offsetTop}px`;
+                gameArea.appendChild(animatedCard);
+                
+                const sortZone2 = document.getElementById('sort-zone-2');
+                const cardCount = sortZone2.querySelectorAll('.card').length;
+                
+                setTimeout(() => {
+                    animatedCard.style.left = `${sortZone2.offsetLeft}px`;
+                    animatedCard.style.top = `${sortZone2.offsetTop + cardCount * CARD_STACK_OFFSET}px`;
+                    
+                    setTimeout(() => {
+                        const staticCard = createStaticCard(filename, suit);
+                        staticCard.style.position = 'absolute';
+                        staticCard.style.left = '0px';
+                        staticCard.style.top = `${cardCount * CARD_STACK_OFFSET}px`;
+                        staticCard.style.zIndex = cardCount + 1;
+                        sortZone2.appendChild(staticCard);
+                        animatedCard.remove();
+                        
+                        // Animation done - hide play icon
+                        hidePlayIcon();
+                        tutorialStep = 7;
+                        updateStepDisplay();
+                        // Show popup with Next button
+                        showPopup("15", "Coolidge is now stacked on Fillmore.", '', PopupPosition.OVER_FOUNDATIONS);
+                        enableNextButton();
+                    }, 2600);
+                }, 100);
+            }, 1000);
+        }
+
+        /**
+         * STEP 8: Explain the goal - Foundation zones
+         * Shows greyscale placeholder cards to indicate the goal
+         */
+        function step8_ExplainGoal() {
+            hideAllUI();
+            
+            // Place greyscale placeholder cards in Foundation zones to show the goal
+            placeGreyscaleCard('foundation-other', 'O-13.jpg', 'other');      // Fillmore
+            placeGreyscaleCard('foundation-republican', 'R-31.jpg', 'republican');  // Hoover
+            placeGreyscaleCard('foundation-democratic', 'D-28.jpg', 'democratic');  // Wilson
+            
+            // Make Foundation zones pulsate to draw attention
+            const foundationOther = document.getElementById('foundation-other');
+            const foundationRepublican = document.getElementById('foundation-republican');
+            const foundationDemocratic = document.getElementById('foundation-democratic');
+            
+            foundationOther.classList.add('pulsing');
+            foundationRepublican.classList.add('pulsing');
+            foundationDemocratic.classList.add('pulsing');
+            
+            // Position over foundations to be consistent with surrounding messages
+            showPopup("16", "The GOAL is to get all Presidents into Foundation Zones by Party, in reverse chronological order.", '', PopupPosition.OVER_FOUNDATIONS);
+            
+            tutorialStep = 8;
+            updateStepDisplay();
+            enableNextButton();
+        }
+
+        /**
+         * STEP 9: Explain Fillmore is blocked
+         * Points to Sort Zone 3 where Fillmore is under Coolidge
+         * Greyscale cards remain from step 8
+         */
+        function step9_ExplainFillmoreBlocked() {
+            hideAllUI();
+            
+            // Stop Foundation zones pulsating (from step 8)
+            document.getElementById('foundation-other').classList.remove('pulsing');
+            document.getElementById('foundation-republican').classList.remove('pulsing');
+            document.getElementById('foundation-democratic').classList.remove('pulsing');
+            
+            // Greyscale cards already placed in step 8, no need to place again
+            
+            showPopup("17", "The first card for 'Wildcard' is Fillmore.<br>But his card is currently covered up by Coolidge.", '', PopupPosition.OVER_FOUNDATIONS);
+            
+            // Add pointing emoji - will stay visible until Next is clicked
+            const sortZone2 = document.getElementById('sort-zone-2');
+            const emoji = document.createElement('div');
+            emoji.id = 'pointing-finger-17';  // ID so we can remove it later
+            emoji.innerHTML = '👉';
+            emoji.style.position = 'absolute';
+            emoji.style.fontSize = '40px';
+            emoji.style.zIndex = 3000;
+            emoji.style.left = `${sortZone2.offsetLeft - 50}px`;
+            emoji.style.top = `${sortZone2.offsetTop + 40}px`;
+            gameArea.appendChild(emoji);
+            
+            tutorialStep = 9;
+            updateStepDisplay();
+            enableNextButton();
+            
+            // Store reference so hideAllUI can remove it
+            window.currentPointingFinger = emoji;
+        }
+        
+        /**
+         * Places a greyscale placeholder card in a foundation zone
+         * Cards in foundations are rotated 90° for landscape display
+         * @param {string} foundationId - ID of foundation element
+         * @param {string} filename - Card image filename
+         * @param {string} suit - Card party affiliation
+         */
+        function placeGreyscaleCard(foundationId, filename, suit) {
+            const foundation = document.getElementById(foundationId);
+            
+            // Remove any existing greyscale card
+            const existingGreyscale = foundation.querySelector('.card.greyscale');
+            if (existingGreyscale) existingGreyscale.remove();
+            
+            const cardDiv = createStaticCard(filename, suit, true);  // rotated = true for foundation
+            cardDiv.classList.add('greyscale');
+            cardDiv.style.position = 'absolute';
+            cardDiv.style.left = '0px';
+            cardDiv.style.top = '0px';
+            cardDiv.style.zIndex = 1;
+            foundation.appendChild(cardDiv);
+        }
+        
+        /**
+         * Removes all greyscale placeholder cards from foundation zones
+         */
+        function removeGreyscaleCards() {
+            document.querySelectorAll('.card.greyscale').forEach(card => card.remove());
+        }
+
+        /**
+         * STEP 10: Explain Washington can help (Part 1)
+         */
+        function step10_ExplainWashingtonSolution() {
+            hideAllUI();
+            
+            // Greyscale cards remain visible throughout
+            // First sentence only - explaining the problem
+            showPopup("18.1", "To move Coolidge (red), we need to use the Sort Zones to move Coolidge's card<br>so that we can get to the card we need (Fillmore).", '', PopupPosition.OVER_FOUNDATIONS);
+            
+            tutorialStep = 9.25;  // Intermediate step for 18.1 -> 18.15 transition
+            updateStepDisplay();
+            enableNextButton();
+        }
+        
+        /**
+         * STEP 10 continued: Explain why we can't move Coolidge yet (Part 1.5)
+         */
+        function step10_ExplainWashingtonSolution1_5() {
+            hideAllUI();
+            
+            // Second sentence - explaining the obstacle with pulsating red cards
+            showPopup("18.15", "But we currently can NOT move Coolidge to the other two Sort Zones<br>because they're also occupied by red cards.", '', PopupPosition.OVER_FOUNDATIONS);
+            
+            // Find and pulsate the red cards in Sort Zones 1 & 2 (Harding R-29 and Roosevelt R-26)
+            const sortZone0 = document.getElementById('sort-zone-0');
+            const sortZone1 = document.getElementById('sort-zone-1');
+            
+            // Find top red cards in each zone
+            const hardingCard = Array.from(sortZone0.querySelectorAll('.card')).find(card =>
+                card.querySelector('img')?.src.includes('R-29'));
+            const rooseveltCard = Array.from(sortZone1.querySelectorAll('.card')).find(card =>
+                card.querySelector('img')?.src.includes('R-26'));
+            
+            if (hardingCard) hardingCard.classList.add('pulsating');
+            if (rooseveltCard) rooseveltCard.classList.add('pulsating');
+            
+            tutorialStep = 9.5;  // Intermediate step for 18.15 -> 18.2 transition
+            updateStepDisplay();
+            enableNextButton();
+        }
+        
+        /**
+         * STEP 10 continued: Explain Washington solution (Part 2)
+         */
+        function step10_ExplainWashingtonSolution2() {
+            hideAllUI();
+            
+            // Remove pulsating from red cards
+            document.querySelectorAll('.card.pulsating').forEach(card => {
+                card.classList.remove('pulsating');
+            });
+            
+            showPopup("18.2", "First we need to place a blue or yellow card into Sort Zone 1 or 2.", '', PopupPosition.OVER_FOUNDATIONS);
+            
+            tutorialStep = 10;
+            updateStepDisplay();
+            enableNextButton();
+        }
+
+        /**
+         * STEP 11: Animate Washington to Sort Zone 2
+         */
+        function step11_AnimateWashingtonToSortZone() {
+            hideAllUI();
+            
+            // Show message while animating
+            showPopup("19", "Washington is a Wildcard.", '', PopupPosition.OVER_FOUNDATIONS, ButtonState.PLAYING);
+            
+            const cardToMove = wasteDiv.querySelector('.tutorial-card');
+            
+            // Debug logging
+            console.log('Step 11: Looking for Washington card');
+            console.log('Cards in waste:', wasteDiv.querySelectorAll('.tutorial-card').length);
+            
+            if (!cardToMove) {
+                console.error('Step 11 ERROR: No card to move found in waste pile');
+                showPopup("19-error", "Error: Washington card not found. Click Next to continue.", 'error', PopupPosition.OVER_FOUNDATIONS);
+                tutorialStep = 11;
+                updateStepDisplay();
+                enableNextButton();
+                return;
+            }
+            
+            const filename = cardToMove.querySelector('img').src.split('/').pop();
+            const suit = cardToMove.dataset.suit;
+            cardToMove.remove();
+            
+            const animatedCard = createAnimatedCard(filename, suit);
+            animatedCard.style.left = `${wasteDiv.offsetLeft}px`;
+            animatedCard.style.top = `${wasteDiv.offsetTop}px`;
+            gameArea.appendChild(animatedCard);
+            
+            const sortZone1 = document.getElementById('sort-zone-1');
+            const cardCount = sortZone1.querySelectorAll('.card').length;
+            
+            setTimeout(() => {
+                animatedCard.style.left = `${sortZone1.offsetLeft}px`;
+                animatedCard.style.top = `${sortZone1.offsetTop + cardCount * CARD_STACK_OFFSET}px`;
+                
+                setTimeout(() => {
+                    const staticCard = createStaticCard(filename, suit);
+                    staticCard.style.position = 'absolute';
+                    staticCard.style.left = '0px';
+                    staticCard.style.top = `${cardCount * CARD_STACK_OFFSET}px`;
+                    staticCard.style.zIndex = cardCount + 1;
+                    sortZone1.appendChild(staticCard);
+                    animatedCard.remove();
+                    
+                    // Animation done - hide play icon
+                    hidePlayIcon();
+                    tutorialStep = 11;
+                    updateStepDisplay();
+                    // Show popup with Next button
+                    showPopup("20", "Washington is now on Sort Zone 2.", '', PopupPosition.OVER_FOUNDATIONS);
+                    enableNextButton();
+                }, 2600);
+            }, 100);
+        }
+
+        /**
+         * STEP 12: Animate Coolidge from Sort Zone 3 to Sort Zone 2
+         */
+        function step12_AnimateCoolidgeToSortZone2() {
+            hideAllUI();
+            
+            showPopup("21", "Now we can move Coolidge onto Washington.", '', PopupPosition.OVER_FOUNDATIONS, ButtonState.PLAYING);
+            
+            const sortZone2 = document.getElementById('sort-zone-2');
+            const coolidgeCard = Array.from(sortZone2.querySelectorAll('.card')).find(card =>
+                card.querySelector('img').src.includes('R-30'));
+            
+            // Debug logging
+            console.log('Step 12: Looking for Coolidge card in Sort Zone 3');
+            console.log('Cards in sortZone2:', sortZone2.querySelectorAll('.card').length);
+            
+            if (!coolidgeCard) {
+                console.error('Step 12 ERROR: Coolidge card not found in Sort Zone 3');
+                showPopup("21-error", "Error: Coolidge card not found. Click Next to continue.", 'error', PopupPosition.OVER_FOUNDATIONS);
+                tutorialStep = 12;
+                updateStepDisplay();
+                enableNextButton();
+                return;
+            }
+            
+            const filename = coolidgeCard.querySelector('img').src.split('/').pop();
+            const suit = 'republican';
+            const startLeft = sortZone2.offsetLeft;
+            const startTop = sortZone2.offsetTop + parseFloat(coolidgeCard.style.top || 0);
+            coolidgeCard.remove();
+            
+            const animatedCard = createAnimatedCard(filename, suit);
+            animatedCard.style.left = `${startLeft}px`;
+            animatedCard.style.top = `${startTop}px`;
+            gameArea.appendChild(animatedCard);
+            
+            const sortZone1 = document.getElementById('sort-zone-1');
+            const cardCount = sortZone1.querySelectorAll('.card').length;
+            
+            setTimeout(() => {
+                animatedCard.style.left = `${sortZone1.offsetLeft}px`;
+                animatedCard.style.top = `${sortZone1.offsetTop + cardCount * CARD_STACK_OFFSET}px`;
+                
+                setTimeout(() => {
+                    const staticCard = createStaticCard(filename, suit);
+                    staticCard.style.position = 'absolute';
+                    staticCard.style.left = '0px';
+                    staticCard.style.top = `${cardCount * CARD_STACK_OFFSET}px`;
+                    staticCard.style.zIndex = cardCount + 1;
+                    sortZone1.appendChild(staticCard);
+                    animatedCard.remove();
+                    
+                    // Animation done - hide play icon
+                    hidePlayIcon();
+                    tutorialStep = 12;
+                    updateStepDisplay();
+                    // Show popup with Next button
+                    showPopup("22", "Coolidge is now on Washington.", '', PopupPosition.OVER_FOUNDATIONS);
+                    enableNextButton();
+                }, 2600);
+            }, 100);
+        }
+
+        /**
+         * STEP 13: Animate Fillmore to Foundation (with 90° rotation)
+         */
+        function step13_AnimateFillmoreToFoundation() {
+            hideAllUI();
+            
+            // Greyscale cards are already in place from step 8
+            // The colored Fillmore will animate and cover the greyscale one
+            
+            showPopup("23", "Now we can access Fillmore and move him to the Wildcard Foundation!", '', PopupPosition.OVER_FOUNDATIONS, ButtonState.PLAYING);
+            
+            const sortZone2 = document.getElementById('sort-zone-2');
+            const fillmoreCard = Array.from(sortZone2.querySelectorAll('.card')).find(card =>
+                card.querySelector('img').src.includes('O-13'));
+            
+            // Debug logging
+            console.log('Step 13: Looking for Fillmore card in Sort Zone 3');
+            console.log('Cards in sortZone2:', sortZone2.querySelectorAll('.card').length);
+            
+            if (!fillmoreCard) {
+                console.error('Step 13 ERROR: Fillmore card not found in Sort Zone 3');
+                showPopup("23-error", "Error: Fillmore card not found. Click Next to continue.", 'error', PopupPosition.OVER_FOUNDATIONS);
+                tutorialStep = 13;
+                updateStepDisplay();
+                enableNextButton();
+                return;
+            }
+            
+            const filename = fillmoreCard.querySelector('img').src.split('/').pop();
+            const suit = 'other';
+            const startLeft = sortZone2.offsetLeft;
+            const startTop = sortZone2.offsetTop + parseFloat(fillmoreCard.style.top || 0);
+            fillmoreCard.remove();
+            
+            const animatedCard = createAnimatedCard(filename, suit, false, true);  // rotateToFoundation = true
+            animatedCard.style.left = `${startLeft}px`;
+            animatedCard.style.top = `${startTop}px`;
+            gameArea.appendChild(animatedCard);
+            
+            const foundationOther = document.getElementById('foundation-other');
+            
+            setTimeout(() => {
+                // Animate to foundation with 90° rotation
+                animateToFoundation(animatedCard, foundationOther.offsetLeft, foundationOther.offsetTop);
+                
+                setTimeout(() => {
+                    // Remove the greyscale Fillmore first
+                    const greyscaleFillmore = foundationOther.querySelector('.card.greyscale');
+                    if (greyscaleFillmore) greyscaleFillmore.remove();
+                    
+                    // Place the colored card on top (rotated)
+                    const staticCard = createStaticCard(filename, suit, true);  // rotated = true
+                    staticCard.style.position = 'absolute';
+                    staticCard.style.left = '0px';
+                    staticCard.style.top = '0px';
+                    staticCard.style.zIndex = 2;
+                    foundationOther.appendChild(staticCard);
+                    animatedCard.remove();
+                    
+                    // Animation done - hide play icon
+                    hidePlayIcon();
+                    tutorialStep = 13;
+                    updateStepDisplay();
+                    // Show popup with Next button
+                    showPopup("24", "Fillmore is now in the Wildcard Foundation!", '', PopupPosition.OVER_FOUNDATIONS);
+                    enableNextButton();
+                }, 2600);
+            }, 100);
+        }
+
+        /**
+         * STEP 14: Show Foundation goal with all president lists
+         */
+        function step14_ShowFoundationGoal() {
+            hideAllUI();
+            
+            // Remove any remaining greyscale cards from step 13
+            removeGreyscaleCards();
+            
+            // Position over sort zones since we're showing foundation content
+            showPopup("25", "The Game is Won when you complete all 3 Foundation zones<br>in reverse chronological order.", '', PopupPosition.OVER_SORT_ZONES);
+            
+            // Show all 3 president lists in their Foundation zones
+            // Highlight the NEXT card needed in each zone:
+            // - Wildcard: Zachary Taylor (index 1) since Fillmore (index 0) is already placed (completedUpTo: 0)
+            // - Republican: Herbert Hoover (index 0) - first card needed
+            // - Democratic: Woodrow Wilson (index 0) - first card needed
+            showPresidentListInFoundation('foundation-other', getWildcardPresidents(), 1, 0);  // Fillmore completed
+            showPresidentListInFoundation('foundation-republican', getRepublicanPresidents(), 0, -1);
+            showPresidentListInFoundation('foundation-democratic', getDemocraticPresidents(), 0, -1);
+            
+            tutorialStep = 14;
+            updateStepDisplay();
+            enableNextButton();
+        }
+
+        /**
+         * Returns Wildcard presidents in REVERSE chronological order
+         * These are Federalists, Whigs, and Independents (pre-party era)
+         */
+        function getWildcardPresidents() {
+            return [
+                { name: "Millard Fillmore", years: "1850-1853" },
+                { name: "Zachary Taylor", years: "1849-1850" },
+                { name: "John Tyler", years: "1841-1845" },
+                { name: "W.H. Harrison", years: "1841" },
+                { name: "John Q. Adams", years: "1825-1829" },
+                { name: "John Adams", years: "1797-1801" },
+                { name: "George Washington", years: "1789-1797" }
+            ];
+        }
+
+        /**
+         * Returns Democratic presidents in REVERSE chronological order
+         */
+        function getDemocraticPresidents() {
+            return [
+                { name: "Woodrow Wilson", years: "1913-1921" },
+                { name: "Grover Cleveland", years: "1893-1897" },
+                { name: "Grover Cleveland", years: "1885-1889" },
+                { name: "Andrew Johnson", years: "1865-1869" },
+                { name: "James Buchanan", years: "1857-1861" },
+                { name: "Franklin Pierce", years: "1853-1857" },
+                { name: "James K. Polk", years: "1845-1849" },
+                { name: "Martin Van Buren", years: "1837-1841" },
+                { name: "Andrew Jackson", years: "1829-1837" },
+                { name: "James Monroe", years: "1817-1825" },
+                { name: "James Madison", years: "1809-1817" },
+                { name: "Thomas Jefferson", years: "1801-1809" }
+            ];
+        }
+
+        /**
+         * Returns Republican presidents in REVERSE chronological order
+         */
+        function getRepublicanPresidents() {
+            return [
+                { name: "Herbert Hoover", years: "1929-1933" },
+                { name: "Calvin Coolidge", years: "1923-1929" },
+                { name: "Warren G. Harding", years: "1921-1923" },
+                { name: "William H. Taft", years: "1909-1913" },
+                { name: "Theodore Roosevelt", years: "1901-1909" },
+                { name: "William McKinley", years: "1897-1901" },
+                { name: "Benjamin Harrison", years: "1889-1893" },
+                { name: "Chester A. Arthur", years: "1881-1885" },
+                { name: "James A. Garfield", years: "1881" },
+                { name: "Rutherford B. Hayes", years: "1877-1881" },
+                { name: "Ulysses S. Grant", years: "1869-1877" },
+                { name: "Abraham Lincoln", years: "1861-1865" }
+            ];
+        }
+
+        /**
+         * Displays a president list inside a foundation zone
+         * Format: "Full Name    years"
+         * @param {string} foundationId - ID of foundation element
+         * @param {Array} presidents - Array of {name, years} objects
+         * @param {number} highlightIndex - Index of the "next" card to highlight (optional)
+         * @param {number} completedUpTo - Index up to which items are completed (optional, -1 means none)
+         */
+        function showPresidentListInFoundation(foundationId, presidents, highlightIndex = -1, completedUpTo = -1) {
+            const foundation = document.getElementById(foundationId);
+            
+            // Remove any existing list
+            const existingList = foundation.querySelector('.president-list');
+            if (existingList) existingList.remove();
+            
+            // Create list container
+            const listDiv = document.createElement('div');
+            listDiv.className = 'president-list';
+            listDiv.style.cssText = `
+                position: absolute;
+                top: 5px;
+                left: 5px;
+                right: 5px;
+                bottom: 5px;
+                background: rgba(255,255,255,0.95);
+                border-radius: 5px;
+                padding: 5px;
+                font-size: 8px;
+                line-height: 1.2;
+                overflow-y: auto;
+                z-index: 100;
+            `;
+            
+            // Add header
+            const header = document.createElement('div');
+            header.style.cssText = 'font-weight: bold; text-align: center; margin-bottom: 3px; font-size: 9px; border-bottom: 1px solid #ccc; padding-bottom: 2px;';
+            header.textContent = 'Build Order ↓';
+            listDiv.appendChild(header);
+            
+            // Add each president
+            presidents.forEach((p, index) => {
+                const line = document.createElement('div');
+                line.style.cssText = 'display: flex; justify-content: space-between; padding: 1px 0;';
+                
+                // Mark as completed with checkmark
+                if (index <= completedUpTo) {
+                    line.classList.add('completed');
+                }
+                
+                // Highlight the "next" card if specified
+                if (index === highlightIndex) {
+                    line.classList.add('highlight-next');
+                }
+                
+                const nameSpan = document.createElement('span');
+                nameSpan.style.cssText = 'overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;';
+                
+                // Add checkmark for completed items
+                if (index <= completedUpTo) {
+                    nameSpan.innerHTML = '<span class="checkmark">✓</span>' + p.name;
+                } else {
+                    nameSpan.textContent = p.name;
+                }
+                
+                const yearsSpan = document.createElement('span');
+                yearsSpan.textContent = p.years;
+                yearsSpan.style.cssText = 'margin-left: 4px; white-space: nowrap; color: #666;';
+                
+                line.appendChild(nameSpan);
+                line.appendChild(yearsSpan);
+                listDiv.appendChild(line);
+            });
+            
+            foundation.appendChild(listDiv);
+        }
+
+        /**
+         * STEP 15: Interactive challenge - User figures out how to access Wilson
+         * 
+         * Game State:
+         * - Sort Zone 1: R-27, D-28 (Wilson), R-29 (Harding on top)
+         * - Sort Zone 2: D-7, R-26, O-1, R-30 (Coolidge on top)
+         * - Sort Zone 3: D-3 (Jefferson alone)
+         * - Democratic Foundation: empty (needs Wilson first)
+         * 
+         * Solution: Move Harding onto Jefferson, then Wilson to Democratic Foundation
+         */
+        let challengePhase = 0;  // 0=need to expose Wilson, 1=need to move Wilson to Foundation
+        let hardingMoved = false;  // Track if Harding has been moved
+        let hintTimer = null;  // Timer for showing hint if player is stuck
+        let text27Timer = null;  // Safety timer for text 27
+        
+        function step15_InteractiveChallenge() {
+            hideAllUI();
+            
+            // Clear any existing timers
+            if (hintTimer) clearTimeout(hintTimer);
+            if (text27Timer) clearTimeout(text27Timer);
+            
+            // Remove president lists from foundations
+            document.querySelectorAll('.president-list').forEach(list => list.remove());
+            
+            // Show the greyscale Wilson in Democratic Foundation as the goal
+            placeGreyscaleCard('foundation-democratic', 'D-28.jpg', 'democratic');
+            
+            // WAITING state - user needs to move cards
+            showPopup("26", "Now it's your turn!<br>Can you access the Wilson card and place it in the Democratic Foundation zone?", '', PopupPosition.OVER_FOUNDATIONS, ButtonState.WAITING);
+            
+            challengePhase = 0;
+            hardingMoved = false;
+            
+            // Make ALL top cards draggable so user can experiment
+            makeTopCardsDraggable();
+            
+            // Set up drop handlers for this challenge
+            setupChallengeDropHandlers();
+            
+            tutorialStep = 15;
+            updateStepDisplay();
+            
+            // Start hint timer - show hint after 8 seconds if player hasn't moved Harding
+            hintTimer = setTimeout(() => {
+                if (!hardingMoved && challengePhase === 0) {
+                    showHintForWilson();
+                }
+            }, 8000);
+        }
+        
+        /**
+         * Show hint pointing to covered Wilson card
+         */
+        function showHintForWilson() {
+            // Show hint message
+            showPopup("26-hint", "The Wilson card is covered up.<br>How can we uncover it?", '', PopupPosition.OVER_FOUNDATIONS, ButtonState.WAITING);
+            
+            // Add pointing finger to the visible portion of Wilson card (second from top in Sort Zone 1)
+            const sortZone0 = document.getElementById('sort-zone-0');
+            const cards = sortZone0.querySelectorAll('.card');
+            
+            // Wilson is the second card from top (index = cards.length - 2)
+            if (cards.length >= 2) {
+                const wilsonCard = cards[cards.length - 2];
+                const wilsonRect = wilsonCard.getBoundingClientRect();
+                const gameRect = gameArea.getBoundingClientRect();
+                
+                const emoji = document.createElement('div');
+                emoji.id = 'pointing-finger-26';
+                emoji.innerHTML = '👉';
+                emoji.style.position = 'absolute';
+                emoji.style.fontSize = '40px';
+                emoji.style.zIndex = 3000;
+                // Point to the visible portion of Wilson (the part sticking out)
+                emoji.style.left = `${sortZone0.offsetLeft - 50}px`;
+                emoji.style.top = `${sortZone0.offsetTop + CARD_STACK_OFFSET}px`;
+                gameArea.appendChild(emoji);
+                
+                // Store reference for cleanup
+                window.currentPointingFinger = emoji;
+            }
+        }
+        
+        /**
+         * Show text 27 with safety timer in case it disappears
+         * Positioned over sort zones so it doesn't cover the Democratic Foundation
+         */
+        function showText27() {
+            // Clear any existing text27 timer
+            if (text27Timer) clearTimeout(text27Timer);
+            
+            // Position over SORT ZONES so it doesn't cover the Foundation zone user needs to interact with
+            showPopup("27", "Great move!<br>Now drag Wilson to the Democratic Foundation zone.", '', PopupPosition.OVER_SORT_ZONES, ButtonState.WAITING);
+            
+            // Safety timer - if message disappears, re-show it after 5 seconds
+            text27Timer = setTimeout(() => {
+                // Only re-show if we're still in phase 1 (Wilson not yet moved)
+                if (hardingMoved && challengePhase === 1) {
+                    // Check if popup is not visible
+                    if (tutorialPopupContainer.style.display === 'none' || 
+                        !tutorialPopup.innerHTML.includes('Wilson')) {
+                        console.log('Text 27 safety timer triggered - re-showing message');
+                        ensureWilsonDraggable();
+                        showPopup("27-safety", "Drag Wilson to the Democratic Foundation zone (top right).", '', PopupPosition.OVER_SORT_ZONES, ButtonState.WAITING);
+                    }
+                }
+            }, 5000);
+        }
+        
+        /**
+         * Make all top cards in sort zones draggable
+         */
+        function makeTopCardsDraggable() {
+            // Sort Zone 1 - Harding (R-29)
+            const sortZone0 = document.getElementById('sort-zone-0');
+            const hardingCard = sortZone0.querySelector('.card:last-child');
+            if (hardingCard) {
+                hardingCard.id = 'card-R-29';
+                hardingCard.dataset.cardFile = 'R-29';
+                makeCardDraggable(hardingCard);
+            }
+            
+            // Sort Zone 2 - Coolidge (R-30)
+            const sortZone1 = document.getElementById('sort-zone-1');
+            const coolidgeCard = sortZone1.querySelector('.card:last-child');
+            if (coolidgeCard) {
+                coolidgeCard.id = 'card-R-30';
+                coolidgeCard.dataset.cardFile = 'R-30';
+                makeCardDraggable(coolidgeCard);
+            }
+            
+            // Sort Zone 3 - Jefferson (D-3)
+            const sortZone2 = document.getElementById('sort-zone-2');
+            const jeffersonCard = sortZone2.querySelector('.card:last-child');
+            if (jeffersonCard) {
+                jeffersonCard.id = 'card-D-3';
+                jeffersonCard.dataset.cardFile = 'D-3';
+                makeCardDraggable(jeffersonCard);
+            }
+        }
+        
+        /**
+         * Make Wilson draggable after Harding is moved
+         */
+        function makeWilsonDraggable() {
+            const sortZone0 = document.getElementById('sort-zone-0');
+            const wilsonCard = sortZone0.querySelector('.card:last-child');
+            
+            console.log('makeWilsonDraggable called');
+            console.log('Sort Zone 0 cards:', sortZone0.querySelectorAll('.card').length);
+            
+            if (wilsonCard) {
+                const img = wilsonCard.querySelector('img');
+                console.log('Found card with image:', img ? img.src : 'no image');
+                
+                wilsonCard.id = 'card-D-28';
+                wilsonCard.dataset.cardFile = 'D-28';
+                makeCardDraggable(wilsonCard);
+                
+                console.log('Wilson is now draggable:', wilsonCard.draggable);
+            } else {
+                console.error('Could not find Wilson card in Sort Zone 1!');
+            }
+        }
+        
+        /**
+         * Ensure Wilson remains draggable (call after error messages in Phase 1)
+         */
+        function ensureWilsonDraggable() {
+            const wilsonCard = document.getElementById('card-D-28');
+            if (wilsonCard) {
+                wilsonCard.draggable = true;
+                wilsonCard.style.cursor = 'grab';
+                console.log('Wilson draggability re-ensured');
+            } else {
+                // Wilson might not have an ID yet, try to find by position
+                const sortZone0 = document.getElementById('sort-zone-0');
+                const topCard = sortZone0.querySelector('.card:last-child');
+                if (topCard) {
+                    topCard.id = 'card-D-28';
+                    topCard.dataset.cardFile = 'D-28';
+                    makeCardDraggable(topCard);
+                    console.log('Wilson found and made draggable via position');
+                }
+            }
+        }
+        
+        /**
+         * Set up drop handlers for the interactive challenge
+         */
+        function setupChallengeDropHandlers() {
+            // Set up drop handlers on all sort zones
+            const sortZones = document.querySelectorAll('.sort-zone-pile');
+            sortZones.forEach(sortZone => {
+                sortZone.addEventListener('dragover', (e) => e.preventDefault());
+                sortZone.addEventListener('drop', handleChallengeSortZoneDrop);
+            });
+            
+            // Set up Foundation drop handlers
+            const foundationDem = document.getElementById('foundation-democratic');
+            foundationDem.addEventListener('dragover', (e) => e.preventDefault());
+            foundationDem.addEventListener('drop', handleChallengeFoundationDrop);
+            
+            // Also allow drops on other foundations (to give error feedback)
+            const foundationRep = document.getElementById('foundation-republican');
+            const foundationOther = document.getElementById('foundation-other');
+            [foundationRep, foundationOther].forEach(foundation => {
+                foundation.addEventListener('dragover', (e) => e.preventDefault());
+                foundation.addEventListener('drop', handleWrongFoundationDrop);
+            });
+        }
+        
+        /**
+         * Handle drops on sort zones during challenge
+         */
+        async function handleChallengeSortZoneDrop(e) {
+            e.preventDefault();
+            const cardId = e.dataTransfer.getData('text/plain');
+            const card = document.getElementById(cardId);
+            const sortZone = e.currentTarget;
+            
+            if (!card) return;
+            
+            const topCard = sortZone.querySelector('.card:last-child');
+            const cardFile = card.dataset.cardFile || card.id.replace('card-', '');
+            const sourceZone = card.parentElement;
+            
+            console.log('Drop detected - cardFile:', cardFile, 'hardingMoved:', hardingMoved, 'challengePhase:', challengePhase);
+            
+            // Check if this is the same zone (no move)
+            if (sourceZone === sortZone) return;
+            
+            // Check if move is legal (alternating colors)
+            if (topCard && !isLegalMove(card, topCard)) {
+                const movingColor = cardFile.startsWith('R') ? 'red' : (cardFile.startsWith('D') ? 'blue' : 'yellow');
+                const targetColor = getCardType(topCard) === 'R' ? 'red' : (getCardType(topCard) === 'D' ? 'blue' : 'yellow');
+                await showErrorMessage("challenge-error", `That's not a legal move! You can't place a ${movingColor} card on a ${targetColor} card. Cards must alternate colors.`);
+                
+                if (!hardingMoved) {
+                    showPopup("26-retry", "Can you access the Wilson card and place it in the Democratic Foundation zone?", '', PopupPosition.OVER_FOUNDATIONS, ButtonState.WAITING);
+                } else {
+                    ensureWilsonDraggable();
+                    showPopup("27-retry", "Drag Wilson to the Democratic Foundation zone.", '', PopupPosition.OVER_SORT_ZONES, ButtonState.WAITING);
+                }
+                return;
+            }
+            
+            // Check what card is being moved
+            const isHarding = cardFile === 'R-29';
+            const isWilson = cardFile === 'D-28';
+            const fromSortZone1 = sourceZone.id === 'sort-zone-0';
+            
+            // CASE 1: Harding being moved (correct first move)
+            if (isHarding && fromSortZone1 && !hardingMoved) {
+                // Correct! Place Harding
+                placeCardInZone(card, sortZone);
+                card.draggable = false;
+                hardingMoved = true;
+                challengePhase = 1;
+                
+                // Clear the hint timer since player figured it out
+                if (hintTimer) clearTimeout(hintTimer);
+                
+                // Remove pointing finger if showing
+                removePointingFinger();
+                
+                console.log('Harding moved successfully! hardingMoved:', hardingMoved);
+                
+                // Make Wilson draggable immediately
+                makeWilsonDraggable();
+                
+                // Show combined success/instruction message - position over SORT ZONES so it doesn't cover Foundation
+                showText27();
+                return;
+            }
+            
+            // CASE 2: Wilson being moved to a Sort Zone (wrong - should go to Foundation)
+            if (isWilson && hardingMoved) {
+                await showErrorMessage("27-error", "Wilson needs to go to the Democratic Foundation zone, not a Sort Zone!");
+                ensureWilsonDraggable();
+                showPopup("27-retry", "Drag Wilson to the Democratic Foundation zone (top right).", '', PopupPosition.OVER_SORT_ZONES, ButtonState.WAITING);
+                return;
+            }
+            
+            // CASE 3: Any other legal move before Harding is moved (legal but doesn't help)
+            if (!hardingMoved) {
+                await showErrorMessage("26-hint", "That move is legal, but it doesn't help you access Wilson. Wilson is covered by Harding in Sort Zone 1.");
+                showPopup("26-retry", "Can you access the Wilson card and place it in the Democratic Foundation zone?", '', PopupPosition.OVER_FOUNDATIONS, ButtonState.WAITING);
+                return;
+            }
+            
+            // CASE 4: Moving other cards after Harding moved (not helpful)
+            await showErrorMessage("27-hint", "Focus on moving Wilson to the Democratic Foundation zone!");
+            ensureWilsonDraggable();
+            showPopup("27-retry", "Drag Wilson to the Democratic Foundation zone.", '', PopupPosition.OVER_SORT_ZONES, ButtonState.WAITING);
+        }
+        
+        /**
+         * Handle drops on Democratic Foundation during challenge
+         */
+        async function handleChallengeFoundationDrop(e) {
+            e.preventDefault();
+            const cardId = e.dataTransfer.getData('text/plain');
+            const card = document.getElementById(cardId);
+            
+            if (!card) return;
+            
+            const cardFile = card.dataset.cardFile || card.id.replace('card-', '');
+            
+            console.log('Foundation drop - cardFile:', cardFile, 'hardingMoved:', hardingMoved);
+            
+            // If Harding hasn't been moved yet
+            if (!hardingMoved) {
+                if (cardFile === 'D-28') {
+                    await showErrorMessage("26-error", "Wilson is still covered by Harding! You need to move Harding first to access Wilson.");
+                } else {
+                    await showErrorMessage("26-error", "That card can't go in the Democratic Foundation right now. First, you need to access Wilson!");
+                }
+                showPopup("26-retry", "Can you access the Wilson card and place it in the Democratic Foundation zone?", '', PopupPosition.OVER_FOUNDATIONS, ButtonState.WAITING);
+                return;
+            }
+            
+            // Harding has been moved - should be Wilson
+            if (cardFile === 'D-28') {
+                // Success! Place Wilson in Foundation (rotated 90°)
+                const foundationDem = document.getElementById('foundation-democratic');
+                
+                // Remove greyscale card
+                const greyscale = foundationDem.querySelector('.card.greyscale');
+                if (greyscale) greyscale.remove();
+                
+                // Place Wilson (rotated for foundation)
+                card.style.position = 'absolute';
+                card.style.left = '0px';
+                card.style.top = '0px';
+                card.style.zIndex = 2;
+                card.style.transform = 'rotate(90deg)';  // Rotate for foundation
+                card.draggable = false;
+                foundationDem.appendChild(card);
+                
+                // Clear the safety timer since Wilson was placed successfully
+                if (text27Timer) {
+                    clearTimeout(text27Timer);
+                    text27Timer = null;
+                }
+                challengePhase = 2;  // Mark challenge as complete
+                
+                // Final success!
+                await showSuccessMessage("28", "Excellent!<br>You placed Wilson in the Democratic Foundation!");
+                
+                // Now show the real final message
+                step16_ShowFinalMessage();
+            } else {
+                await showErrorMessage("27-error", "That's not Wilson! Drag Wilson (the blue card now on top of Sort Zone 1).");
+                ensureWilsonDraggable();
+                showPopup("27-retry", "Drag Wilson to the Democratic Foundation zone.", '', PopupPosition.OVER_SORT_ZONES, ButtonState.WAITING);
+            }
+        }
+        
+        /**
+         * Handle drops on wrong foundations (Republican or Wildcard)
+         */
+        async function handleWrongFoundationDrop(e) {
+            e.preventDefault();
+            const cardId = e.dataTransfer.getData('text/plain');
+            const card = document.getElementById(cardId);
+            
+            if (!card) return;
+            
+            const foundationId = e.currentTarget.id;
+            
+            if (foundationId === 'foundation-republican') {
+                await showErrorMessage("challenge-error", "That's the Republican Foundation. Wilson is a Democrat and needs to go in the Democratic Foundation.");
+            } else {
+                await showErrorMessage("challenge-error", "That's the Wildcard Foundation. Wilson needs to go in the Democratic Foundation.");
+            }
+            
+            if (!hardingMoved) {
+                showPopup("26-retry", "Can you access the Wilson card and place it in the Democratic Foundation zone?", '', PopupPosition.OVER_FOUNDATIONS, ButtonState.WAITING);
+            } else {
+                ensureWilsonDraggable();
+                showPopup("27-retry", "Drag Wilson to the Democratic Foundation zone.", '', PopupPosition.OVER_SORT_ZONES, ButtonState.WAITING);
+            }
+        }
+        
+        /**
+         * Helper: Place a card in a sort zone with proper positioning
+         */
+        function placeCardInZone(card, sortZone) {
+            const cardCount = sortZone.querySelectorAll('.card').length;
+            card.style.position = 'absolute';
+            card.style.left = '0px';
+            card.style.top = `${cardCount * CARD_STACK_OFFSET}px`;
+            card.style.zIndex = cardCount + 1;
+            sortZone.appendChild(card);
+        }
+        
+        /**
+         * STEP 16: FINAL - Show completion message (after interactive challenge)
+         */
+        function step16_ShowFinalMessage() {
+            hideAllUI();
+            
+            // Remove remaining greyscale cards
+            removeGreyscaleCards();
+            
+            showPopup("29", "That's it! You've learned how to move cards into different zones.<br>You're ready to start playing.", '', PopupPosition.OVER_SORT_ZONES);
+            
+            // Hide Next button, show Begin Game button instead
+            nextButton.style.display = 'none';
+            beginButton.style.display = 'flex';
+            
+            tutorialStep = 16;
+            updateStepDisplay();
+        }
+
+        // ============================================================================
+        // TUTORIAL FLOW CONTROL
+        // ============================================================================
+
+        /**
+         * Starts the tutorial from beginning
+         */
+        function startTutorial() {
+            setup_InitialDrawPile();
+            autoDemo_Step0_FirstCardToSortZone();
+        }
+
+        /**
+         * Flag to prevent rapid clicking on Next button
+         * Set to true when processing, set to false when ready for next input
+         */
+        let isProcessingStep = false;
+        
+        /**
+         * Handles Next button clicks - routes to appropriate step
+         * Protected against rapid clicks with isProcessingStep flag
+         */
+        function handleNextButtonClick() {
+            // Prevent rapid clicks - if button is disabled or we're processing, ignore
+            if (nextButton.disabled || isProcessingStep) {
+                console.log('Click ignored - button disabled or processing');
+                return;
+            }
+            
+            // Lock to prevent double-clicks
+            isProcessingStep = true;
+            
+            hideAllUI();
+            
+            switch(tutorialStep) {
+                case -0.5:
+                    autoDemo_Step0_ShowSortZonesMessage();
+                    break;
+                case 0:
+                    autoDemo_Step1_SecondCardToSortZone();
+                    break;
+                case 1:
+                    autoDemo_Step2_ThirdCardToSortZone();
+                    break;
+                case 2:
+                    userWait_Step3_ClickDeckPrompt();
+                    break;
+                case 4:
+                    userWait_Step5_DragDropExercise();
+                    break;
+                case 5:
+                    step6_SetupWildcardDemo();  // Start wildcard demonstration
+                    break;
+                case 5.5:
+                    step6_ShowWildcardMessage2();  // Show second wildcard intro message
+                    break;
+                case 6:
+                    step7_AnimateCoolidgeOntoFillmore();
+                    break;
+                case 7:
+                    step8_ExplainGoal();
+                    break;
+                case 8:
+                    step9_ExplainFillmoreBlocked();
+                    break;
+                case 9:
+                    step10_ExplainWashingtonSolution();
+                    break;
+                case 9.25:
+                    step10_ExplainWashingtonSolution1_5();
+                    break;
+                case 9.5:
+                    step10_ExplainWashingtonSolution2();
+                    break;
+                case 10:
+                    step11_AnimateWashingtonToSortZone();
+                    break;
+                case 11:
+                    step12_AnimateCoolidgeToSortZone2();
+                    break;
+                case 12:
+                    step13_AnimateFillmoreToFoundation();
+                    break;
+                case 13:
+                    step14_ShowFoundationGoal();
+                    break;
+                case 14:
+                    step15_InteractiveChallenge();
+                    break;
+            }
+            
+            // Unlock after a short delay to allow the step to initialize
+            setTimeout(() => {
+                isProcessingStep = false;
+            }, 100);
+        }
+
+        // ============================================================================
+        // EVENT LISTENERS
+        // ============================================================================
+
+        // Start button on splash screen
+        document.getElementById('start-button').addEventListener('click', function() {
+            document.getElementById('splash-screen').style.display = 'none';
+            gameArea.style.display = 'block';
+            // Update responsive card stacking offset from CSS variable
+            updateCardStackOffset();
+            startTutorial();
+        });
+
+        // Next button
+        nextButton.addEventListener('click', handleNextButtonClick);
+
+        // Begin Game button
+        beginButton.addEventListener('click', function() {
+            hideAllUI();
+            console.log("Tutorial complete - starting game!");
+            // Here you would initialize the actual game
+        });
+
+        /**
+         * Initialize actual game (placeholder)
+         */
+        function initGame() {
+            console.log("Game started!");
+        }
+        
+        // ============================================================================
+        // SCROLL TOGGLE - For mobile browser testing
+        // ============================================================================
+        
+        /**
+         * Toggle scroll on/off for mobile browser testing
+         * When enabled, allows scrolling to see content hidden by browser chrome
+         */
+        function toggleScroll() {
+            const body = document.body;
+            const btn = document.getElementById('scroll-toggle-btn');
+            
+            if (body.classList.contains('scroll-enabled')) {
+                // Turn off scrolling
+                body.classList.remove('scroll-enabled');
+                btn.innerHTML = '🔓 Scroll';
+                btn.title = 'Enable scrolling';
+            } else {
+                // Turn on scrolling
+                body.classList.add('scroll-enabled');
+                btn.innerHTML = '🔒 Locked';
+                btn.title = 'Disable scrolling';
+            }
+        }
+    </script>
+</body>
+</html>
