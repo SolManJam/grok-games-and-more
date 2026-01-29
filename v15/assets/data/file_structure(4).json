@@ -1,0 +1,70 @@
+{
+  "type": "folder",
+  "name": "root",
+  "children": [
+    {
+      "type": "file",
+      "name": "index.html"
+    },
+    {
+      "type": "folder",
+      "name": "assets",
+      "children": [
+        {
+          "type": "folder",
+          "name": "card-faces",
+          "children": [
+            {
+              "type": "folder",
+              "name": "A",
+              "children": [
+                {
+                  "type": "file",
+                  "name": "F-1.jpg"
+                },
+                {
+                  "type": "file",
+                  "name": "F-2.jpg"
+                }
+              ]
+            },
+            {
+              "type": "folder",
+              "name": "B",
+              "children": []
+            },
+            {
+              "type": "folder",
+              "name": "C",
+              "children": []
+            }
+          ]
+        },
+        {
+          "type": "folder",
+          "name": "heads",
+          "children": [
+            {
+              "type": "file",
+              "name": "head-1.png"
+            },
+            {
+              "type": "file",
+              "name": "head-2.png"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "folder",
+      "name": "data",
+      "children": [
+        {
+          "type": "file",
+          "name": "P.json"
+        }
+      ]
+    }
+  ]
+}

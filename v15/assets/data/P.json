@@ -1,0 +1,322 @@
+[
+    {
+        "series_number": "1/32",
+        "name": "George Washington",
+        "hometown": "Westmoreland Co., Va.",
+        "birthdate": "Feb 22, 1732",
+        "height": "6'2\"",
+        "weight": "175 lbs",
+        "education": "Lower Church School (High School)",
+        "synopsis": "Commander-in-Chief of the Continental Army, Delegate to Constitutional Convention"
+    },
+    {
+        "series_number": "2/32",
+        "name": "John Adams",
+        "hometown": "Quincy, Mass.",
+        "birthdate": "Oct 30, 1735",
+        "height": "5'7\"",
+        "weight": "150 lbs",
+        "education": "Harvard University",
+        "synopsis": "Vice President, Foreign service"
+    },
+    {
+        "series_number": "3/32",
+        "name": "Thomas Jefferson",
+        "hometown": "Albemarle Co., Va.",
+        "birthdate": "Apr 13, 1743",
+        "height": "6'2.5\"",
+        "weight": "174 lbs",
+        "education": "The College of William & Mary",
+        "synopsis": "Vice President, Secretary of State, Foreign service"
+    },
+    {
+        "series_number": "4/32",
+        "name": "James Madison",
+        "hometown": "Port Conway, Va.",
+        "birthdate": "Mar 16, 1751",
+        "height": "5'4\"",
+        "weight": "100 lbs",
+        "education": "Princeton University",
+        "synopsis": "Secretary of State, U.S. House, State legislator"
+    },
+    {
+        "series_number": "5/32",
+        "name": "James Monroe",
+        "hometown": "Westmoreland Co., Va.",
+        "birthdate": "Apr 28, 1758",
+        "height": "6'0\"",
+        "weight": "189 lbs",
+        "education": "The College of William & Mary (did not graduate)",
+        "synopsis": "Secretary of State, Governor, Foreign service, Military"
+    },
+    {
+        "series_number": "6/32",
+        "name": "John Quincy Adams",
+        "hometown": "Quincy, Mass.",
+        "birthdate": "Jul 11, 1767",
+        "height": "5'7\"",
+        "weight": "150 lbs",
+        "education": "Harvard University",
+        "synopsis": "Secretary of State, U.S. Senate, Foreign service"
+    },
+    {
+        "series_number": "7/32",
+        "name": "Andrew Jackson",
+        "hometown": "Waxhaw, S.C.",
+        "birthdate": "Mar 15, 1767",
+        "height": "6'1\"",
+        "weight": "145 lbs",
+        "education": "Salisbury School (High School)",
+        "synopsis": "U.S. Senate, Military, State judge"
+    },
+    {
+        "series_number": "8/32",
+        "name": "Martin Van Buren",
+        "hometown": "Kinderhook, N.Y.",
+        "birthdate": "Dec 5, 1782",
+        "height": "5'6\"",
+        "weight": "150 lbs",
+        "education": "Kinderhook Academy (High School)",
+        "synopsis": "Vice President, Secretary of State, Governor"
+    },
+    {
+        "series_number": "9/32",
+        "name": "William Henry Harrison",
+        "hometown": "Charles City Co., Va.",
+        "birthdate": "Feb 9, 1773",
+        "height": "5'8\"",
+        "weight": "160 lbs",
+        "education": "Hampden-Sydney College (did not graduate)",
+        "synopsis": "Governor of Indiana Territory, U.S. House, Military"
+    },
+    {
+        "series_number": "10/32",
+        "name": "John Tyler",
+        "hometown": "Charles City Co., Va.",
+        "birthdate": "Mar 29, 1790",
+        "height": "6'0\"",
+        "weight": "160 lbs",
+        "education": "The College of William & Mary",
+        "synopsis": "Vice President, U.S. Senate, Governor"
+    },
+    {
+        "series_number": "11/32",
+        "name": "James K. Polk",
+        "hometown": "Mecklenburg Co., N.C.",
+        "birthdate": "Nov 2, 1795",
+        "height": "5'8\"",
+        "weight": "174 lbs",
+        "education": "University of North Carolina",
+        "synopsis": "Governor, U.S. House, State legislator"
+    },
+    {
+        "series_number": "12/32",
+        "name": "Zachary Taylor",
+        "hometown": "Orange Co., Va.",
+        "birthdate": "Nov 24, 1784",
+        "height": "5'8\"",
+        "weight": "170 lbs",
+        "education": "Home Schooled (High School)",
+        "synopsis": "Military"
+    },
+    {
+        "series_number": "13/32",
+        "name": "Millard Fillmore",
+        "hometown": "Cayuga Co., N.Y.",
+        "birthdate": "Jan 7, 1800",
+        "height": "5'9\"",
+        "weight": "165 lbs",
+        "education": "New Hope Academy (High School)",
+        "synopsis": "Vice President, U.S. House, State legislator"
+    },
+    {
+        "series_number": "14/32",
+        "name": "Franklin Pierce",
+        "hometown": "Hillsborough, N.H.",
+        "birthdate": "Nov 23, 1804",
+        "height": "5'10\"",
+        "weight": "155 lbs",
+        "education": "Bowdoin College",
+        "synopsis": "U.S. Senate, U.S. House, Military"
+    },
+    {
+        "series_number": "15/32",
+        "name": "James Buchanan",
+        "hometown": "Mercersburg, Pa.",
+        "birthdate": "Apr 23, 1791",
+        "height": "6'0\"",
+        "weight": "180 lbs",
+        "education": "Dickinson College",
+        "synopsis": "Secretary of State, U.S. Senate, U.S. House"
+    },
+    {
+        "series_number": "16/32",
+        "name": "Abraham Lincoln",
+        "hometown": "Hodgenville, Ky.",
+        "birthdate": "Feb 12, 1809",
+        "height": "6'4\"",
+        "weight": "180 lbs",
+        "education": "Self-educated (High School)",
+        "synopsis": "U.S. House, State legislator"
+    },
+    {
+        "series_number": "17/32",
+        "name": "Andrew Johnson",
+        "hometown": "Raleigh, N.C.",
+        "birthdate": "Dec 29, 1808",
+        "height": "5'10\"",
+        "weight": "175 lbs",
+        "education": "Self-educated (High School)",
+        "synopsis": "Vice President, U.S. Senate, Governor"
+    },
+    {
+        "series_number": "18/32",
+        "name": "Ulysses S. Grant",
+        "hometown": "Point Pleasant, Ohio",
+        "birthdate": "Apr 27, 1822",
+        "height": "5'8\"",
+        "weight": "135 lbs",
+        "education": "United States Military Academy",
+        "synopsis": "Military"
+    },
+    {
+        "series_number": "19/32",
+        "name": "Rutherford B. Hayes",
+        "hometown": "Delaware, Ohio",
+        "birthdate": "Oct 4, 1822",
+        "height": "5'8\"",
+        "weight": "170 lbs",
+        "education": "Kenyon College",
+        "synopsis": "Governor, U.S. House, Military"
+    },
+    {
+        "series_number": "20/32",
+        "name": "James A. Garfield",
+        "hometown": "Moreland Hills, Ohio",
+        "birthdate": "Nov 19, 1831",
+        "height": "6'0\"",
+        "weight": "185 lbs",
+        "education": "Williams College",
+        "synopsis": "U.S. House, Military, State legislator"
+    },
+    {
+        "series_number": "21/32",
+        "name": "Chester A. Arthur",
+        "hometown": "Fairfield, Vt.",
+        "birthdate": "Oct 5, 1829",
+        "height": "6'2\"",
+        "weight": "N/A",
+        "education": "Union College",
+        "synopsis": "Vice President, Local office"
+    },
+    {
+        "series_number": "22/32",
+        "name": "Grover Cleveland",
+        "hometown": "Caldwell, N.J.",
+        "birthdate": "Mar 18, 1837",
+        "height": "5'11\"",
+        "weight": "260 lbs",
+        "education": "Clinton Liberal Institute (High School)",
+        "synopsis": "Governor of New York, Mayor, Local office"
+    },
+    {
+        "series_number": "23/32",
+        "name": "Benjamin Harrison",
+        "hometown": "North Bend, Ohio",
+        "birthdate": "Aug 20, 1833",
+        "height": "5'6\"",
+        "weight": "165 lbs",
+        "education": "Miami University",
+        "synopsis": "U.S. Senate, Military"
+    },
+    {
+        "series_number": "24/32",
+        "name": "Grover Cleveland",
+        "hometown": "Caldwell, N.J.",
+        "birthdate": "Mar 18, 1837",
+        "height": "5'11\"",
+        "weight": "260 lbs",
+        "education": "Clinton Liberal Institute (High School)",
+        "synopsis": "Former President, Governor of New York, Mayor"
+    },
+    {
+        "series_number": "25/32",
+        "name": "William McKinley",
+        "hometown": "Niles, Ohio",
+        "birthdate": "Jan 29, 1843",
+        "height": "5'7\"",
+        "weight": "165 lbs",
+        "education": "Allegheny College (did not graduate)",
+        "synopsis": "Governor, U.S. House, Military"
+    },
+    {
+        "series_number": "26/32",
+        "name": "Theodore Roosevelt",
+        "hometown": "New York, N.Y.",
+        "birthdate": "Oct 27, 1858",
+        "height": "5'10\"",
+        "weight": "190 lbs",
+        "education": "Harvard University",
+        "synopsis": "Vice President, Governor, Military"
+    },
+    {
+        "series_number": "27/32",
+        "name": "William Howard Taft",
+        "hometown": "Cincinnati, Ohio",
+        "birthdate": "Sep 15, 1857",
+        "height": "6'0\"",
+        "weight": "332 lbs",
+        "education": "Yale University",
+        "synopsis": "Secretary of War, Governor of Philippines"
+    },
+    {
+        "series_number": "28/32",
+        "name": "Woodrow Wilson",
+        "hometown": "Staunton, Va.",
+        "birthdate": "Dec 28, 1856",
+        "height": "5'11\"",
+        "weight": "175 lbs",
+        "education": "Princeton University",
+        "synopsis": "Governor, University president"
+    },
+    {
+        "series_number": "29/32",
+        "name": "Warren G. Harding",
+        "hometown": "Blooming Grove, Ohio",
+        "birthdate": "Nov 2, 1865",
+        "height": "6'0\"",
+        "weight": "190 lbs",
+        "education": "Ohio Central College",
+        "synopsis": "U.S. Senate, State legislator"
+    },
+    {
+        "series_number": "30/32",
+        "name": "Calvin Coolidge",
+        "hometown": "Plymouth Notch, Vt.",
+        "birthdate": "Jul 4, 1872",
+        "height": "5'10\"",
+        "weight": "150 lbs",
+        "education": "Amherst College",
+        "synopsis": "Vice President, Governor, State legislator"
+    },
+    {
+        "series_number": "31/32",
+        "name": "Herbert Hoover",
+        "hometown": "West Branch, Iowa",
+        "birthdate": "Aug 10, 1874",
+        "height": "5'11\"",
+        "weight": "185 lbs",
+        "education": "Stanford University",
+        "synopsis": "Secretary of Commerce, Humanitarian"
+    },
+    {
+        "series_number": "32/32",
+        "name": "Franklin D. Roosevelt",
+        "hometown": "Hyde Park, N.Y.",
+        "birthdate": "Jan 30, 1882",
+        "height": "6'2\"",
+        "weight": "185 lbs",
+        "education": "Harvard University",
+        "synopsis": "Governor, Assistant Secretary of the Navy"
+    }
+]

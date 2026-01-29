@@ -1,0 +1,30 @@
+[
+    {
+        "series_number": "1/32",
+        "vocation": "Military Officer and Planter",
+        "term": "1789-1797",
+        "age_range": "57-65",
+        "remembrance_day": "December 14, 1799",
+        "age_at_death": "67",
+        "spouse": "Martha Dandridge Custis",
+        "children": "0 (2 stepchildren)",
+        "pets": "Hounds, horses",
+        "favorites": {
+            "drink": "Madeira wine"
+        }
+    },
+    {
+        "series_number": "2/32",
+        "vocation": "Lawyer and Diplomat",
+        "term": "1797-1801",
+        "age_range": "61-65",
+        "remembrance_day": "July 4, 1826",
+        "age_at_death": "90",
+        "spouse": "Abigail Smith",
+        "children": "5",
+        "pets": "Dogs",
+        "favorites": {
+            "book": "The Bible"
+        }
+    }
+]
