@@ -1,15 +1,6 @@
 /**
  * Presidential Quiz - JavaScript
- * Chat 13 - quiz-v5c-27
- * 
- * CHANGES v5c-27:
- * - Start screen: Signature font now same brown color as quote (#8b4513)
- * - Start screen: "Test your knowledge" line bigger (14px)
- * - Start screen: Tighter line spacing between test line and bullet points
- * - Gameplay: Baseballs bigger (18px), more spread out (12px gap), lower (4px margin)
- * - Gameplay: Bases diamond bigger (55x55px with 14px bases), lower (5px margin)
- * - Gameplay: More gap between score/outs and bases (20px)
- * - Status bar elements now span similar width to presidential card
+ * Chat 13 - quiz-v5c-26
  * 
  * CHANGES v5c-26:
  * - Quote author now shows full president name (e.g., "Thomas Jefferson")

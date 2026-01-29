@@ -39,6 +39,19 @@
     }
 }
 
+/* v5c-27: iPad landscape - use available height for bigger card
+   iPad typical: ~1024x768 or ~1194x834 in landscape
+   Main content area height is roughly viewport height minus status bar (~70px) and padding (~20px)
+   Card aspect ratio ~1:1.4, so if we have 600px height available, card can be ~430px wide */
+@media (min-width: 700px) and (max-width: 1024px) and (orientation: landscape) {
+    :root {
+        /* Use height-based calculation: (available height) / aspect ratio
+           Available height = 100vh - status bar - padding ≈ 100vh - 100px
+           Card aspect ≈ 1.4, so width = (vh - 100) / 1.4 */
+        --card-width: min(350px, calc((100vh - 100px) / 1.4), 35vw);
+    }
+}
+
 /* ============================================================================
    TOUCH/MOBILE SPECIFIC STYLES
    ============================================================================ */
@@ -229,20 +242,27 @@ body {
 
 .lineup-cards {
     display: flex;
-    gap: 20px;
-    flex-wrap: wrap;
+    gap: 15px; /* v5c-27: Reduced gap from 20px */
+    flex-wrap: nowrap; /* v5c-27: NEVER wrap - use all horizontal space */
     justify-content: center;
     align-items: stretch; /* v5c-23: Stretch to align tops and bottoms */
     margin-bottom: 20px;
+    width: 100%;
+    max-width: 100vw;
+    padding: 0 10px;
+    box-sizing: border-box;
 }
 
 /* v5c-23: Center column contains greeting + SP card */
+/* v5c-27: Allow center column to shrink to prevent wrapping */
 .center-column {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: space-between; /* Greeting at top, SP card fills rest */
-    min-width: 260px;
+    min-width: 180px; /* v5c-27: Reduced from 260px - allow shrinking */
+    max-width: 280px;
+    flex: 0 1 260px; /* v5c-27: Don't grow, CAN shrink, ideal 260px */
 }
 
 /* v5c-23: Greeting section (replaces splash screen) */
@@ -298,16 +318,15 @@ body {
 
 .lineup-greeting p {
     color: #333;
-    font-size: 14px; /* v5c-27: Bigger "Test your knowledge" line */
-    margin: 4px 0 2px 0; /* v5c-27: Tighter bottom margin */
+    font-size: 12px;
+    margin: 4px 0;
 }
 
 /* v5c-25: Bullet points */
-/* v5c-27: Tighter top margin */
 .greeting-bullets {
     list-style: disc;
     text-align: left;
-    margin: 2px auto 8px auto;
+    margin: 8px auto;
     padding-left: 20px;
     font-size: 11px;
     color: #555;
@@ -343,11 +362,10 @@ body {
 }
 
 /* v5c-26: Signature-style font for president name */
-/* v5c-27: Same brown color as quote text */
 .greeting-quote .quote-signature {
     font-family: 'Dancing Script', cursive;
     font-size: 14px;
-    color: #8b4513;
+    color: #333;
 }
 
 .lineup-card {
@@ -356,9 +374,9 @@ body {
     border-radius: 8px;
     padding: 15px 20px;
     box-shadow: 0 4px 16px rgba(0,0,0,0.3);
-    min-width: 200px;
-    /* v5c-18: Both cards same width for symmetry */
-    width: 240px;
+    min-width: 160px; /* v5c-27: Reduced from 200px for mobile */
+    /* v5c-27: Changed to flex basis - can shrink on small screens */
+    flex: 0 1 240px; /* Don't grow, CAN shrink, ideal 240px */
     display: flex;
     flex-direction: column;
 }
@@ -588,12 +606,13 @@ body {
 
 /* v5c-9: Starting Pitchers Preview Card */
 /* v5c-23: SP card is now inside center-column, needs its own card styling */
+/* v5c-27: Made min-width responsive to allow shrinking */
 .pitchers-preview {
     background: linear-gradient(to bottom, #f5f0e6 0%, #e8e0d0 100%);
     border-radius: 8px;
     padding: 15px 20px;
     box-shadow: 0 4px 16px rgba(0,0,0,0.3);
-    min-width: 260px;
+    min-width: 0; /* v5c-27: Allow shrinking */
     width: 100%;
     box-sizing: border-box;
     display: flex;
@@ -849,6 +868,193 @@ body {
 }
 
 /* ============================================================================
+   LINEUP SCREEN - MOBILE RESPONSIVE v5c-27
+   Shrink fonts and spacing when center column needs to compress
+   ============================================================================ */
+@media (max-width: 800px) {
+    .lineup-cards {
+        gap: 10px;
+        padding: 0 5px;
+    }
+    
+    .lineup-card {
+        padding: 12px 15px;
+        min-width: 140px;
+        flex: 0 1 200px;
+    }
+    
+    .center-column {
+        min-width: 150px;
+        max-width: 220px;
+        flex: 0 1 200px;
+    }
+    
+    /* Shrink greeting text by ~1 step */
+    .greeting-title-row h1 {
+        font-size: 22px;
+    }
+    
+    .animated-flag {
+        font-size: 18px;
+    }
+    
+    .lineup-greeting p {
+        font-size: 11px;
+    }
+    
+    .greeting-bullets {
+        font-size: 10px;
+    }
+    
+    .lineup-greeting .greeting-subtitle {
+        font-size: 10px;
+    }
+    
+    .greeting-quote {
+        font-size: 10px;
+    }
+    
+    .greeting-quote .quote-signature {
+        font-size: 12px;
+    }
+    
+    /* Shrink pitchers preview */
+    .pitchers-preview {
+        padding: 10px 12px;
+    }
+    
+    .pitchers-preview h3 {
+        font-size: 14px;
+    }
+    
+    .sp-pitcher-head {
+        width: 40px;
+        height: 40px;
+    }
+    
+    .sp-pitcher-name {
+        font-size: 10px;
+    }
+    
+    .sp-pitcher-era {
+        font-size: 9px;
+    }
+    
+    .sp-vs {
+        font-size: 14px;
+    }
+    
+    /* Shrink lineup list items */
+    .lineup-card h3 {
+        font-size: 14px;
+    }
+    
+    .lineup-card ol li,
+    .draggable-item {
+        padding: 4px 8px;
+        min-height: 28px;
+    }
+    
+    .draggable-item .lineup-name {
+        font-size: 11px;
+    }
+    
+    .draggable-item .lineup-ba {
+        font-size: 10px;
+    }
+    
+    .sp-action-btn {
+        padding: 10px 15px;
+        font-size: 13px;
+    }
+}
+
+/* Even smaller screens */
+@media (max-width: 650px) {
+    .lineup-cards {
+        gap: 6px;
+        padding: 0 3px;
+    }
+    
+    .lineup-card {
+        padding: 10px 10px;
+        min-width: 120px;
+        flex: 0 1 160px;
+    }
+    
+    .center-column {
+        min-width: 130px;
+        max-width: 180px;
+        flex: 0 1 160px;
+    }
+    
+    /* Further shrink greeting */
+    .greeting-title-row h1 {
+        font-size: 18px;
+    }
+    
+    .animated-flag {
+        font-size: 14px;
+    }
+    
+    .greeting-title-row {
+        gap: 6px;
+        margin-bottom: 5px;
+        padding-bottom: 5px;
+    }
+    
+    .lineup-greeting {
+        padding: 10px 12px;
+        margin-bottom: 10px;
+    }
+    
+    .lineup-greeting p {
+        font-size: 10px;
+        margin: 2px 0;
+    }
+    
+    .greeting-bullets {
+        font-size: 9px;
+        margin: 5px auto;
+    }
+    
+    .greeting-quote {
+        font-size: 9px;
+        padding-top: 6px;
+    }
+    
+    .greeting-quote .quote-signature {
+        font-size: 11px;
+    }
+    
+    /* Lineup items even smaller */
+    .lineup-card h3 {
+        font-size: 12px;
+        padding-bottom: 5px;
+        margin-bottom: 6px;
+    }
+    
+    .draggable-item .lineup-name {
+        font-size: 10px;
+    }
+    
+    .draggable-item .lineup-ba {
+        font-size: 9px;
+        min-width: 32px;
+    }
+    
+    .drag-handle {
+        padding: 4px 6px 4px 2px;
+        font-size: 14px;
+    }
+    
+    .draggable-item::before {
+        min-width: 18px;
+        font-size: 11px;
+    }
+}
+
+/* ============================================================================
    GAME AREA LAYOUT - Landscape Primary
    ============================================================================ */
 #game-area {
@@ -886,11 +1092,10 @@ body {
 }
 
 /* Left: Score+Outs stacked, with Bases beside them */
-/* v5c-27: Increased gap, elements spread to match card width */
 #status-left-col {
     display: flex;
     align-items: center;
-    gap: 20px; /* v5c-27: More space between score/outs and bases */
+    gap: 8px;
 }
 
 #score-outs-stack {
@@ -969,17 +1174,15 @@ body {
 
 /* Baseball Progress (Outs) - under score */
 /* v5c-26: Centered horizontally under scoreboard */
-/* v5c-27: Bigger baseballs, more spread out, positioned lower */
 #baseball-progress {
     display: flex;
-    gap: 12px; /* v5c-27: More spread out */
+    gap: 5px;
     align-items: center;
     justify-content: center;
-    margin-top: 4px; /* v5c-27: Lower position */
 }
 
 #baseball-progress .baseball {
-    font-size: 18px; /* v5c-27: Bigger baseballs */
+    font-size: 14px;
     line-height: 1;
     transition: all 0.3s ease;
 }
@@ -1003,18 +1206,16 @@ body {
 }
 
 /* Bases Diamond Display - to the right of score/outs */
-/* v5c-27: Bigger bases, positioned lower to align with baseballs */
 #bases-diamond {
     position: relative;
-    width: 55px; /* v5c-27: Bigger */
-    height: 55px; /* v5c-27: Bigger */
-    margin-top: 5px; /* v5c-27: Lower */
+    width: 44px;
+    height: 44px;
 }
 
 #bases-diamond .base {
     position: absolute;
-    width: 14px; /* v5c-27: Bigger bases */
-    height: 14px; /* v5c-27: Bigger bases */
+    width: 12px;
+    height: 12px;
     border: 2px solid rgba(255, 255, 255, 0.5);
     background-color: transparent;
     transition: background-color 0.3s ease, border-color 0.3s ease;
@@ -2243,10 +2444,16 @@ body {
 
 /* ============================================================================
    SMALL LANDSCAPE (phones)
+   v5c-27: Make card bigger on mobile by using available height
    ============================================================================ */
 @media (max-height: 450px) and (orientation: landscape) {
     :root {
-        --card-width: min(180px, 30vh);
+        /* v5c-27: Use height-based sizing - card can be taller on landscape phones
+           Status bar is ~60px, padding ~16px, so usable height is ~vh - 80px
+           Card aspect ratio is roughly 1:1.4 (width:height)
+           So if we want card height to be ~(vh - 80px), width should be (vh-80)/1.4
+           Using calc isn't supported in min(), so we use vh directly */
+        --card-width: min(220px, calc((100vh - 80px) / 1.4), 40vw);
     }
     
     #status-bar {
@@ -2262,6 +2469,14 @@ body {
     .option {
         font-size: clamp(14px, 3vw, 20px);
         padding: 6px 10px;
+    }
+}
+
+/* v5c-27: Medium landscape tablets - maximize card size */
+@media (min-height: 451px) and (max-height: 600px) and (orientation: landscape) {
+    :root {
+        /* Use more height - status bar ~70px, padding ~16px */
+        --card-width: min(280px, calc((100vh - 90px) / 1.4), 35vw);
     }
 }
 
