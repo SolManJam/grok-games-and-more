@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Presidential Quiz - v5c-27</title>
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/quiz-styles.css">
+</head>
+<body>
+    <!-- Portrait orientation warning overlay -->
+    <div id="rotate-device-overlay">
+        <div class="rotate-icon">📱</div>
+        <h2>Please Rotate Your Device</h2>
+        <p>This game plays best in landscape mode</p>
+    </div>
+
+    <!-- Splash Screen -->
+    <div id="splash-screen">
+        <h1>Presidential Quiz</h1>
+        <p>Test your knowledge of U.S. Presidents!</p>
+        <p>Pitch a full 9-inning game against the opposing lineup.</p>
+        <button id="start-button">View Lineups</button>
+    </div>
+
+    <!-- Lineup Cards Screen -->
+    <div id="lineup-screen" style="display: none;">
+    </div>
+
+    <!-- Pitcher Selection Screen - NEW v3c-2 -->
+    <div id="pitcher-select-screen" style="display: none;">
+    </div>
+
+    <!-- Bullpen Modal - NEW v3c-2 -->
+    <div id="bullpen-modal" style="display: none;">
+    </div>
+
+    <!-- Game Area -->
+    <div id="game-area" style="display: none;">
+        <div class="game-container">
+            <!-- Status Bar - v4c-5: Three-column layout matching user diagram -->
+            <div id="status-bar">
+                <!-- Left: Score+Outs (stacked) with Bases to the right -->
+                <div id="status-left-col">
+                    <div id="score-outs-stack">
+                        <div id="scoreboard"></div>
+                        <div id="baseball-progress"></div>
+                    </div>
+                    <div id="bases-diamond">
+                        <div class="base base-2"></div>
+                        <div class="base base-3"></div>
+                        <div class="base base-1"></div>
+                    </div>
+                </div>
+                
+                <!-- Center: BIG Question -->
+                <div id="message-area"></div>
+                
+                <!-- Right: Pitcher info (stacked) with icons to the right -->
+                <div id="status-right-col">
+                    <div id="pitcher-info-stack">
+                        <span id="current-pitcher-name">---</span>
+                        <div id="pitch-display">
+                            <span class="pitch-count">P: 0</span>
+                            <span class="fatigue-indicator">🟢</span>
+                        </div>
+                    </div>
+                    <div id="status-buttons">
+                        <button id="bullpen-btn" title="Call Bullpen" style="display: none;">📞</button>
+                        <div id="bullpen-tooltip">Call to the Bullpen?</div>
+                        <button id="settings-btn" title="Settings">⚙️</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Game Content -->
+            <div class="main-content">
+                <!-- Left Side: President Card Image -->
+                <div id="left-side">
+                    <img id="current-image" src="" alt="President Card">
+                    <img id="next-image" src="" alt="Next President" style="display: none;">
+                </div>
+
+                <!-- Right Side: Answer Options -->
+                <div id="right-side">
+                    <div class="option" data-index="0"></div>
+                    <div class="option" data-index="1"></div>
+                    <div class="option" data-index="2"></div>
+                    <div class="option" data-index="3"></div>
+                    <div class="option" data-index="4"></div>
+                    <div class="option" data-index="5"></div>
+                    
+                    <!-- Hint Overlay -->
+                    <div id="hint-overlay">
+                        <div class="overlay-content">
+                            <div class="correct-answer-section">
+                                <span class="label">Correct Answer:</span>
+                                <span class="correct-answer"></span>
+                            </div>
+                            <div class="hint-section">
+                                <span class="label">Clue:</span>
+                                <span class="hint-text"></span>
+                            </div>
+                        </div>
+                        <span class="tap-continue">(tap to continue)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Screen -->
+    <div id="settings-screen">
+        <div id="settings-content">
+            <h2>⚙️ Settings</h2>
+            
+            <div class="settings-section">
+                <label>Quiz Mode</label>
+                <div class="mode-buttons">
+                    <button class="mode-btn settings-mode" data-mode="number">What Number?</button>
+                    <button class="mode-btn settings-mode" data-mode="years">What Years?</button>
+                </div>
+            </div>
+            
+            <div class="settings-section">
+                <label>Number of Choices</label>
+                <div class="difficulty-buttons">
+                    <button class="difficulty-btn settings-diff" data-choices="3">3</button>
+                    <button class="difficulty-btn settings-diff" data-choices="4">4</button>
+                    <button class="difficulty-btn settings-diff" data-choices="5">5</button>
+                    <button class="difficulty-btn settings-diff" data-choices="6">6</button>
+                </div>
+                <p class="settings-note">Changes apply to the next question</p>
+            </div>
+            
+            <div class="settings-actions">
+                <button class="settings-action-btn" id="restart-quiz-btn">🔄 Restart Quiz</button>
+                <button class="settings-action-btn" id="main-menu-btn">🏠 Main Menu</button>
+                <button class="settings-action-btn" id="high-scores-btn">🏆 High Scores</button>
+            </div>
+            
+            <button id="close-settings-btn">Continue</button>
+        </div>
+    </div>
+
+    <!-- Inning Complete Screen - v3c-6: Content built dynamically -->
+    <div id="inning-complete-screen">
+        <div id="inning-complete-content">
+            <!-- Content built by showInningComplete() -->
+        </div>
+    </div>
+
+    <!-- Final Results Screen - v5c-9: Landscape layout -->
+    <div id="final-screen">
+        <div id="final-content">
+            <h2>Game Over!</h2>
+            <div class="final-two-column">
+                <div class="final-left-col">
+                    <div id="final-line-score"></div>
+                    <div id="final-pitching-summary"></div>
+                </div>
+                <div class="final-right-col">
+                    <p class="final-score">Final: <span id="final-score">0-0</span></p>
+                    <div id="final-result"></div>
+                    <p class="final-grade" id="final-grade"></p>
+                    <p id="pitch-summary" class="pitch-summary"></p>
+                    
+                    <div class="final-actions">
+                        <a href="#" id="play-again-btn">🔄 Play Again</a>
+                        <a href="#" id="view-leaderboard-btn">🏆 Leaderboard</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- High Scores Modal -->
+    <div id="high-scores-modal">
+        <div id="high-scores-content">
+            <h2>🏆 Leaderboard</h2>
+            
+            <div id="leaderboard-scores" class="scores-list"></div>
+            
+            <button id="close-high-scores-btn">Close</button>
+        </div>
+    </div>
+
+    <!-- Score Submission Dialog -->
+    <div id="score-submission">
+        <div id="submission-content">
+            <h3>New High Score!</h3>
+            <p>Enter your initials:</p>
+            <input type="text" id="initials-input" maxlength="3" placeholder="AAA">
+            <button id="submit-score-btn">Submit</button>
+        </div>
+    </div>
+
+    <!-- DEV-ONLY: Scroll toggle button -->
+    <button id="scroll-toggle-btn" onclick="toggleScroll()">🔓 Scroll</button>
+    <!-- /DEV-ONLY -->
+
+    <script src="js/quiz-scripts.js"></script>
+</body>
+</html>

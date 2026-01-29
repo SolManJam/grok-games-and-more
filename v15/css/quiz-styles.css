@@ -1,0 +1,3112 @@
+/* ============================================================================
+   PRESIDENTIAL QUIZ - CSS Styles
+   Matches Solitaire.html styling patterns
+   ============================================================================ */
+
+/* ============================================================================
+   CSS CUSTOM PROPERTIES
+   ============================================================================ */
+:root {
+    /* Card dimensions */
+    --card-width: min(200px, 35vw);
+    /* Note: card-height is calculated dynamically in JS to match actual image */
+    
+    /* Colors - matching Solitaire */
+    --color-table-green: #1a5c1a;
+    --color-table-felt: #228B22;
+    --color-gold: #FFD700;
+    --color-correct: #ffd700;
+    --color-wrong: #cc4444;
+    --color-option-bg: #1e5320;
+    --color-option-hover: #247028;
+    --color-disabled: #666666;
+    
+    /* Spacing */
+    --game-padding: 8px;
+    --option-gap: 8px;
+}
+
+/* Larger cards on bigger screens */
+@media (min-width: 700px) {
+    :root {
+        --card-width: min(280px, 30vw);
+    }
+}
+
+@media (min-width: 1000px) {
+    :root {
+        --card-width: min(320px, 25vw);
+    }
+}
+
+/* ============================================================================
+   TOUCH/MOBILE SPECIFIC STYLES
+   ============================================================================ */
+
+/* Prevent text selection and callouts on touch devices */
+.option, #super-button, #game-area {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+/* Touch-friendly button sizing */
+.option {
+    touch-action: manipulation;
+    min-height: 44px;
+}
+
+/* iOS safe area handling for notched devices */
+@supports (padding: max(0px)) {
+    body {
+        padding-left: max(var(--game-padding), env(safe-area-inset-left));
+        padding-right: max(var(--game-padding), env(safe-area-inset-right));
+        padding-top: max(var(--game-padding), env(safe-area-inset-top));
+        padding-bottom: max(var(--game-padding), env(safe-area-inset-bottom));
+    }
+}
+
+/* Portrait orientation warning overlay */
+#rotate-device-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(26, 92, 26, 0.95);
+    z-index: 99999;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    color: white;
+    text-align: center;
+    padding: 20px;
+}
+
+#rotate-device-overlay .rotate-icon {
+    font-size: 60px;
+    margin-bottom: 20px;
+    animation: rotate-hint 2s ease-in-out infinite;
+}
+
+#rotate-device-overlay h2 {
+    margin: 0 0 10px 0;
+    font-size: 24px;
+}
+
+#rotate-device-overlay p {
+    margin: 0;
+    font-size: 16px;
+    opacity: 0.9;
+}
+
+@keyframes rotate-hint {
+    0%, 100% { transform: rotate(0deg); }
+    25% { transform: rotate(-20deg); }
+    75% { transform: rotate(20deg); }
+}
+
+/* Show portrait warning only on narrow/tall screens (phones in portrait) */
+@media (max-width: 600px) and (orientation: portrait) {
+    #rotate-device-overlay {
+        display: flex;
+    }
+}
+
+/* DEV-ONLY: Scroll toggle button */
+#scroll-toggle-btn {
+    position: fixed;
+    bottom: 10px;
+    right: 10px;
+    z-index: 10000;
+    background-color: rgba(0, 0, 0, 0.7);
+    color: white;
+    border: 2px solid white;
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 12px;
+    cursor: pointer;
+    touch-action: manipulation;
+    opacity: 0.8;
+    transition: opacity 0.2s;
+}
+
+#scroll-toggle-btn:hover, #scroll-toggle-btn:active {
+    opacity: 1;
+    background-color: rgba(0, 0, 0, 0.9);
+}
+
+body.scroll-enabled #scroll-toggle-btn {
+    background-color: rgba(40, 167, 69, 0.8);
+    border-color: #28a745;
+}
+
+body.scroll-enabled {
+    overflow: auto !important;
+}
+/* /DEV-ONLY */
+
+/* ============================================================================
+   BASE STYLES
+   ============================================================================ */
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: linear-gradient(145deg, var(--color-table-green) 0%, var(--color-table-felt) 50%, #1e6b1e 100%);
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 100vh;
+    min-height: 100dvh;
+    overflow: hidden;
+    padding: var(--game-padding);
+}
+
+/* ============================================================================
+   SPLASH SCREEN - v4c-4: Off-white background (not bright white)
+   ============================================================================ */
+#splash-screen {
+    text-align: center;
+    background: linear-gradient(to bottom, #f5f0e6 0%, #e8e0d0 100%);
+    padding: 25px 35px;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+    margin-top: 10vh;
+    max-width: 90vw;
+    width: 400px;
+}
+
+#splash-screen h1 {
+    font-family: 'Dancing Script', cursive;
+    font-size: clamp(32px, 8vw, 48px);
+    margin: 0;
+    color: #1a5c1a;
+}
+
+#splash-screen p {
+    color: #555;
+    margin: 10px 0;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.game-info {
+    background: rgba(26, 92, 26, 0.1);
+    border: 1px solid rgba(26, 92, 26, 0.3);
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin: 15px 0;
+    text-align: left;
+}
+
+.game-info p {
+    margin: 4px 0 !important;
+    font-size: 13px !important;
+}
+
+.game-info p:first-child {
+    text-align: center;
+    margin-bottom: 8px !important;
+    color: #333 !important;
+}
+
+/* Lineup Screen */
+#lineup-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    min-height: 100vh;
+}
+
+.lineup-cards {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: stretch; /* v5c-23: Stretch to align tops and bottoms */
+    margin-bottom: 20px;
+}
+
+/* v5c-23: Center column contains greeting + SP card */
+.center-column {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between; /* Greeting at top, SP card fills rest */
+    min-width: 260px;
+}
+
+/* v5c-23: Greeting section (replaces splash screen) */
+/* v5c-24: Made larger with quote at bottom */
+/* v5c-25: Added bullet points and animated flags */
+.lineup-greeting {
+    background: linear-gradient(to bottom, #f5f0e6 0%, #e8e0d0 100%);
+    border-radius: 8px;
+    padding: 15px 20px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+    text-align: center;
+    margin-bottom: 15px;
+    width: 100%;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+}
+
+/* v5c-25: Title row with flags */
+.greeting-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 8px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #ccc;
+}
+
+.greeting-title-row h1 {
+    font-family: 'Dancing Script', cursive;
+    color: #1a5c1a;
+    font-size: 28px;
+    margin: 0;
+}
+
+/* v5c-25: Animated waving flag */
+.animated-flag {
+    font-size: 24px;
+    display: inline-block;
+    animation: wave-flag 1s ease-in-out infinite;
+    transform-origin: bottom center;
+}
+
+.animated-flag:nth-child(3) {
+    animation-delay: 0.5s; /* Right flag waves with offset */
+}
+
+@keyframes wave-flag {
+    0%, 100% { transform: rotate(-5deg); }
+    50% { transform: rotate(5deg); }
+}
+
+.lineup-greeting p {
+    color: #333;
+    font-size: 14px; /* v5c-27: Bigger "Test your knowledge" line */
+    margin: 4px 0 2px 0; /* v5c-27: Tighter bottom margin */
+}
+
+/* v5c-25: Bullet points */
+/* v5c-27: Tighter top margin */
+.greeting-bullets {
+    list-style: disc;
+    text-align: left;
+    margin: 2px auto 8px auto;
+    padding-left: 20px;
+    font-size: 11px;
+    color: #555;
+    display: inline-block;
+}
+
+.greeting-bullets li {
+    margin: 3px 0;
+}
+
+.lineup-greeting .greeting-subtitle {
+    color: #666;
+    font-size: 11px;
+    margin-top: 8px;
+}
+
+/* v5c-24: Quote at bottom of greeting */
+.greeting-quote {
+    margin-top: auto;
+    padding-top: 10px;
+    font-size: 11px;
+    color: #8b4513;
+    font-style: italic;
+    line-height: 1.4;
+}
+
+.greeting-quote .quote-author {
+    display: block;
+    font-style: normal;
+    font-weight: bold;
+    margin-top: 4px;
+    font-size: 10px;
+}
+
+/* v5c-26: Signature-style font for president name */
+/* v5c-27: Same brown color as quote text */
+.greeting-quote .quote-signature {
+    font-family: 'Dancing Script', cursive;
+    font-size: 14px;
+    color: #8b4513;
+}
+
+.lineup-card {
+    /* v4c-1: Less bright white - use off-white/cream tone */
+    background: linear-gradient(to bottom, #f5f0e6 0%, #e8e0d0 100%);
+    border-radius: 8px;
+    padding: 15px 20px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+    min-width: 200px;
+    /* v5c-18: Both cards same width for symmetry */
+    width: 240px;
+    display: flex;
+    flex-direction: column;
+}
+
+/* v5c-18: Removed separate home-lineup width - now same as away */
+
+.lineup-card h3 {
+    margin: 0 0 10px 0;
+    text-align: center;
+    font-size: 16px;
+    border-bottom: 2px solid #ccc;
+    padding-bottom: 8px;
+}
+
+/* v5c-18: Style regular ol list to match draggable list appearance */
+.lineup-card ol {
+    margin: 0;
+    padding-left: 0;
+    list-style: none;
+    font-size: 13px;
+    color: #333;
+    flex-grow: 1;
+    counter-reset: lineup-counter;
+}
+
+/* v5c-18: Style regular li items to match draggable items */
+.lineup-card ol li {
+    display: flex;
+    align-items: center;
+    padding: 6px 10px;
+    margin: 2px 0;
+    background: rgba(255, 255, 255, 0.7);
+    border-radius: 4px;
+    counter-increment: lineup-counter;
+    min-height: 32px;
+    box-sizing: border-box;
+}
+
+.lineup-card ol li::before {
+    content: counter(lineup-counter) ".";
+    min-width: 22px;
+    font-weight: bold;
+    color: #555;
+    font-size: 13px;
+}
+
+.lineup-card ol li .lineup-name {
+    flex: 1;
+    font-size: 13px;
+}
+
+.lineup-card ol li .lineup-ba {
+    font-size: 12px;
+    color: #666;
+    min-width: 40px;
+    text-align: right;
+}
+
+/* Choose pitcher button - v5c-20: Now in SP card, but keep for backwards compat */
+#choose-pitcher-btn {
+    margin-top: 15px;
+    padding: 10px 16px;
+    font-size: 14px;
+    background-color: #1a5c1a;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    min-height: 44px;
+}
+
+#choose-pitcher-btn:hover {
+    background-color: #2d7d2d;
+}
+
+/* v5c-10: Start Game button (after pitcher selected) */
+#start-game-btn {
+    margin-top: 15px;
+    padding: 12px 20px;
+    font-size: 16px;
+    background-color: var(--color-gold);
+    color: #1a5c1a;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    min-height: 48px;
+    transition: all 0.2s;
+}
+
+#start-game-btn:hover {
+    background-color: #ffed4a;
+    transform: scale(1.02);
+}
+
+/* v5c-10: Draggable list styling */
+/* v5c-18: Matched to regular list styling for consistency */
+.draggable-list {
+    margin: 0;
+    padding-left: 0;
+    list-style: none;
+    counter-reset: lineup-counter;
+    width: 100%;
+}
+
+.draggable-item {
+    display: flex;
+    align-items: center;
+    padding: 6px 10px;
+    margin: 2px 0;
+    background: rgba(255, 255, 255, 0.7);
+    border-radius: 4px;
+    cursor: default;
+    transition: transform 0.15s ease-out, background 0.15s, box-shadow 0.15s;
+    counter-increment: lineup-counter;
+    min-height: 32px;
+    box-sizing: border-box;
+}
+
+.draggable-item::before {
+    content: counter(lineup-counter) ".";
+    min-width: 22px;
+    font-weight: bold;
+    color: #555;
+    font-size: 13px;
+}
+
+.draggable-item .lineup-name {
+    flex: 1;
+    font-size: 13px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding-right: 8px;
+}
+
+.draggable-item .lineup-ba {
+    font-size: 12px;
+    color: #666;
+    min-width: 40px;
+    text-align: right;
+}
+
+.draggable-item:hover {
+    background: rgba(255, 255, 255, 0.9);
+}
+
+/* v5c-21: Disabled list items for opponent team (same size, no interaction) */
+.disabled-list .disabled-item {
+    cursor: default;
+}
+
+.disabled-list .disabled-item:hover {
+    background: rgba(255, 255, 255, 0.7); /* No hover effect */
+}
+
+/* v5c-22: Same as drag-handle but invisible - use same char with transparent color */
+.disabled-handle {
+    color: transparent !important;
+    cursor: default;
+}
+
+.draggable-item.dragging {
+    background: rgba(41, 128, 185, 0.95);
+    color: white;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.35);
+    z-index: 1000;
+}
+
+.draggable-item.dragging::before {
+    color: rgba(255,255,255,0.8);
+}
+
+.draggable-item.dragging .lineup-name {
+    color: white;
+}
+
+.draggable-item.dragging .lineup-ba {
+    color: rgba(255,255,255,0.8);
+}
+
+/* Drag handle */
+.drag-handle {
+    cursor: grab;
+    padding: 6px 10px 6px 4px;
+    color: #888;
+    font-size: 16px;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.drag-handle:hover {
+    color: #555;
+}
+
+.drag-handle:active {
+    cursor: grabbing;
+}
+
+/* Placeholder for drop position */
+.drag-placeholder {
+    background: rgba(41, 128, 185, 0.15);
+    border: 2px dashed #2980b9;
+    border-radius: 6px;
+    margin: 3px 0;
+    transition: height 0.15s ease-out;
+}
+
+/* Walk Option Styling - just italic, same green as others */
+.walk-option {
+    font-style: italic;
+}
+
+/* Away team lineup */
+.away-lineup h3 {
+    color: #c0392b;
+    border-color: #c0392b;
+}
+
+/* Home team lineup */
+.home-lineup h3 {
+    color: #2980b9;
+    border-color: #2980b9;
+}
+
+/* v5c-9: Starting Pitchers Preview Card */
+/* v5c-23: SP card is now inside center-column, needs its own card styling */
+.pitchers-preview {
+    background: linear-gradient(to bottom, #f5f0e6 0%, #e8e0d0 100%);
+    border-radius: 8px;
+    padding: 15px 20px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+    min-width: 260px;
+    width: 100%;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    flex: 1; /* Fill remaining space in center column */
+}
+
+/* v5c-24: Header styled like lineup card headers - underlined and centered */
+.pitchers-preview h3 {
+    color: #8b4513;
+    font-size: 16px;
+    text-align: center;
+    margin: 0 0 10px 0;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #ccc;
+}
+
+/* v5c-19: Horizontal layout for pitchers side-by-side */
+/* v5c-24: Reduced padding, VS aligned with head circles */
+.sp-matchup-horizontal {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 10px;
+    padding: 5px 0;
+    flex: 1;
+}
+
+/* Keep old vertical layout class for backwards compatibility */
+.sp-matchup {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 0;
+}
+
+.sp-entry {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
+
+.sp-team-label {
+    font-size: 11px;
+    font-weight: bold;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.sp-head-container {
+    width: 55px;
+    height: 55px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 2px solid #8b4513;
+    background: #333;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.sp-head {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.sp-tbd-circle {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(145deg, #2980b9, #1a5276);
+    color: white;
+    font-size: 24px;
+    font-weight: bold;
+}
+
+.sp-name {
+    font-size: 11px;
+    font-weight: bold;
+    color: #333;
+    text-align: center;
+    max-width: 80px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.sp-era {
+    font-size: 10px;
+    color: #666;
+}
+
+.sp-quality {
+    font-size: 9px;
+    letter-spacing: -1px;
+}
+
+/* v5c-19: VS in center between pitchers */
+/* v5c-24: Positioned to align center with head circles */
+.sp-vs-center {
+    font-size: 14px;
+    font-weight: bold;
+    color: #999;
+    /* Team label is ~16px high, head is 55px, so VS center should be at ~16 + 27.5 = 43.5px from top */
+    /* Using margin-top to push down to align with head center */
+    margin-top: 28px; /* Roughly: team-label height (16px) + half head height minus half VS height */
+    padding: 0 5px;
+}
+
+.sp-vs {
+    font-size: 11px;
+    font-weight: bold;
+    color: #999;
+    padding: 5px 0;
+}
+
+/* v5c-20: Action button in SP card */
+.sp-action-btn {
+    margin-top: 10px;
+    padding: 10px 16px;
+    font-size: 13px;
+    background-color: #1a5c1a;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    width: 100%;
+    min-height: 40px;
+    transition: all 0.2s;
+}
+
+.sp-action-btn:hover {
+    background-color: #2d7d2d;
+}
+
+/* Start Game button - gold color */
+.sp-action-btn.sp-start-btn {
+    background-color: var(--color-gold);
+    color: #1a5c1a;
+}
+
+.sp-action-btn.sp-start-btn:hover {
+    background-color: #ffed4a;
+}
+
+.mode-description {
+    margin-top: 20px !important;
+    font-weight: bold;
+    color: #333 !important;
+}
+
+.difficulty-label {
+    margin-top: 15px !important;
+    font-weight: bold;
+    color: #333 !important;
+}
+
+/* Mode Buttons (What Number? / What Years?) */
+.mode-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin: 10px 0;
+}
+
+.mode-btn {
+    padding: 10px 16px;
+    font-size: 14px;
+    cursor: pointer;
+    background-color: #f0f0f0;
+    color: #333;
+    border: 2px solid #ccc;
+    border-radius: 8px;
+    transition: all 0.2s;
+    touch-action: manipulation;
+}
+
+.mode-btn:hover {
+    background-color: #e0e0e0;
+}
+
+.mode-btn.selected {
+    background-color: #4CAF50;
+    border-color: var(--color-gold);
+    color: white;
+    font-weight: bold;
+}
+
+/* Difficulty Buttons */
+.difficulty-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin: 10px 0;
+}
+
+.difficulty-btn {
+    padding: 10px 18px;
+    font-size: 16px;
+    cursor: pointer;
+    background-color: #f0f0f0;
+    color: #333;
+    border: 2px solid #ccc;
+    border-radius: 8px;
+    transition: all 0.2s;
+    touch-action: manipulation;
+    min-width: 50px;
+}
+
+.difficulty-btn:hover {
+    background-color: #e0e0e0;
+}
+
+.difficulty-btn.selected {
+    background-color: #4CAF50;
+    border-color: var(--color-gold);
+    color: white;
+    font-weight: bold;
+}
+
+#start-button {
+    padding: 14px 32px;
+    font-size: 18px;
+    cursor: pointer;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    margin-top: 20px;
+    font-weight: bold;
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+    transition: all 0.2s ease;
+    touch-action: manipulation;
+}
+
+#start-button:hover {
+    background-color: #45a049;
+    transform: translateY(-2px);
+}
+
+#start-button:active {
+    transform: translateY(0);
+}
+
+/* ============================================================================
+   GAME AREA LAYOUT - Landscape Primary
+   ============================================================================ */
+#game-area {
+    width: 100%;
+    max-width: 1200px;
+    height: calc(100vh - 16px);
+    height: calc(100dvh - 16px);
+    position: relative;
+    box-sizing: border-box;
+}
+
+.game-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    gap: 0;
+}
+
+/* ============================================================================
+   STATUS BAR
+   ============================================================================ */
+/* ============================================================================
+   STATUS BAR - v4c-5: Three-column layout matching user diagram
+   Left: [Score/Outs][Bases]  Center: Question  Right: [Pitcher][Icons]
+   ============================================================================ */
+#status-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background-color: rgba(0, 0, 0, 0.6);
+    border-radius: 8px;
+    padding: 8px 12px;
+    margin-bottom: 8px;
+    gap: 15px;
+}
+
+/* Left: Score+Outs stacked, with Bases beside them */
+/* v5c-27: Increased gap, elements spread to match card width */
+#status-left-col {
+    display: flex;
+    align-items: center;
+    gap: 20px; /* v5c-27: More space between score/outs and bases */
+}
+
+#score-outs-stack {
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* v5c-26: Center outs under scoreboard */
+    gap: 3px;
+}
+
+/* MLB Network-style Scoreboard */
+#scoreboard {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background-color: rgba(0, 0, 0, 0.7);
+    border-radius: 4px;
+    padding: 3px 6px;
+    font-family: 'Arial Black', Arial, sans-serif;
+    font-size: 11px;
+}
+
+#scoreboard .score-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+#scoreboard .score-row.away {
+    color: #ff8a8a;
+}
+
+#scoreboard .score-row.home {
+    color: #7dd3fc;
+}
+
+#scoreboard .team-abbr {
+    font-size: 10px;
+    font-weight: bold;
+    width: 28px;
+    text-align: right;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+}
+
+#scoreboard .team-score {
+    font-size: 12px;
+    font-weight: bold;
+    min-width: 16px;
+    text-align: center;
+    background-color: rgba(255, 255, 255, 0.25);
+    padding: 1px 4px;
+    border-radius: 2px;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+}
+
+#scoreboard .inning-indicator {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin: 0 4px;
+    line-height: 1;
+}
+
+#scoreboard .inning-arrow {
+    font-size: 7px;
+    color: var(--color-gold);
+    line-height: 1;
+}
+
+#scoreboard .inning-num {
+    font-size: 12px;
+    font-weight: bold;
+    color: white;
+    line-height: 1;
+}
+
+/* Baseball Progress (Outs) - under score */
+/* v5c-26: Centered horizontally under scoreboard */
+/* v5c-27: Bigger baseballs, more spread out, positioned lower */
+#baseball-progress {
+    display: flex;
+    gap: 12px; /* v5c-27: More spread out */
+    align-items: center;
+    justify-content: center;
+    margin-top: 4px; /* v5c-27: Lower position */
+}
+
+#baseball-progress .baseball {
+    font-size: 18px; /* v5c-27: Bigger baseballs */
+    line-height: 1;
+    transition: all 0.3s ease;
+}
+
+#baseball-progress .baseball.empty {
+    opacity: 0.25;
+    filter: grayscale(100%);
+}
+
+#baseball-progress .baseball.correct {
+    opacity: 1;
+    filter: none;
+    text-shadow: 0 0 5px rgba(255, 255, 255, 0.7);
+    animation: baseball-pop 0.3s ease-out;
+}
+
+@keyframes baseball-pop {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.3); }
+    100% { transform: scale(1); }
+}
+
+/* Bases Diamond Display - to the right of score/outs */
+/* v5c-27: Bigger bases, positioned lower to align with baseballs */
+#bases-diamond {
+    position: relative;
+    width: 55px; /* v5c-27: Bigger */
+    height: 55px; /* v5c-27: Bigger */
+    margin-top: 5px; /* v5c-27: Lower */
+}
+
+#bases-diamond .base {
+    position: absolute;
+    width: 14px; /* v5c-27: Bigger bases */
+    height: 14px; /* v5c-27: Bigger bases */
+    border: 2px solid rgba(255, 255, 255, 0.5);
+    background-color: transparent;
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+    transform: rotate(45deg);
+}
+
+#bases-diamond .base-2 {
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%) rotate(45deg);
+}
+
+#bases-diamond .base-3 {
+    top: 50%;
+    left: 0;
+    transform: translateY(-50%) rotate(45deg);
+}
+
+#bases-diamond .base-1 {
+    top: 50%;
+    right: 0;
+    transform: translateY(-50%) rotate(45deg);
+}
+
+#bases-diamond .base.occupied {
+    background-color: #ff4444;
+    border-color: #ff4444;
+    box-shadow: 0 0 8px rgba(255, 68, 68, 0.9);
+}
+
+/* Center: BIG Question - the main focus! */
+#message-area {
+    flex: 1;
+    text-align: center;
+    color: white;
+    font-size: 26px;
+    padding: 8px 15px;
+    line-height: 1.2;
+}
+
+#message-area em {
+    color: var(--color-gold);
+    font-style: normal;
+    font-weight: bold;
+    font-size: 1.1em;
+}
+
+#message-area u {
+    color: var(--color-gold);
+}
+
+/* Right: Pitcher info stacked, with buttons beside them */
+#status-right-col {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+#pitcher-info-stack {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+    /* v5c-2 FIX: Increased min-width to accommodate longest warmup message */
+    /* "Washington warming (3 more batters)" is about 35 chars = ~200px */
+    min-width: 200px;
+}
+
+#current-pitcher-name {
+    color: white;
+    font-weight: bold;
+    font-size: 12px;
+    text-align: right;
+}
+
+#pitch-display {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+#pitch-display .pitch-count {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 11px;
+}
+
+#pitch-display .fatigue-indicator {
+    font-size: 12px;
+}
+
+#status-buttons {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+#settings-btn {
+    background: none;
+    border: none;
+    color: var(--color-gold);
+    font-size: 18px;
+    cursor: pointer;
+    padding: 2px;
+    touch-action: manipulation;
+    opacity: 0.8;
+    transition: opacity 0.2s;
+}
+
+#settings-btn:hover, #settings-btn:active {
+    opacity: 1;
+}
+
+.status-item {
+    color: var(--color-gold);
+    font-size: min(14px, 3.5vw);
+    font-weight: bold;
+    white-space: nowrap;
+}
+
+/* ============================================================================
+   MAIN CONTENT - Card + Options Layout
+   ============================================================================ */
+.main-content {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    gap: 15px;
+    padding: 5px;
+    position: relative;
+}
+
+/* LEFT SIDE: President Card */
+#left-side {
+    flex: 0 0 auto;
+    width: var(--card-width);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+}
+
+#current-image {
+    width: 100%;
+    height: auto;
+    max-height: calc(100vh - 100px);
+    object-fit: contain;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+    transition: opacity 0.15s ease;
+}
+
+/* v3c-9: Image fallback when image fails to load */
+.image-fallback {
+    width: 100%;
+    min-height: 200px;
+    background: linear-gradient(145deg, #2d7d2d, #1a5c1a);
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 30px;
+    text-align: center;
+}
+
+/* v4c-1: Only showing full name now (no rank or term to avoid giving away answers) */
+.fallback-name {
+    font-size: 32px;
+    font-weight: bold;
+    color: white;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    line-height: 1.3;
+}
+
+/* Deprecated - no longer used */
+.fallback-rank,
+.fallback-term {
+    display: none;
+}
+
+#next-image {
+    display: none !important;
+}
+
+/* RIGHT SIDE: Answer Options */
+#right-side {
+    flex: 1;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    gap: var(--option-gap);
+    position: relative;
+    min-width: 0;
+    /* Height is set dynamically by JS to match card image */
+    align-self: flex-start;
+}
+
+/* Hide extra options when not needed */
+#right-side.choices-3 .option:nth-child(n+4),
+#right-side.choices-4 .option:nth-child(n+5),
+#right-side.choices-5 .option:nth-child(n+6) {
+    display: none;
+}
+
+/* Adjust grid rows based on choice count */
+#right-side.choices-3,
+#right-side.choices-4 {
+    grid-template-rows: repeat(2, 1fr);
+}
+
+#right-side.choices-5,
+#right-side.choices-6 {
+    grid-template-rows: repeat(3, 1fr);
+}
+
+/* ============================================================================
+   OPTION BUTTONS
+   ============================================================================ */
+.option {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: var(--color-option-bg);
+    color: white;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.1s;
+    font-size: clamp(18px, 4vw, 28px);
+    padding: 10px 15px;
+    text-align: center;
+    line-height: 1.2;
+    word-wrap: break-word;
+    overflow: hidden;
+}
+
+.option:hover:not(.disabled) {
+    background-color: var(--color-option-hover);
+    transform: scale(1.02);
+}
+
+.option:active:not(.disabled) {
+    transform: scale(0.98);
+}
+
+.option.disabled {
+    background-color: var(--color-disabled);
+    cursor: default;
+    pointer-events: none;
+}
+
+.option.try-again,
+.option.wrong-guess {
+    background-color: var(--color-wrong);
+    color: white;
+    font-size: clamp(14px, 3vw, 20px);
+}
+
+.option.hints {
+    background-color: #555;
+    color: white;
+    font-size: clamp(11px, 2vw, 14px);
+    line-height: 1.3;
+    padding: 8px;
+    cursor: default;
+}
+
+.option.correct {
+    background-color: var(--color-correct);
+    color: navy;
+    font-weight: bold;
+    animation: pulsate 0.8s infinite ease-in-out;
+}
+
+@keyframes pulsate {
+    0% { background-color: #ffd700; }
+    50% { background-color: #ffea00; }
+    100% { background-color: #ffd700; }
+}
+
+/* ============================================================================
+   MERGED HINT DISPLAY - Shows correct answer and clue over button area
+   v3c-1: Updated for 2-line answer display with HTML content
+   ============================================================================ */
+#hint-overlay {
+    display: none;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #333;
+    color: white;
+    border-radius: 10px;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 15px 20px;
+    text-align: center;
+    z-index: 50;
+    cursor: pointer;
+    border: 2px solid var(--color-gold);
+}
+
+#hint-overlay.visible {
+    display: flex;
+}
+
+#hint-overlay .overlay-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 20px;
+    width: 100%;
+}
+
+#hint-overlay .correct-answer-section,
+#hint-overlay .hint-section {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+#hint-overlay .label {
+    font-size: clamp(10px, 1.5vw, 12px);
+    color: var(--color-gold);
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* v3c-1: Correct answer now uses 2 lines (name / #term) */
+#hint-overlay .correct-answer {
+    font-size: clamp(15px, 2.8vw, 22px);
+    font-weight: bold;
+    line-height: 1.35;
+}
+
+/* Style for the name (first line) */
+#hint-overlay .correct-answer br + :first-letter {
+    /* Note: CSS can't style after <br>, but the font-size handles readability */
+}
+
+/* v3c-1: Hint/clue text with line breaks at logical points */
+#hint-overlay .hint-text {
+    font-size: clamp(12px, 2vw, 15px);
+    line-height: 1.45;
+    opacity: 0.9;
+    font-style: italic;
+}
+
+#hint-overlay .tap-continue {
+    font-size: 11px;
+    opacity: 0.4;
+    margin-top: 8px;
+}
+
+/* ============================================================================
+   SUPER BUTTON - Removed, replaced by #hint-overlay above
+   ============================================================================ */
+#super-button {
+    display: none;
+}
+
+/* ============================================================================
+   SETTINGS SCREEN
+   ============================================================================ */
+#settings-screen {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.9);
+    z-index: 25000;
+    justify-content: center;
+    align-items: center;
+}
+
+#settings-content {
+    background: linear-gradient(145deg, #1a5c1a, #228B22);
+    padding: 25px 35px;
+    border-radius: 16px;
+    text-align: center;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+    border: 3px solid var(--color-gold);
+    max-width: 420px;
+    width: 90%;
+}
+
+#settings-content h2 {
+    font-family: 'Dancing Script', cursive;
+    color: var(--color-gold);
+    font-size: 28px;
+    margin: 0 0 20px 0;
+}
+
+.settings-section {
+    margin: 20px 0;
+    padding: 15px;
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 10px;
+}
+
+.settings-section label {
+    display: block;
+    color: var(--color-gold);
+    font-size: 14px;
+    margin-bottom: 12px;
+    font-weight: bold;
+}
+
+/* Settings screen button styling */
+.settings-section .mode-btn,
+.settings-section .difficulty-btn {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: white;
+    border-color: rgba(255, 255, 255, 0.4);
+}
+
+.settings-section .mode-btn:hover,
+.settings-section .difficulty-btn:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+.settings-section .mode-btn.selected,
+.settings-section .difficulty-btn.selected {
+    background-color: #4CAF50;
+    border-color: var(--color-gold);
+}
+
+.settings-note {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 11px;
+    margin-top: 10px;
+    font-style: italic;
+}
+
+.settings-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 20px 0;
+}
+
+.settings-action-btn {
+    padding: 12px 20px;
+    font-size: 16px;
+    cursor: pointer;
+    background-color: rgba(255, 255, 255, 0.1);
+    color: white;
+    border: 2px solid rgba(255, 255, 255, 0.4);
+    border-radius: 8px;
+    transition: all 0.2s;
+    touch-action: manipulation;
+}
+
+.settings-action-btn:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.6);
+}
+
+#close-settings-btn {
+    padding: 12px 30px;
+    font-size: 18px;
+    cursor: pointer;
+    background-color: var(--color-gold);
+    color: #1a5c1a;
+    border: none;
+    border-radius: 8px;
+    margin-top: 10px;
+    font-weight: bold;
+    touch-action: manipulation;
+}
+
+#close-settings-btn:hover {
+    background-color: #ffec80;
+}
+
+/* ============================================================================
+   INNING COMPLETE SCREEN - v3c-6 Redesigned
+   ============================================================================ */
+#inning-complete-screen {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.9);
+    z-index: 20000;
+    justify-content: center;
+    align-items: center;
+    padding: 10px;
+}
+
+#inning-complete-content {
+    background: linear-gradient(145deg, #1a5c1a, #228B22);
+    padding: 15px 20px;
+    border-radius: 16px;
+    text-align: center;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+    border: 3px solid var(--color-gold);
+    /* v4c-2: Much wider for landscape */
+    max-width: 95vw;
+    width: 900px;
+    max-height: 95vh;
+    overflow-y: auto;
+}
+
+#inning-complete-content h2 {
+    font-family: 'Dancing Script', cursive;
+    color: var(--color-gold);
+    font-size: 22px;
+    margin: 5px 0 10px 0;
+}
+
+/* Scoreboard at top */
+#recap-scoreboard {
+    margin-bottom: 10px;
+}
+
+#recap-scoreboard .line-score {
+    margin: 0;
+}
+
+/* Recap sections */
+.recap-section {
+    background-color: rgba(0, 0, 0, 0.25);
+    border-radius: 10px;
+    padding: 12px 15px;
+    margin: 10px 0;
+    text-align: left;
+}
+
+/* v3c-7: Header row with runs on same line */
+.recap-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
+.recap-header {
+    color: var(--color-gold);
+    font-weight: bold;
+    font-size: 16px;
+}
+
+.recap-runs {
+    color: white;
+    font-size: 14px;
+}
+
+.recap-runs #anim-runs {
+    color: var(--color-gold);
+    font-weight: bold;
+    /* v5c-1: Removed font-size: 18px - now consistent with other stats */
+}
+
+.questions-missed {
+    color: white;
+    font-size: 14px;
+}
+
+/* v3c-8: Jersey number styling */
+.jersey-num {
+    color: var(--color-gold);
+    font-weight: bold;
+    font-size: 0.9em;
+    margin-right: 2px;
+}
+
+/* Bottom half animation area */
+.bottom-animation-area {
+    display: flex;
+    gap: 15px;
+    margin-top: 10px;
+}
+
+.animation-left {
+    flex: 0 0 100px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.opp-pitcher-display {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 11px;
+    margin-bottom: 8px;
+    text-align: center;
+}
+
+#anim-pitcher {
+    color: white;
+    font-weight: bold;
+}
+
+/* Animated bases diamond */
+#anim-bases-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.anim-bases-diamond {
+    position: relative;
+    width: 50px;
+    height: 50px;
+}
+
+.anim-base {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    border: 2px solid rgba(255, 255, 255, 0.5);
+    background-color: transparent;
+    transform: rotate(45deg);
+    transition: all 0.3s ease;
+}
+
+.anim-base-2 { top: 0; left: 50%; transform: translateX(-50%) rotate(45deg); }
+.anim-base-3 { top: 50%; left: 0; transform: translateY(-50%) rotate(45deg); }
+.anim-base-1 { top: 50%; right: 0; transform: translateY(-50%) rotate(45deg); }
+
+.anim-base.occupied {
+    background-color: #ff4444;
+    border-color: #ff4444;
+    box-shadow: 0 0 8px rgba(255, 68, 68, 0.9);
+}
+
+#anim-outs {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 12px;
+    margin-top: 8px;
+}
+
+/* Scrolling batter list */
+.animation-right {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+#batter-scroll-container {
+    height: 112px; /* 4 lines * 28px */
+    overflow: hidden;
+    position: relative;
+}
+
+#batter-list {
+    transition: transform 0.3s ease;
+}
+
+.batter-line {
+    height: 28px;
+    line-height: 28px;
+    font-size: 13px;
+    color: white;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding: 0 5px;
+    border-radius: 4px;
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateX(-10px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+.batter-line.out {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.batter-line.hit {
+    color: #90EE90;
+}
+
+.batter-line.homerun {
+    color: var(--color-gold);
+}
+
+/* v3c-9: Ghost runner styling */
+.batter-line.ghost-runner {
+    color: rgba(255, 255, 255, 0.8);
+    font-style: italic;
+    background-color: rgba(100, 100, 255, 0.2);
+}
+
+/* v3c-9: Skip message (walk-off) styling */
+.batter-line.skip-message {
+    color: var(--color-gold);
+    font-style: italic;
+    text-align: center;
+    font-weight: bold;
+}
+
+/* v5c-7: Walk-off win styling */
+.batter-line.walkoff {
+    color: var(--color-gold);
+    font-weight: bold;
+    text-align: center;
+    animation: walkoff-flash 0.5s ease-in-out infinite alternate;
+}
+
+.walkoff-text {
+    font-size: 14px;
+}
+
+@keyframes walkoff-flash {
+    from { opacity: 0.7; }
+    to { opacity: 1; }
+}
+
+.runs-scored {
+    color: var(--color-gold);
+    font-weight: bold;
+}
+
+#anim-score {
+    color: white;
+    font-size: 14px;
+    margin-top: 8px;
+    text-align: right;
+}
+
+/* v5c-1: Removed font-size: 18px - now uses .stat-value (14px) for consistent sizing with Hits/LOB */
+#anim-runs {
+    color: var(--color-gold);
+    font-weight: bold;
+}
+
+/* Up next - OLD STYLE (kept for non-recap usage) */
+/* v5c-16: margin removed here, handled by .recap-action-btn for recap screens */
+.up-next {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 13px;
+    font-style: italic;
+}
+
+/* v5c-16: Remove conflicting margin-top for recap usage */
+#next-inning-btn {
+    padding: 14px 28px;
+    font-size: 18px;
+    cursor: pointer;
+    background-color: var(--color-gold);
+    color: #1a5c1a;
+    border: none;
+    border-radius: 8px;
+    font-weight: bold;
+    touch-action: manipulation;
+    transition: all 0.2s;
+}
+
+#next-inning-btn:hover:not(:disabled) {
+    background-color: #ffec80;
+    transform: scale(1.02);
+}
+
+#next-inning-btn:disabled {
+    cursor: not-allowed;
+}
+
+/* Baseball Line Score - FIXED alignment with CSS Grid */
+.line-score {
+    background-color: rgba(0, 0, 0, 0.4);
+    border-radius: 8px;
+    padding: 10px;
+    margin: 15px 0;
+    font-family: monospace;
+    font-size: 11px; /* v3c-7: Slightly smaller to fit LOB */
+    /* v5c-2: Removed overflow-x from here, moved to wrapper */
+    display: inline-block;
+    min-width: 100%;
+}
+
+/* v5c-2: Wrapper for horizontal scrolling in extra innings */
+.line-score-wrapper {
+    overflow-x: auto;
+    overflow-y: hidden;
+    max-width: 100%;
+    /* Scroll to show latest innings (right side) */
+    direction: rtl;
+}
+
+.line-score-wrapper .line-score {
+    direction: ltr;
+}
+
+.line-score-row {
+    display: grid;
+    /* v3c-7: Added LOB column */
+    grid-template-columns: 32px repeat(9, 18px) 22px 22px 26px; /* team + 9 innings + R + H + LOB */
+    gap: 2px;
+    align-items: center;
+    padding: 4px 0;
+}
+
+/* For extra innings, expand the grid */
+.line-score-row.extra-innings {
+    grid-template-columns: 32px repeat(auto-fit, minmax(18px, 18px)) 22px 22px 26px;
+}
+
+.line-score-row.header {
+    color: rgba(255, 255, 255, 0.6);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    padding-bottom: 6px;
+    margin-bottom: 4px;
+}
+
+.line-score-row .team-name {
+    text-align: left;
+    color: var(--color-gold);
+    font-weight: bold;
+}
+
+.line-score-row .inning-num,
+.line-score-row .inning-score {
+    text-align: center;
+    color: white;
+}
+
+.line-score-row .total-label,
+.line-score-row .total-score {
+    text-align: center;
+    font-weight: bold;
+}
+
+.line-score-row .total-label {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.line-score-row .total-score {
+    color: var(--color-gold);
+}
+
+/* Perfect Inning "none" animations */
+.perfect-none {
+    display: inline-block;
+    color: var(--color-gold);
+}
+
+.perfect-none.n1 { font-size: 14px; }
+.perfect-none.n2 { font-size: 18px; }
+.perfect-none.n3 { font-size: 22px; font-weight: bold; }
+.perfect-none.n4 { font-size: 26px; font-weight: bold; }
+.perfect-none.n5 { font-size: 30px; font-weight: bold; }
+
+.perfect-none.n6 {
+    font-size: 34px;
+    font-weight: bold;
+    text-shadow: 2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000;
+}
+
+.perfect-none.n7 {
+    font-size: 38px;
+    font-weight: bold;
+    text-shadow: 2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000;
+    animation: bubble-dance 0.5s ease-in-out infinite alternate;
+}
+
+.perfect-none.n8 {
+    font-size: 42px;
+    font-weight: bold;
+    text-shadow: 3px 3px 0 #000, -3px -3px 0 #000, 3px -3px 0 #000, -3px 3px 0 #000;
+    animation: bubble-jump 0.4s ease-in-out infinite;
+}
+
+@keyframes bubble-dance {
+    0% { transform: rotate(-5deg) scale(1); }
+    100% { transform: rotate(5deg) scale(1.05); }
+}
+
+@keyframes bubble-jump {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
+
+/* ============================================================================
+   FINAL RESULTS SCREEN - v5c-9: Landscape layout
+   ============================================================================ */
+#final-screen {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.9);
+    z-index: 20000;
+    justify-content: center;
+    align-items: center;
+}
+
+#final-content {
+    background: linear-gradient(145deg, #1a5c1a, #228B22);
+    padding: 20px 30px;
+    border-radius: 16px;
+    text-align: center;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+    border: 3px solid var(--color-gold);
+    max-width: 850px;
+    width: 95%;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+/* v5c-9: Two-column layout for final screen */
+.final-two-column {
+    display: flex;
+    gap: 25px;
+    justify-content: center;
+    align-items: flex-start;
+    text-align: left;
+}
+
+.final-left-col {
+    flex: 0 0 auto;
+    min-width: 300px;
+}
+
+.final-right-col {
+    flex: 1;
+    min-width: 200px;
+    text-align: center;
+}
+
+/* Boxscore in final screen uses same scroll wrapper */
+.final-left-col .line-score-wrapper {
+    max-width: 100%;
+    overflow-x: auto;
+    direction: rtl;
+}
+
+.final-left-col .line-score-wrapper .line-score {
+    direction: ltr;
+}
+
+/* Final screen pitching summary box */
+.final-pitching-box {
+    background-color: rgba(0, 0, 0, 0.3);
+    border-radius: 8px;
+    padding: 10px 15px;
+    margin-top: 10px;
+    text-align: left;
+}
+
+.pitching-title {
+    color: var(--color-gold);
+    font-weight: bold;
+    font-size: 13px;
+    margin-bottom: 8px;
+    border-bottom: 1px solid rgba(255,255,255,0.2);
+    padding-bottom: 5px;
+}
+
+.pitcher-line {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 12px;
+    margin: 4px 0;
+}
+
+#final-content h2 {
+    font-family: 'Dancing Script', cursive;
+    color: var(--color-gold);
+    font-size: 36px;
+    margin: 0 0 20px 0;
+}
+
+.final-score {
+    color: white;
+    font-size: 24px;
+    margin: 15px 0;
+}
+
+.final-grade {
+    font-size: 64px;
+    margin: 20px 0;
+    font-weight: bold;
+}
+
+.final-grade.grade-a { color: #4CAF50; }
+.final-grade.grade-b { color: #8BC34A; }
+.final-grade.grade-c { color: var(--color-gold); }
+.final-grade.grade-f { color: #f44336; }
+
+.final-grade.perfect-game {
+    color: var(--color-gold);
+    font-size: clamp(24px, 5vw, 36px);
+    text-shadow: 0 0 20px rgba(255, 215, 0, 0.8);
+    animation: perfect-glow 1.5s ease-in-out infinite alternate;
+}
+
+@keyframes perfect-glow {
+    from { text-shadow: 0 0 10px rgba(255, 215, 0, 0.5); }
+    to { text-shadow: 0 0 30px rgba(255, 215, 0, 1), 0 0 50px rgba(255, 215, 0, 0.5); }
+}
+
+.final-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 25px;
+}
+
+.final-actions a {
+    color: white;
+    text-decoration: none;
+    padding: 12px 20px;
+    background-color: rgba(255, 255, 255, 0.1);
+    border: 2px solid rgba(255, 255, 255, 0.4);
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+
+.final-actions a:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.6);
+}
+
+/* ============================================================================
+   HIGH SCORES MODAL
+   ============================================================================ */
+#high-scores-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.9);
+    z-index: 26000;
+    justify-content: center;
+    align-items: center;
+}
+
+#high-scores-content {
+    background: linear-gradient(145deg, #1a5c1a, #228B22);
+    padding: 25px 35px;
+    border-radius: 16px;
+    text-align: center;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+    border: 3px solid var(--color-gold);
+    max-width: 400px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+#high-scores-content h2 {
+    font-family: 'Dancing Script', cursive;
+    color: var(--color-gold);
+    font-size: 28px;
+    margin: 0 0 20px 0;
+}
+
+.scores-tabs {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-bottom: 15px;
+}
+
+.scores-tab {
+    padding: 8px 16px;
+    font-size: 14px;
+    cursor: pointer;
+    background-color: rgba(255, 255, 255, 0.1);
+    color: white;
+    border: 2px solid rgba(255, 255, 255, 0.4);
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+
+.scores-tab.active {
+    background-color: var(--color-gold);
+    color: #1a5c1a;
+    border-color: var(--color-gold);
+    font-weight: bold;
+}
+
+.scores-list {
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 10px;
+    padding: 15px;
+    min-height: 200px;
+}
+
+.score-entry {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 10px;
+    color: white;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.score-entry:last-child {
+    border-bottom: none;
+}
+
+.score-rank {
+    color: var(--color-gold);
+    font-weight: bold;
+    width: 40px;
+}
+
+.score-initials {
+    flex: 1;
+    text-align: left;
+    padding-left: 10px;
+}
+
+.score-value {
+    font-weight: bold;
+}
+
+.no-scores {
+    color: rgba(255, 255, 255, 0.6);
+    font-style: italic;
+    padding: 40px 20px;
+}
+
+#close-high-scores-btn {
+    padding: 12px 30px;
+    font-size: 18px;
+    cursor: pointer;
+    background-color: var(--color-gold);
+    color: #1a5c1a;
+    border: none;
+    border-radius: 8px;
+    margin-top: 20px;
+    font-weight: bold;
+    touch-action: manipulation;
+}
+
+/* ============================================================================
+   SCORE SUBMISSION DIALOG
+   ============================================================================ */
+#score-submission {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.9);
+    z-index: 27000;
+    justify-content: center;
+    align-items: center;
+}
+
+#submission-content {
+    background: linear-gradient(145deg, #1a5c1a, #228B22);
+    padding: 30px 40px;
+    border-radius: 16px;
+    text-align: center;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+    border: 3px solid var(--color-gold);
+}
+
+#submission-content h3 {
+    color: var(--color-gold);
+    font-size: 24px;
+    margin: 0 0 15px 0;
+}
+
+#submission-content p {
+    color: white;
+    margin: 10px 0;
+}
+
+#initials-input {
+    font-size: 28px;
+    text-align: center;
+    width: 100px;
+    padding: 10px;
+    border: 2px solid var(--color-gold);
+    border-radius: 8px;
+    text-transform: uppercase;
+    background: rgba(255, 255, 255, 0.9);
+}
+
+#submit-score-btn {
+    padding: 12px 30px;
+    font-size: 18px;
+    cursor: pointer;
+    background-color: var(--color-gold);
+    color: #1a5c1a;
+    border: none;
+    border-radius: 8px;
+    margin-top: 15px;
+    font-weight: bold;
+    touch-action: manipulation;
+}
+
+/* ============================================================================
+   PORTRAIT MODE ADJUSTMENTS (Tablets)
+   ============================================================================ */
+@media (orientation: portrait) and (min-width: 601px) {
+    .main-content {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    #left-side {
+        width: min(60vw, 300px);
+        margin-bottom: 15px;
+    }
+    
+    #right-side {
+        width: 100%;
+        max-width: 500px;
+    }
+    
+    #super-button {
+        left: 0;
+        top: calc(var(--card-height) + 20px);
+    }
+}
+
+/* ============================================================================
+   SMALL LANDSCAPE (phones)
+   ============================================================================ */
+@media (max-height: 450px) and (orientation: landscape) {
+    :root {
+        --card-width: min(180px, 30vh);
+    }
+    
+    #status-bar {
+        padding: 4px 10px;
+        min-height: 36px;
+        margin-bottom: 4px;
+    }
+    
+    .main-content {
+        gap: 10px;
+    }
+    
+    .option {
+        font-size: clamp(14px, 3vw, 20px);
+        padding: 6px 10px;
+    }
+}
+
+/* ============================================================================
+   PITCH DISPLAY - NEW v3c-2
+   ============================================================================ */
+#pitch-display {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(0, 0, 0, 0.6);
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 14px;
+    color: white;
+    font-weight: bold;
+}
+
+#pitch-display .pitch-count {
+    font-family: 'Courier New', monospace;
+}
+
+#pitch-display .inning-pitches {
+    font-size: 11px;
+    color: #FF9800;
+}
+
+#pitch-display .fatigue-indicator {
+    font-size: 14px;
+}
+
+#pitch-display.gassed-warning {
+    animation: gassed-pulse 0.8s infinite;
+}
+
+@keyframes gassed-pulse {
+    0%, 100% { background: rgba(244, 67, 54, 0.6); }
+    50% { background: rgba(244, 67, 54, 0.9); }
+}
+
+/* ============================================================================
+   BULLPEN BUTTON - NEW v3c-2
+   ============================================================================ */
+#bullpen-btn {
+    background: none;
+    border: none;
+    color: var(--color-gold);
+    font-size: 20px;
+    cursor: pointer;
+    padding: 5px;
+    touch-action: manipulation;
+    opacity: 0.7;
+    transition: all 0.2s;
+}
+
+#bullpen-btn:hover, #bullpen-btn:active {
+    opacity: 1;
+    transform: scale(1.1);
+}
+
+#bullpen-btn.bullpen-needed {
+    animation: bullpen-alert 1s infinite;
+}
+
+@keyframes bullpen-alert {
+    0%, 100% { opacity: 0.7; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.2); }
+}
+
+/* ============================================================================
+   BULLPEN TOOLTIP - NEW v3c-3
+   Quote box style with pointer arrow
+   ============================================================================ */
+#bullpen-tooltip {
+    display: none;
+    position: absolute;
+    bottom: calc(100% + 10px);
+    right: 60px;
+    background: rgba(0, 0, 0, 0.9);
+    color: var(--color-gold);
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: bold;
+    white-space: nowrap;
+    z-index: 100;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    border: 2px solid var(--color-gold);
+}
+
+/* Arrow pointer pointing down-right toward phone icon */
+#bullpen-tooltip::after {
+    content: '';
+    position: absolute;
+    bottom: -10px;
+    right: 15px;
+    border-width: 10px 10px 0 10px;
+    border-style: solid;
+    border-color: var(--color-gold) transparent transparent transparent;
+}
+
+#bullpen-tooltip::before {
+    content: '';
+    position: absolute;
+    bottom: -7px;
+    right: 17px;
+    border-width: 8px 8px 0 8px;
+    border-style: solid;
+    border-color: rgba(0, 0, 0, 0.9) transparent transparent transparent;
+    z-index: 1;
+}
+
+#bullpen-tooltip.visible {
+    display: block;
+    opacity: 1;
+    animation: tooltip-bounce 0.5s ease-out;
+}
+
+@keyframes tooltip-bounce {
+    0% { transform: translateY(10px); opacity: 0; }
+    50% { transform: translateY(-3px); }
+    100% { transform: translateY(0); opacity: 1; }
+}
+
+/* ============================================================================
+   PITCHER SELECTION SCREEN - NEW v3c-2
+   ============================================================================ */
+#pitcher-select-screen {
+    display: flex;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.95);
+    z-index: 28000;
+    justify-content: center;
+    align-items: center;
+}
+
+.pitcher-select-content {
+    background: linear-gradient(145deg, #1a5c1a, #228B22);
+    padding: 25px 35px;
+    border-radius: 16px;
+    text-align: center;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+    border: 3px solid var(--color-gold);
+    max-width: 500px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.pitcher-select-content h2 {
+    font-family: 'Dancing Script', cursive;
+    color: var(--color-gold);
+    font-size: 28px;
+    margin: 0 0 10px 0;
+}
+
+.pitcher-select-content > p {
+    color: white;
+    margin: 0 0 20px 0;
+    font-size: 14px;
+}
+
+.pitcher-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.pitcher-option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 8px;
+    padding: 10px 15px;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: white;
+    gap: 12px;
+}
+
+.pitcher-option:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: var(--color-gold);
+    transform: translateX(5px);
+}
+
+/* v5c-11: Name block with first name on top, last name below */
+.pitcher-option .pitcher-name-block {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    min-width: 110px;
+    flex: 1;
+}
+
+.pitcher-option .pitcher-first-name {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.pitcher-option .pitcher-last-name {
+    font-size: 14px;
+    font-weight: bold;
+    color: white;
+}
+
+/* Stats block: ERA and quality label */
+.pitcher-option .pitcher-stats-block {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 65px;
+}
+
+.pitcher-option .pitcher-era {
+    font-size: 12px;
+    color: var(--color-gold);
+    font-weight: bold;
+}
+
+.pitcher-option .pitcher-quality {
+    font-size: 11px;
+    font-weight: bold;
+}
+
+/* Rating block: stars and stamina */
+.pitcher-option .pitcher-rating-block {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    min-width: 70px;
+}
+
+.pitcher-option .pitcher-stars {
+    font-size: 12px;
+    letter-spacing: -1px;
+}
+
+.pitcher-option .pitcher-stamina {
+    font-size: 10px;
+    opacity: 0.7;
+}
+
+/* ============================================================================
+   BULLPEN MODAL - NEW v3c-2
+   ============================================================================ */
+#bullpen-modal {
+    display: flex;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.9);
+    z-index: 29000;
+    justify-content: center;
+    align-items: center;
+}
+
+.bullpen-content {
+    background: linear-gradient(145deg, #1a5c1a, #228B22);
+    padding: 25px 35px;
+    border-radius: 16px;
+    text-align: center;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+    border: 3px solid var(--color-gold);
+    max-width: 450px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.bullpen-content h2 {
+    font-family: 'Dancing Script', cursive;
+    color: var(--color-gold);
+    font-size: 26px;
+    margin: 0 0 10px 0;
+}
+
+.bullpen-content > p {
+    color: white;
+    margin: 8px 0;
+    font-size: 13px;
+}
+
+.reliever-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 15px 0;
+}
+
+.reliever-option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 8px;
+    padding: 10px 15px;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: white;
+}
+
+.reliever-option:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: var(--color-gold);
+}
+
+.reliever-option .reliever-name {
+    font-weight: bold;
+    flex: 1;
+    text-align: left;
+}
+
+.reliever-option .reliever-quality {
+    font-size: 12px;
+    font-weight: bold;
+    margin: 0 10px;
+}
+
+.reliever-option .reliever-stars {
+    font-size: 12px;
+    letter-spacing: -1px;
+}
+
+.no-relievers {
+    color: rgba(255, 255, 255, 0.6);
+    font-style: italic;
+    padding: 20px;
+}
+
+#cancel-bullpen-btn {
+    padding: 10px 25px;
+    font-size: 16px;
+    cursor: pointer;
+    background-color: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: 2px solid rgba(255, 255, 255, 0.4);
+    border-radius: 8px;
+    margin-top: 10px;
+    transition: all 0.2s;
+}
+
+#cancel-bullpen-btn:hover {
+    background-color: rgba(255, 255, 255, 0.3);
+}
+
+/* ============================================================================
+   LINEUP CARD UPDATES - v3c-2
+   ============================================================================ */
+.lineup-card li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.lineup-name {
+    flex: 1;
+}
+
+.lineup-diff, .lineup-pitcher {
+    font-size: 10px;
+    letter-spacing: -1px;
+    opacity: 0.8;
+}
+
+/* v3c-4: Batting average display */
+.lineup-ba {
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    color: #666;
+    min-width: 35px;
+    text-align: right;
+}
+
+/* v3c-4: Team label (OPP) / (YOU) */
+.team-label {
+    font-size: 12px;
+    font-weight: normal;
+    opacity: 0.7;
+}
+
+/* v3c-4: Button under home team card */
+.home-lineup #choose-pitcher-btn {
+    margin-top: 15px;
+    padding: 12px 20px;
+    font-size: 16px;
+    cursor: pointer;
+    background-color: var(--color-gold);
+    color: #1a5c1a;
+    border: none;
+    border-radius: 8px;
+    font-weight: bold;
+    transition: all 0.2s;
+}
+
+.home-lineup #choose-pitcher-btn:hover {
+    background-color: #ffd700;
+    transform: scale(1.05);
+}
+
+/* ============================================================================
+   PITCH SUMMARY - v3c-2
+   ============================================================================ */
+.pitch-summary {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 14px;
+    margin: 10px 0;
+}
+
+/* ============================================================================
+   FINAL RESULT DISPLAY - v3c-4
+   ============================================================================ */
+#final-result {
+    margin: 15px 0;
+}
+
+#final-result .special-achievement {
+    font-size: 24px;
+    font-weight: bold;
+    color: var(--color-gold);
+    margin-bottom: 10px;
+    animation: achievement-glow 1s ease-in-out infinite alternate;
+}
+
+@keyframes achievement-glow {
+    0% { text-shadow: 0 0 5px rgba(255, 215, 0, 0.5); }
+    100% { text-shadow: 0 0 20px rgba(255, 215, 0, 0.9); }
+}
+
+#final-result .result-message {
+    font-size: 20px;
+    color: white;
+}
+
+/* Accuracy percentage display */
+.final-grade {
+    font-size: 28px;
+    font-weight: bold;
+    margin: 10px 0;
+}
+
+/* ============================================================================
+   v4c-1: NEW STYLES - Bullpen Warmup, Two-Column Recap, etc.
+   ============================================================================ */
+
+/* Warmup status in bullpen modal */
+.warmup-status {
+    background-color: rgba(255, 165, 0, 0.2);
+    border: 2px solid orange;
+    border-radius: 8px;
+    padding: 10px 15px;
+    margin: 10px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.warmup-status.ready {
+    background-color: rgba(0, 255, 0, 0.2);
+    border-color: #00ff00;
+}
+
+.warmup-text {
+    font-weight: bold;
+    color: orange;
+}
+
+.warmup-status.ready .warmup-text {
+    color: #00ff00;
+}
+
+.bring-in-btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    background-color: rgba(255, 255, 255, 0.2);
+    color: white;
+    transition: all 0.2s ease;
+}
+
+.bring-in-btn:hover {
+    background-color: rgba(255, 255, 255, 0.3);
+}
+
+.bring-in-btn.ready {
+    background-color: #00aa00;
+    animation: pulse-ready 0.8s ease-in-out infinite alternate;
+}
+
+@keyframes pulse-ready {
+    0% { box-shadow: 0 0 5px rgba(0, 255, 0, 0.5); }
+    100% { box-shadow: 0 0 15px rgba(0, 255, 0, 0.9); }
+}
+
+/* Reliever currently warming indicator */
+.reliever-option.warming {
+    border-color: orange;
+    background-color: rgba(255, 165, 0, 0.15);
+}
+
+.warming-indicator {
+    margin-left: 5px;
+}
+
+/* v4c-6: Warmup info in pitcher name area */
+.warmup-name {
+    color: #FFA500;
+    font-size: 11px;
+    animation: warmup-pulse 1s ease-in-out infinite alternate;
+}
+
+.warmup-name.ready {
+    color: #4CAF50;
+    animation: warmup-ready-pulse 0.5s ease-in-out infinite alternate;
+}
+
+@keyframes warmup-pulse {
+    from { opacity: 0.7; }
+    to { opacity: 1; }
+}
+
+@keyframes warmup-ready-pulse {
+    0% { background-color: rgba(0, 255, 0, 0.2); }
+    100% { background-color: rgba(0, 255, 0, 0.5); }
+}
+
+/* v5c-2: Reliever decision prompt in hint overlay */
+/* v5c-3: Cleaner layout - hide default labels, question on top, buttons below */
+.reliever-prompt {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.reliever-ready-name {
+    font-size: 24px;
+    font-weight: bold;
+    color: var(--color-gold);
+    margin-bottom: 12px;
+}
+
+.reliever-prompt-text {
+    font-size: 18px;
+    color: white;
+}
+
+.reliever-decision-btns {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+    max-width: 300px;
+    margin: 0 auto;
+}
+
+.reliever-btn {
+    padding: 14px 20px;
+    font-size: 16px;
+    font-weight: bold;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 2px solid;
+    touch-action: manipulation;
+}
+
+.reliever-btn.yes {
+    background-color: #4CAF50;
+    border-color: #45a049;
+    color: white;
+}
+
+.reliever-btn.yes:hover {
+    background-color: #45a049;
+    transform: scale(1.02);
+}
+
+.reliever-btn.no {
+    background-color: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.4);
+    color: white;
+}
+
+.reliever-btn.no:hover {
+    background-color: rgba(255, 255, 255, 0.25);
+}
+
+/* v5c-3: When in reliever mode, restructure the overlay */
+#hint-overlay.reliever-mode .correct-answer-section,
+#hint-overlay.reliever-mode .hint-section {
+    /* Swap the visual order - hint (question) on top, correct-answer (buttons) below */
+}
+
+#hint-overlay.reliever-mode .overlay-content {
+    display: flex;
+    flex-direction: column;
+}
+
+#hint-overlay.reliever-mode .hint-section {
+    order: 1; /* Question/prompt first */
+}
+
+#hint-overlay.reliever-mode .correct-answer-section {
+    order: 2; /* Buttons second */
+    margin-top: 10px;
+}
+
+/* Two-column recap layout */
+.recap-two-column {
+    display: flex;
+    gap: 25px;
+    width: 100%;
+    align-items: stretch; /* v5c-14: Back to stretch so columns are equal height */
+}
+
+.recap-left-col {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.recap-right-col {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+/* v4c-6: Align Top and Bottom sections */
+.recap-two-column .recap-section {
+    margin: 0;
+    padding: 10px 12px;
+}
+
+/* Scoreboard at top of left column */
+#recap-scoreboard {
+    margin-bottom: 8px;
+}
+
+/* v5c-14: Middle sections flex to fill space, pushing buttons to bottom */
+.recap-left-col .top-recap {
+    flex: 1;
+    margin-bottom: 0;
+}
+
+.recap-right-col .bottom-recap {
+    flex: 1;
+}
+
+/* Line score in recap - make it fit better */
+.recap-two-column .line-score {
+    font-size: 11px;
+}
+
+.recap-two-column .line-score .inning-num,
+.recap-two-column .line-score .inning-score {
+    min-width: 18px;
+    padding: 2px 3px;
+}
+
+/* Pitcher line (moved to its own row) */
+/* v5c-9: Updated to handle ER and ERA display */
+.opp-pitcher-line {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 12px;
+    margin-bottom: 8px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.opp-pitcher-line #anim-pitcher {
+    color: white;
+    font-weight: bold;
+}
+
+/* Bottom stats line (Runs, Hits, LOB) */
+.bottom-stats-line {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 8px;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.bottom-stats-line .stat-value {
+    color: var(--color-gold);
+    font-weight: bold;
+    font-size: 14px;
+}
+
+/* v5c-9: Pitcher stats line in recap */
+.pitcher-stats-line {
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 12px;
+    margin: 4px 0 8px 0;
+    padding: 4px 8px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+    display: inline-block;
+}
+
+/* Batter scroll container - taller */
+.recap-two-column #batter-scroll-container {
+    height: 140px;
+}
+
+.recap-two-column .batter-line {
+    height: 28px;
+    line-height: 28px;
+    font-size: 13px;
+}
+
+/* v4c-6: Matching action button style for Up Next and Continue button - exact same size */
+/* v5c-2: Added explicit min-height and overflow handling for consistent heights */
+/* v5c-14: margin-top: auto pushes button to bottom, flex:1 on sections keeps them equal */
+/* v5c-17: Added 12px margin-top for spacing between content and buttons */
+.recap-action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 10px 15px;
+    font-size: 14px;
+    font-weight: bold;
+    text-align: center;
+    border-radius: 8px;
+    margin-top: 12px;  /* v5c-17: Spacing above button */
+    height: 48px;
+    min-height: 48px;
+    max-height: 48px;
+    box-sizing: border-box;
+    overflow: hidden;
+    line-height: 1.2;
+}
+
+/* Up Next - info style (not clickable) */
+/* v5c-15: Now a button element for consistent alignment */
+.up-next.recap-action-btn {
+    background-color: rgba(0, 0, 0, 0.3);
+    color: rgba(255, 255, 255, 0.9);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    cursor: default;
+    font-family: inherit;
+}
+
+.up-next.recap-action-btn:disabled {
+    opacity: 1; /* Don't dim when disabled */
+}
+
+/* Continue/Start button - action style */
+#next-inning-btn.recap-action-btn {
+    background-color: var(--color-gold);
+    color: #1a5c1a;
+    border: 2px solid var(--color-gold);
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.1s;
+}
+
+#next-inning-btn.recap-action-btn:hover:not(:disabled) {
+    background-color: #ffed4a;
+}
+
+#next-inning-btn.recap-action-btn:active:not(:disabled) {
+    transform: scale(0.98);
+}
+
+/* Mobile portrait - stack columns */
+@media (max-width: 700px) {
+    .recap-two-column {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .recap-left-col,
+    .recap-right-col {
+        width: 100%;
+    }
+    
+    #inning-complete-content {
+        width: 95%;
+        max-width: 500px;
+    }
+    
+    /* v5c-9: Final screen mobile layout */
+    .final-two-column {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .final-left-col,
+    .final-right-col {
+        width: 100%;
+        min-width: auto;
+    }
+    
+    .final-left-col {
+        order: 2; /* Show results first on mobile */
+    }
+    
+    .final-right-col {
+        order: 1;
+    }
+}
+
+/* Landscape - optimize for width */
+@media (orientation: landscape) and (min-width: 700px) {
+    #inning-complete-content {
+        padding: 12px 18px;
+    }
+    
+    .recap-two-column {
+        gap: 20px;
+    }
+    
+    .recap-two-column h2 {
+        font-size: 18px;
+        margin: 3px 0 8px 0;
+    }
+    
+    .recap-section {
+        padding: 8px 10px;
+        margin: 5px 0;
+    }
+    
+    .recap-two-column #batter-scroll-container {
+        height: 120px;
+    }
+    
+    .recap-two-column .batter-line {
+        height: 24px;
+        line-height: 24px;
+        font-size: 12px;
+    }
+}

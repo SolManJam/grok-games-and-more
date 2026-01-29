@@ -1,0 +1,223 @@
+{
+    "description": "Static initial batting stats for all presidents. BA correlates with quiz difficulty: famous presidents (easy questions) have LOW BA, obscure presidents (hard questions) have HIGH BA.",
+    "version": "v20260129",
+    "batters": {
+        "Washington": {
+            "difficulty": 1,
+            "seasonHits": 12,
+            "seasonAB": 65,
+            "targetBA": 0.185,
+            "notes": "Very easy - First president, most famous"
+        },
+        "J. Adams": {
+            "difficulty": 3,
+            "seasonHits": 21,
+            "seasonAB": 75,
+            "targetBA": 0.280,
+            "notes": "Medium - Founding Father but less famous than others"
+        },
+        "Jefferson": {
+            "difficulty": 1,
+            "seasonHits": 13,
+            "seasonAB": 68,
+            "targetBA": 0.191,
+            "notes": "Very easy - Founding Father, Declaration author"
+        },
+        "Madison": {
+            "difficulty": 3,
+            "seasonHits": 20,
+            "seasonAB": 72,
+            "targetBA": 0.278,
+            "notes": "Medium - Father of Constitution"
+        },
+        "Monroe": {
+            "difficulty": 3,
+            "seasonHits": 19,
+            "seasonAB": 70,
+            "targetBA": 0.271,
+            "notes": "Medium - Monroe Doctrine"
+        },
+        "J.Q. Adams": {
+            "difficulty": 4,
+            "seasonHits": 27,
+            "seasonAB": 82,
+            "targetBA": 0.329,
+            "notes": "Hard - Confused with father"
+        },
+        "Jackson": {
+            "difficulty": 2,
+            "seasonHits": 15,
+            "seasonAB": 62,
+            "targetBA": 0.242,
+            "notes": "Easy - On the $20 bill"
+        },
+        "Van Buren": {
+            "difficulty": 4,
+            "seasonHits": 28,
+            "seasonAB": 85,
+            "targetBA": 0.329,
+            "notes": "Hard - Often forgotten"
+        },
+        "W.H. Harrison": {
+            "difficulty": 3,
+            "seasonHits": 22,
+            "seasonAB": 78,
+            "targetBA": 0.282,
+            "notes": "Medium - Famous for short term"
+        },
+        "Tyler": {
+            "difficulty": 5,
+            "seasonHits": 32,
+            "seasonAB": 92,
+            "targetBA": 0.348,
+            "notes": "Very hard - Obscure"
+        },
+        "Polk": {
+            "difficulty": 4,
+            "seasonHits": 26,
+            "seasonAB": 80,
+            "targetBA": 0.325,
+            "notes": "Hard - Underappreciated"
+        },
+        "Taylor": {
+            "difficulty": 4,
+            "seasonHits": 25,
+            "seasonAB": 78,
+            "targetBA": 0.321,
+            "notes": "Hard - Military fame faded"
+        },
+        "Fillmore": {
+            "difficulty": 5,
+            "seasonHits": 33,
+            "seasonAB": 95,
+            "targetBA": 0.347,
+            "notes": "Very hard - Most obscure"
+        },
+        "Pierce": {
+            "difficulty": 5,
+            "seasonHits": 31,
+            "seasonAB": 88,
+            "targetBA": 0.352,
+            "notes": "Very hard - Forgettable"
+        },
+        "Buchanan": {
+            "difficulty": 4,
+            "seasonHits": 27,
+            "seasonAB": 84,
+            "targetBA": 0.321,
+            "notes": "Hard - Pre-Civil War"
+        },
+        "Lincoln": {
+            "difficulty": 1,
+            "seasonHits": 11,
+            "seasonAB": 60,
+            "targetBA": 0.183,
+            "notes": "Very easy - Most famous president"
+        },
+        "Johnson": {
+            "difficulty": 4,
+            "seasonHits": 26,
+            "seasonAB": 82,
+            "targetBA": 0.317,
+            "notes": "Hard - Reconstruction era"
+        },
+        "Grant": {
+            "difficulty": 2,
+            "seasonHits": 16,
+            "seasonAB": 65,
+            "targetBA": 0.246,
+            "notes": "Easy - Civil War hero"
+        },
+        "Hayes": {
+            "difficulty": 5,
+            "seasonHits": 30,
+            "seasonAB": 86,
+            "targetBA": 0.349,
+            "notes": "Very hard - Obscure"
+        },
+        "Garfield": {
+            "difficulty": 4,
+            "seasonHits": 25,
+            "seasonAB": 78,
+            "targetBA": 0.321,
+            "notes": "Hard - Assassinated early"
+        },
+        "Arthur": {
+            "difficulty": 5,
+            "seasonHits": 32,
+            "seasonAB": 90,
+            "targetBA": 0.356,
+            "notes": "Very hard - Very obscure"
+        },
+        "Cleveland": {
+            "difficulty": 3,
+            "seasonHits": 21,
+            "seasonAB": 74,
+            "targetBA": 0.284,
+            "notes": "Medium - Non-consecutive terms notable"
+        },
+        "B. Harrison": {
+            "difficulty": 5,
+            "seasonHits": 31,
+            "seasonAB": 88,
+            "targetBA": 0.352,
+            "notes": "Very hard - Confused with W.H. Harrison"
+        },
+        "McKinley": {
+            "difficulty": 3,
+            "seasonHits": 20,
+            "seasonAB": 72,
+            "targetBA": 0.278,
+            "notes": "Medium - Assassinated"
+        },
+        "T. Roosevelt": {
+            "difficulty": 1,
+            "seasonHits": 12,
+            "seasonAB": 62,
+            "targetBA": 0.194,
+            "notes": "Very easy - Teddy bears, Rough Riders"
+        },
+        "Taft": {
+            "difficulty": 3,
+            "seasonHits": 19,
+            "seasonAB": 70,
+            "targetBA": 0.271,
+            "notes": "Medium - Heaviest president"
+        },
+        "Wilson": {
+            "difficulty": 2,
+            "seasonHits": 17,
+            "seasonAB": 68,
+            "targetBA": 0.250,
+            "notes": "Easy - WWI president"
+        },
+        "Harding": {
+            "difficulty": 4,
+            "seasonHits": 26,
+            "seasonAB": 80,
+            "targetBA": 0.325,
+            "notes": "Hard - Scandals forgotten"
+        },
+        "Coolidge": {
+            "difficulty": 3,
+            "seasonHits": 20,
+            "seasonAB": 72,
+            "targetBA": 0.278,
+            "notes": "Medium - Silent Cal"
+        },
+        "Hoover": {
+            "difficulty": 2,
+            "seasonHits": 16,
+            "seasonAB": 64,
+            "targetBA": 0.250,
+            "notes": "Easy - Great Depression blame"
+        },
+        "FDR": {
+            "difficulty": 1,
+            "seasonHits": 11,
+            "seasonAB": 58,
+            "targetBA": 0.190,
+            "notes": "Very easy - New Deal, WWII, longest serving"
+        }
+    }
+}
