@@ -1453,9 +1453,13 @@ body {
     overflow: hidden;
 }
 
-.option:hover:not(.disabled) {
-    background-color: var(--color-option-hover);
-    transform: scale(1.02);
+/* v5c-28: Only apply hover effects on devices with fine pointer (mouse)
+   This prevents "sticky hover" on touch devices */
+@media (hover: hover) and (pointer: fine) {
+    .option:hover:not(.disabled) {
+        background-color: var(--color-option-hover);
+        transform: scale(1.02);
+    }
 }
 
 .option:active:not(.disabled) {
